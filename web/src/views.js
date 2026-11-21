@@ -18,7 +18,7 @@ const SECTIONS = [
   ['dia', 'Mi Día', 'dia'], ['calendario', 'Calendario', 'cal'], ['areas', 'Áreas', 'areas'], ['rutina', 'Rutina semanal', 'rutina'],
   ['tareas', 'Tareas', 'tareas'], ['enfoque', 'Enfoque', 'enfoque'], ['notas', 'Mis notas', 'notas'], ['progreso', 'Progreso', 'progreso'], ['config', 'Configuración', 'config']
 ];
-const UI = {view: 'dia', q: '', calDate: todayISO(), selDate: todayISO(), sumTab: 'hoy', taskTab: 'todo', filters: {area: '', type: '', prio: '', sort: 'fecha'}, showHiddenNotes: false, sideTab: 'citas', taskMode: 'tareas', openList: null, openArea: null, areaType: '', motivHidden: false, motiv: '', qWhen: 'hoy', qDate: null};
+const UI = {daySel: null, view: 'dia', q: '', calDate: todayISO(), selDate: todayISO(), sumTab: 'hoy', taskTab: 'todo', filters: {area: '', type: '', prio: '', sort: 'fecha'}, showHiddenNotes: false, sideTab: 'citas', taskMode: 'tareas', openList: null, openArea: null, areaType: '', motivHidden: false, motiv: '', qWhen: 'hoy', qDate: null};
 const isMobile = () => window.matchMedia('(max-width:820px)').matches;
 
 /* ========== Estructura ========== */
@@ -83,7 +83,7 @@ function render() {
 }
 function renderView() {
   const v = $('#view');
-  const fn = {dia: vDia, calendario: vCal, areas: vAreas, rutina: vRutina, tareas: vTareas, enfoque: vEnfoque, notas: vNotas, progreso: vProgreso, config: vConfig}[UI.view];
+  const fn = {dia: vDia2, calendario: vCal, areas: vAreas, rutina: vRutina, tareas: vTareas, enfoque: vEnfoque, notas: vNotas, progreso: vProgreso, config: vConfig}[UI.view];
   v.innerHTML = ''; fn(v); listBadge();
 }
 
@@ -154,83 +154,6 @@ function rangeDays(tab) {
   return weekDays(addDays(weekStartOf(t), 7));
 }
 let motivTimer = null;
-function vDia(v) {
-  const [wd, wt] = weekProgress();
-  const days = rangeDays(UI.sumTab);
-  const now = nowMin(), t = todayISO();
-  const nextIt = sortedDay(t).find(i => (i.k === 'ev' && !i.x.allDay && toMin(i.x.end) > now) || (i.k === 'rt' && toMin(i.x.end) > now) || (i.k === 'tk' && i.x.time && toMin(i.x.time) >= now - 15));
-  const inRange = d => days.includes(d);
-  const pend = S.tasks.filter(x => inRange(x.date) && !isDone(x)).length;
-  const comp = S.tasks.filter(x => inRange(x.date) && isDone(x)).length;
-  const late = S.tasks.filter(isLate).length;
-  const upc = S.events.filter(e => inRange(e.date) && (e.date > t || e.allDay || toMin(e.end) > now)).length;
-  const lim = addDays(t, 60);
-  const citas = S.events.filter(e => e.date >= t && e.date <= lim && (e.date > t || e.allDay || toMin(e.end) > now)).sort((a, b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || ''))).slice(0, 5);
-  const rems = [...S.tasks.filter(x => x.reminder != null && !isDone(x) && x.date >= t).map(x => ['tk', x, x.date + (x.time || '')]), ...S.events.filter(e => e.reminder != null && e.date >= t).map(e => ['ev', e, e.date + (e.start || '')])].sort((a, b) => a[2].localeCompare(b[2])).slice(0, 5);
-  const doneList = S.tasks.filter(x => isDone(x) && (UI.sumTab === 'hoy' ? x.date === t || (x.completedAt && iso(new Date(x.completedAt)) === t) : inRange(x.date))).sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0)).slice(0, 8);
-  const dt = new Date();
-  v.innerHTML = `
-    <div class="hero"><div class="hero-main"><div class="hero-top"><div><div class="date">${cap(DIAS[dt.getDay()])}, ${dt.getDate()} de ${MESES[dt.getMonth()]} de ${dt.getFullYear()}</div><div class="hi">${greeting()} 👋</div></div>
-      <div class="ring" title="Avance de la semana">${ringSVG(wd, wt)}<div class="lbl">${wd}/${wt}<small>semana</small></div></div></div>
-      ${UI.motivHidden ? '' : `<div class="hero-msg" id="motiv"><button class="x" id="mX" aria-label="Cerrar mensaje">✕</button><p>✨ ${esc(UI.motiv)}</p><div class="hscroll"><button class="btn sm hb1" id="m1">Organizar mi día</button><button class="btn sm hb2" id="m2">Planificar mi semana</button><button class="btn sm hb2" id="m3">Modo enfoque</button></div></div>`}</div></div>
-    <div class="card quick">${nextIt ? `<button class="nextline" id="nextGo" data-nk="${nextIt.k}" data-nid="${nextIt.x.id}"><span class="nl-k">Lo próximo</span><span class="nl-ic">${nextIt.k === 'ev' ? evType(nextIt.x.evType).icon : nextIt.k === 'rt' ? '🔁' : typeById(nextIt.x.typeId).icon}</span><span class="nl-t">${esc(nextIt.x.title || nextIt.x.name)}</span><b>${fmtTime(nextIt.k === 'tk' ? nextIt.x.time : nextIt.x.start)}</b></button>` : ''}<h3>¿Qué tienes pendiente?</h3><div class="in"><input id="qIn" placeholder="Ej. cita con el dentista a las 3 pm" maxlength="140"><button class="btn" id="qAdd">Añadir</button></div>
-      <div class="row wrap" style="margin-top:8px"><button class="chip" data-qw="hoy">Hoy</button><button class="chip" data-qw="man">Mañana</button><button class="chip" data-qw="otra">Otra fecha</button><input type="date" id="qDate" class="inp" style="width:auto;padding:5px 10px;display:none"></div><div class="hint" id="qHint"></div></div>
-    <div class="grid g2" style="margin-top:14px">
-      <div class="card"><h3>Tu resumen</h3><div class="chips">${[['hoy', 'Hoy'], ['man', 'Mañana'], ['sem', 'Semana'], ['prox', 'Próxima']].map(([k, n]) => `<button class="chip ${UI.sumTab === k ? 'on' : ''}" data-st="${k}">${n}</button>`).join('')}</div>
-        <div class="stats"><div class="stat"><b>${pend}</b><span>Pendientes</span></div><div class="stat ok"><b>${comp}</b><span>Completadas</span></div><div class="stat ${late ? 'warn' : ''}"><b>${late}</b><span>Atrasadas</span></div><div class="stat"><b>${upc}</b><span>${isMobile() ? 'Compromisos' : 'Próximos compromisos'}</span></div></div>
-        ${late ? `<button class="btn sec sm" id="seeLate" style="margin-bottom:6px">⚠️ Ver ${late} atrasada${late === 1 ? '' : 's'}</button>` : ''}
-        <div id="agenda"></div></div>
-      ${(() => {
-        const panes = [['citas', '📅 Próximas citas', citas.length ? citas.map(e => itemHTML('ev', e, {date: true})).join('') : '<div class="muted small">Nada agendado por ahora.</div>'],
-          ['rem', '🔔 Recordatorios personales', rems.length ? rems.map(([k, x]) => itemHTML(k, x, {date: true})).join('') : '<div class="muted small">Enciende la campanita 🔔 en una tarea o evento para verla aquí.</div>'],
-          ['done', '✅ Completadas', doneList.length ? doneList.map(x => itemHTML('tk', x)).join('') : '<div class="muted small">Lo que completes aparecerá aquí.</div>']];
-        if (!isMobile()) return `<div class="grid" style="align-content:start">${panes.map(p => `<div class="card"><h3>${p[1]}</h3>${p[2]}</div>`).join('')}</div>`;
-        const cur = panes.find(p => p[0] === UI.sideTab) || panes[0];
-        return `<div class="card"><div class="tabs3">${panes.map(p => `<button data-side="${p[0]}" class="${p === cur ? 'on' : ''}">${{citas: 'Próximas citas', rem: 'Recordatorios', done: 'Completadas'}[p[0]]}</button>`).join('')}</div>${cur[2]}</div>`;
-      })()}</div>`;
-  const ag = $('#agenda', v);
-  ag.innerHTML = days.map(d => {
-    const its = sortedDay(d); const ho = holidaysOn(d);
-    const lbl = d === t ? 'Hoy · ' + fmtLong(d) : d === addDays(t, 1) ? 'Mañana · ' + fmtLong(d) : fmtLong(d);
-    return `<div class="dayblock"><div class="dayhead">${lbl}${ho.map(h => `<span class="tag" style="background:var(--holi);color:var(--holiText)">🎉 ${esc(h.name)}</span>`).join('')}</div>${its.length ? its.map(i => itemHTML(i.k, i.x)).join('') : '<div class="alldone">✓ Todo listo</div>'}</div>`;
-  }).join('');
-  wireItems(v);
-  // Motivación
-  if (!UI.motivHidden) {
-    if (!motivTimer) motivTimer = setTimeout(() => { UI.motivHidden = true; const m = $('#motiv'); if (m) m.remove(); }, 60000);
-    $('#mX', v).onclick = () => { UI.motivHidden = true; $('#motiv').remove(); };
-    $('#m1', v).onclick = () => { UI.sumTab = 'hoy'; renderView(); $('#qIn').focus(); };
-    $('#m2', v).onclick = () => { S.settings.calView = 'week'; UI.calDate = todayISO(); save('meta'); go('calendario'); setTimeout(() => { const p = $('#planner'); p && p.scrollIntoView({behavior: 'smooth'}); }, 80); };
-    $('#m3', v).onclick = () => go('enfoque');
-  }
-  v.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { UI.sumTab = b.dataset.st; renderView(); });
-  v.querySelectorAll('[data-side]').forEach(b => b.onclick = () => { UI.sideTab = b.dataset.side; const y = window.scrollY; renderView(); window.scrollTo(0, y); });
-  const ng = $('#nextGo', v); if (ng) ng.onclick = () => { const k = ng.dataset.nk, id = ng.dataset.nid; if (k === 'tk') openTaskDetail(id); else if (k === 'ev') openEventDetail(id); else openRoutineForm(S.routines.find(r => r.id === id)); };
-  const sl = $('#seeLate', v); if (sl) sl.onclick = () => { UI.taskTab = 'late'; go('tareas'); };
-  // Entrada rápida
-  const qIn = $('#qIn', v), hint = $('#qHint', v), qd = $('#qDate', v);
-  const paintQW = () => { v.querySelectorAll('[data-qw]').forEach(b => b.classList.toggle('on', b.dataset.qw === UI.qWhen)); qd.style.display = UI.qWhen === 'otra' ? '' : 'none'; if (UI.qWhen === 'otra') qd.value = UI.qDate || addDays(t, 2); };
-  paintQW();
-  v.querySelectorAll('[data-qw]').forEach(b => b.onclick = () => { UI.qWhen = b.dataset.qw; if (UI.qWhen === 'otra' && !UI.qDate) UI.qDate = addDays(t, 2); paintQW(); if (UI.qWhen === 'otra') { try { qd.showPicker && qd.showPicker(); } catch (e) {} } qIn.focus(); });
-  qd.onchange = () => UI.qDate = qd.value;
-  const showHint = () => {
-    const tx = qIn.value.trim(); if (!tx) { hint.textContent = ''; return; }
-    const g = guess(tx); const a = areaById(g.areaId); const ty = typeById(g.typeId);
-    hint.textContent = `Se guardará como ${ty.icon} ${ty.name}${a ? ' en ' + a.name : ''}${g.time ? ' a las ' + fmtTime(g.time) : ''}`;
-  };
-  qIn.oninput = showHint;
-  const addQ = () => {
-    const tx = qIn.value.trim(); if (!tx) { qIn.focus(); return; }
-    const g = guess(tx);
-    const date = UI.qWhen === 'hoy' ? t : UI.qWhen === 'man' ? addDays(t, 1) : (qd.value || UI.qDate || addDays(t, 2));
-    S.tasks.push({id: uid(), title: tx, date, time: g.time, typeId: g.typeId, areaId: g.areaId, priority: 'Media', details: '', steps: [], status: 'Pendiente', obs: '', reminder: null, createdAt: Date.now()});
-    save('tasks'); toast(`Añadido para ${date === t ? 'hoy' : date === addDays(t, 1) ? 'mañana' : fmtShort(date)} ✓`);
-    renderView(); setTimeout(() => { const n = $('#qIn'); n && n.focus(); }, 0);
-  };
-  $('#qAdd', v).onclick = addQ;
-  qIn.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); addQ(); } };
-}
-
 /* ========== CALENDARIO ========== */
 function calTitle(view, d) {
   const dd = parseISO(d);
@@ -997,4 +920,115 @@ function dayLists(box) {
   if (q('#qOpen')) q('#qOpen').onclick = () => { const id = UI.popTab; go('tareas'); UI.taskMode = 'listas'; UI.openList = id; render(); };
   if (q('#qUndo')) q('#qUndo').onclick = () => { S.lists.find(y => y.id === UI.popTab).items.forEach(i => i.done = false); save('lists'); redraw(); };
   if (q('#qNewList')) q('#qNewList').onclick = () => { go('tareas'); UI.taskMode = 'listas'; render(); openListForm(); };
+}
+
+/* ========== MI DÍA (v2): tira de días + línea de tiempo con gestos ========== */
+function heroHTML() {
+  const [wd, wt] = weekProgress(), dt = new Date();
+  return `<div class="hero"><div class="hero-main"><div class="hero-top"><div><div class="date">${cap(DIAS[dt.getDay()])}, ${dt.getDate()} de ${MESES[dt.getMonth()]}</div><div class="hi">${greeting()} 👋</div></div>
+    <div class="ring" title="Avance de la semana">${ringSVG(wd, wt)}<div class="lbl">${wd}/${wt}<small>semana</small></div></div></div>
+    ${UI.motivHidden ? '' : `<div class="hero-msg" id="motiv"><button class="x" id="mX" aria-label="Cerrar mensaje">✕</button><p>✨ ${esc(UI.motiv)}</p><div class="hscroll"><button class="btn sm hb1" id="m1">Organizar mi día</button><button class="btn sm hb2" id="m2">Planificar mi semana</button><button class="btn sm hb2" id="m3">Modo enfoque</button></div></div>`}</div></div>`;
+}
+function wireHero(v) {
+  if (UI.motivHidden) return;
+  if (!motivTimer) motivTimer = setTimeout(() => { UI.motivHidden = true; const m = $('#motiv'); if (m) m.remove(); }, 60000);
+  $('#mX', v).onclick = () => { UI.motivHidden = true; $('#motiv').remove(); };
+  $('#m1', v).onclick = () => { UI.daySel = todayISO(); renderView(); setTimeout(() => { const q = $('#qIn'); q && (q.scrollIntoView({block: 'center', behavior: 'smooth'}), q.focus()); }, 50); };
+  $('#m2', v).onclick = () => { S.settings.calView = 'week'; UI.calDate = todayISO(); save('meta'); go('calendario'); setTimeout(() => { const p = $('#planner'); p && p.scrollIntoView({behavior: 'smooth'}); }, 80); };
+  $('#m3', v).onclick = () => go('enfoque');
+}
+function vDia2(v) {
+  const t = todayISO();
+  if (!UI.daySel || UI.daySel < t) UI.daySel = t;
+  const d = UI.daySel, isToday = d === t, now = nowMin();
+  const strip = [...Array(14)].map((_, i) => addDays(t, i));
+  const late = isToday ? S.tasks.filter(isLate).sort((a, b) => a.date.localeCompare(b.date)) : [];
+  const its = sortedDay(d, {all: true, withDone: true});
+  const pendItems = its.filter(i => !(i.k === 'tk' && isDone(i.x)));
+  const doneItems = its.filter(i => i.k === 'tk' && isDone(i.x));
+  const nPend = its.filter(i => i.k === 'tk' && !isDone(i.x)).length, nDone = doneItems.length;
+  const ho = holidaysOn(d);
+  const dayName = isToday ? 'Hoy' : d === addDays(t, 1) ? 'Mañana' : cap(DIAS[dow(d)]);
+  // línea de tiempo con "AHORA"
+  let nowPlaced = !isToday, tl = '';
+  const endOf = i => i.k === 'tk' ? (i.x.time ? toMin(i.x.time) + 30 : -1) : i.k === 'ev' ? (i.x.allDay ? -1 : toMin(i.x.end)) : toMin(i.x.end);
+  pendItems.forEach(i => {
+    const st = i.k === 'tk' ? (i.x.time ? toMin(i.x.time) : null) : i.k === 'ev' ? (i.x.allDay ? null : toMin(i.x.start)) : toMin(i.x.start);
+    if (!nowPlaced && st !== null && st > now) { tl += `<div class="nowmark"><span>AHORA · ${fmtTime(fromMin(now))}</span></div>`; nowPlaced = true; }
+    const past = isToday && st !== null && endOf(i) >= 0 && endOf(i) < now;
+    tl += tlRow(i, past);
+  });
+  if (!nowPlaced && pendItems.length) tl += `<div class="nowmark"><span>AHORA · ${fmtTime(fromMin(now))}</span></div>`;
+  v.innerHTML = `${heroHTML()}
+    <div class="card daycard">
+      <div class="dstrip hscroll" id="dstrip">${strip.map(x => { const it = sortedDay(x, {all: true}); const hol = holidaysOn(x).length; return `<button class="dpill ${x === d ? 'on' : ''} ${x === t ? 'today' : ''} ${hol ? 'holi' : ''}" data-dd="${x}"><span class="dw">${x === t ? 'Hoy' : DCORTO[dow(x)]}</span><span class="dn">${parseISO(x).getDate()}</span><span class="ddots">${it.slice(0, 3).map(i => `<i style="background:${colorOf(i.k, i.x)}"></i>`).join('')}${hol ? '<i style="background:var(--red)"></i>' : ''}</span></button>`; }).join('')}<button class="dpill more" id="dMore"><span class="dw">Otra</span><span class="dn">📅</span><span class="ddots"></span></button></div>
+      <div class="dhead"><div><b>${dayName}</b><span class="muted"> · ${parseISO(d).getDate()} de ${MESES[parseISO(d).getMonth()]}</span>${ho.map(h => ` <span class="tag" style="background:var(--holi);color:var(--holiText)">🎉 ${esc(h.name)}</span>`).join('')}</div>
+        <div class="muted small">${[nPend ? `${nPend} por hacer` : '', nDone ? `${nDone} hecha${nDone === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ')}</div></div>
+      <div class="qadd daddbar"><input id="qIn" placeholder="Añadir a ${isToday ? 'hoy' : dayName.toLowerCase()}… (ej. dentista a las 3 pm)" maxlength="140" autocomplete="off"><button class="btn" id="qAdd" aria-label="Añadir">+</button></div>
+      <div class="hint" id="qHint"></div>
+      ${late.length ? `<div class="lateb"><div class="lateh">⚠️ Atrasadas (${late.length})<span class="sp"></span><button class="btn ghost sm" id="allToday">Traer todas a hoy</button></div>${late.map(x => `<div class="tlrow late" data-tk="${x.id}"><span class="tltime">${parseISO(x.date).getDate()} ${MESES[parseISO(x.date).getMonth()].slice(0, 3)}</span><div class="tlcard"><button class="check" data-chk="${x.id}" aria-label="Completar"></button><span class="em">${typeById(x.typeId).icon}</span><div class="body"><div class="t">${esc(x.title)}</div></div><button class="btn sec sm" data-totoday="${x.id}">A hoy</button></div></div>`).join('')}</div>` : ''}
+      <div class="timeline" id="tline">${tl || `<div class="tlempty">${isToday ? '✓ Día libre. Añade algo arriba o disfruta 🌿' : 'Nada para este día todavía.'}</div>`}</div>
+      ${doneItems.length ? `<details class="fold donefold"><summary>Hechas (${doneItems.length})</summary>${doneItems.map(i => tlRow(i, false)).join('')}</details>` : ''}
+      ${pendItems.some(i => i.k === 'tk') ? `<div class="xs muted swipehint">${isMobile() ? 'Desliza una tarea → para completarla, ← para pasarla a mañana.' : 'Pasa el ratón sobre una tarea para completarla o pasarla a mañana.'}</div>` : ''}
+    </div>`;
+  wireHero(v);
+  wireItems(v);
+  v.querySelectorAll('[data-dd]').forEach(b => b.onclick = () => { UI.daySel = b.dataset.dd; renderView(); });
+  const sel = v.querySelector('.dpill.on'); if (sel && sel.scrollIntoView) { const strip = $('#dstrip', v); strip.scrollLeft = Math.max(0, sel.offsetLeft - 60); }
+  $('#dMore', v).onclick = () => { const i = document.createElement('input'); i.type = 'date'; i.min = t; i.style.cssText = 'position:fixed;opacity:0;left:50%;top:50%'; document.body.appendChild(i); i.onchange = () => { if (i.value) { UI.daySel = i.value; renderView(); } i.remove(); }; i.onblur = () => setTimeout(() => i.remove(), 500); try { i.showPicker(); } catch (e) { i.click(); } };
+  const at = $('#allToday', v); if (at) at.onclick = () => { S.tasks.filter(isLate).forEach(x => x.date = t); save('tasks'); renderView(); toast('Atrasadas movidas a hoy'); };
+  v.querySelectorAll('[data-totoday]').forEach(b => b.onclick = e => { e.stopPropagation(); S.tasks.find(x => x.id === b.dataset.totoday).date = t; save('tasks'); renderView(); toast('Movida a hoy'); });
+  v.querySelectorAll('[data-tom]').forEach(b => b.onclick = e => { e.stopPropagation(); postpone(b.dataset.tom); });
+  v.querySelectorAll('[data-done]').forEach(b => b.onclick = e => { e.stopPropagation(); setDone(b.dataset.done, true); });
+  wireSwipes(v);
+  // añadir al día elegido
+  const qIn = $('#qIn', v), hint = $('#qHint', v);
+  qIn.oninput = () => { const tx = qIn.value.trim(); if (!tx) { hint.textContent = ''; return; } const g = guess(tx), a = areaById(g.areaId), ty = typeById(g.typeId); hint.textContent = `Se guardará como ${ty.icon} ${ty.name}${a ? ' en ' + a.name : ''}${g.time ? ' a las ' + fmtTime(g.time) : ''}`; };
+  const addQ = () => {
+    const tx = qIn.value.trim(); if (!tx) { qIn.focus(); return; }
+    const g = guess(tx);
+    S.tasks.push({id: uid(), title: tx, date: d, time: g.time, typeId: g.typeId, areaId: g.areaId, priority: 'Media', details: '', steps: [], status: 'Pendiente', obs: '', reminder: null, createdAt: Date.now()});
+    save('tasks'); toast(`Añadido para ${isToday ? 'hoy' : dayName.toLowerCase()} ✓`); renderView(); setTimeout(() => { const n = $('#qIn'); n && n.focus(); }, 0);
+  };
+  $('#qAdd', v).onclick = addQ; qIn.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); addQ(); } };
+}
+function tlRow(i, past) {
+  const x = i.x, c = colorOf(i.k, x);
+  const time = i.k === 'tk' ? (x.time ? fmtTime(x.time) : '') : i.k === 'ev' ? (x.allDay ? 'Todo el día' : fmtTime(x.start)) : fmtTime(x.start);
+  const tshort = time.replace(' a. m.', ' am').replace(' p. m.', ' pm');
+  if (i.k === 'tk') {
+    const ty = typeById(x.typeId), a = areaById(x.areaId), dn = isDone(x);
+    return `<div class="tlrow ${past ? 'past' : ''}" data-tk="${x.id}"><span class="tltime">${tshort}</span><div class="tlcard swipe ${dn ? 'done' : ''} ${x.priority === 'Urgente' ? 'r' : x.priority === 'Alta' ? 'o' : ''}" data-sw="${x.id}" style="--c:${c}">
+      <button class="check ${dn ? 'on' : ''}" data-chk="${x.id}" aria-label="Completar">${dn ? '✓' : ''}</button><span class="em">${ty.icon}</span>
+      <div class="body"><div class="t">${esc(x.title)}</div>${a || x.reminder != null || (x.steps && x.steps.length) ? `<div class="m">${a ? `<span class="tag"><span class="dot" style="background:${a.color}"></span>${esc(a.name)}</span>` : ''}${x.steps && x.steps.length ? `<span>☑ ${x.steps.filter(s => s.done).length}/${x.steps.length}</span>` : ''}${x.reminder != null ? '<span class="bell">🔔</span>' : ''}</div>` : ''}</div>
+      ${dn ? '' : `<span class="hoveracts"><button class="btn sec sm" data-done="${x.id}" title="Completar">✓</button><button class="btn sec sm" data-tom="${x.id}" title="Pasar a mañana">→ Mañana</button></span>`}</div></div>`;
+  }
+  if (i.k === 'ev') { const et = evType(x.evType); return `<div class="tlrow ${past ? 'past' : ''}" data-ev="${x.id}"><span class="tltime">${tshort}</span><div class="tlcard ev" style="--c:${c}"><span class="em">${et.icon}</span><div class="body"><div class="t">${esc(x.title)}</div><div class="m">${x.allDay ? '' : `<span>hasta ${fmtTime(x.end)}</span>`}${x.place ? `<span>📍 ${esc(x.place)}</span>` : ''}${x.reminder != null ? '<span class="bell">🔔</span>' : ''}</div></div></div></div>`; }
+  return `<div class="tlrow ${past ? 'past' : ''}" data-rt="${x.id}"><span class="tltime">${tshort}</span><div class="tlcard rt" style="--c:${c}"><span class="em">🔁</span><div class="body"><div class="t">${esc(x.name)}</div><div class="m"><span>hasta ${fmtTime(x.end)}</span>${x.place ? `<span>📍 ${esc(x.place)}</span>` : ''}</div></div></div></div>`;
+}
+function postpone(id) {
+  const x = S.tasks.find(y => y.id === id); if (!x) return;
+  const base = x.date < todayISO() ? todayISO() : x.date; x.date = addDays(base, 1); save('tasks'); renderView();
+  toast('Pasada a ' + (x.date === addDays(todayISO(), 1) ? 'mañana' : fmtShort(x.date)) + ' →');
+}
+// Gestos: deslizar → completar, ← pasar a mañana
+function wireSwipes(root) {
+  root.querySelectorAll('.tlcard.swipe:not(.done)').forEach(card => {
+    let x0 = null, y0 = 0, dx = 0, lock = null;
+    card.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') return; x0 = e.clientX; y0 = e.clientY; dx = 0; lock = null; });
+    card.addEventListener('pointermove', e => {
+      if (x0 === null) return; const ddx = e.clientX - x0, ddy = e.clientY - y0;
+      if (!lock) { if (Math.abs(ddx) > 10 && Math.abs(ddx) > Math.abs(ddy)) lock = 'x'; else if (Math.abs(ddy) > 10) { lock = 'y'; x0 = null; return; } else return; }
+      dx = ddx; card.style.transform = `translateX(${dx}px)`; card.classList.toggle('sw-ok', dx > 60); card.classList.toggle('sw-tom', dx < -60);
+      card.parentElement.dataset.swdir = dx > 0 ? 'ok' : 'tom';
+    });
+    const end = () => {
+      if (x0 === null) return; x0 = null; const id = card.dataset.sw;
+      if (dx > 90) { card.style.transition = 'transform .2s'; card.style.transform = 'translateX(110%)'; setTimeout(() => setDone(id, true), 180); }
+      else if (dx < -90) { card.style.transition = 'transform .2s'; card.style.transform = 'translateX(-110%)'; setTimeout(() => postpone(id), 180); }
+      else { card.style.transition = 'transform .2s'; card.style.transform = ''; setTimeout(() => { card.style.transition = ''; card.classList.remove('sw-ok', 'sw-tom'); }, 220); }
+      if (Math.abs(dx) > 10) { const stop = ev => { ev.stopPropagation(); ev.preventDefault(); }; card.addEventListener('click', stop, {capture: true, once: true}); setTimeout(() => card.removeEventListener('click', stop, {capture: true}), 300); }
+    };
+    card.addEventListener('pointerup', end); card.addEventListener('pointercancel', end);
+  });
 }

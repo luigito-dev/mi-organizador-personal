@@ -534,3 +534,57 @@ textarea.inp{min-height:80px;resize:vertical}
 .qadd .btn{width:46px;padding:0;font-size:22px}
 .qfoot{margin-top:6px;min-height:30px}
 .lsbtn{display:inline-flex}
+/* Resumen en una línea */
+.sumline{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:12px 2px 4px;font-size:14px;color:var(--muted)}
+.sumline b{color:var(--text);font-size:15px}
+.sumline .ok b{color:var(--green)}
+.sumline .warn{color:var(--red);font-weight:600;padding:3px 10px;border-radius:999px;background:var(--red-l);font-size:13.5px}
+.sumline .warn b{color:var(--red)}
+/* ===== Mi Día v2 ===== */
+.daycard{margin-top:16px;padding-bottom:10px}
+.dstrip{gap:8px;padding:2px 2px 6px;scroll-snap-type:x proximity}
+.dpill{flex:none;width:54px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 7px;border-radius:16px;background:var(--soft);scroll-snap-align:start}
+.dpill .dw{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:capitalize}
+.dpill .dn{font-size:19px;font-weight:700}
+.dpill .ddots{display:flex;gap:3px;height:6px}
+.dpill .ddots i{width:5px;height:5px;border-radius:50%}
+.dpill.today .dw{color:var(--blue)}
+.dpill.holi{background:var(--holi)}
+.dpill.on{background:var(--blue);color:#fff;box-shadow:0 6px 14px rgba(31,95,191,.3)}
+.dpill.on .dw{color:rgba(255,255,255,.85)}
+.dpill.on .ddots i{background:#fff!important}
+.dpill.more .dn{font-size:17px}
+.dhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:14px 2px 10px;flex-wrap:wrap}
+.dhead b{font-size:18px}
+.daddbar{margin-top:0}
+.daycard .hint{font-size:12px;color:var(--muted);margin:6px 2px 0;min-height:0}
+.lateb{margin-top:12px;background:var(--red-l);border-radius:14px;padding:10px}
+.lateh{display:flex;align-items:center;font-weight:700;color:var(--red);font-size:14px;margin-bottom:4px}
+.timeline{position:relative;margin-top:12px}
+.tlrow{display:grid;grid-template-columns:56px minmax(0,1fr);gap:8px;align-items:stretch;margin-bottom:8px;position:relative}
+.tltime{font-size:12px;font-weight:600;color:var(--muted);text-align:right;padding-top:13px;white-space:nowrap}
+.tlrow.past{opacity:.55}
+.tlcard{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:14px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c);min-width:0;cursor:pointer;position:relative;touch-action:pan-y;user-select:none}
+.tlcard.ev{background:var(--teal-l);border-color:transparent;border-left-color:var(--c)}
+.tlcard.rt{background:repeating-linear-gradient(135deg,var(--card),var(--card) 8px,var(--soft) 8px,var(--soft) 16px)}
+.tlcard.r{background:var(--red-l)}
+.tlcard.o{background:var(--orange-l)}
+.tlcard .body{flex:1;min-width:0}
+.tlcard .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tlcard .m{font-size:12.5px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:2px}
+.tlcard.done .t{text-decoration:line-through;color:var(--muted)}
+.tlcard.sw-ok{background:#d9f5e3}
+.tlcard.sw-tom{background:var(--blue-l)}
+.tlrow[data-swdir=ok]::before,.tlrow[data-swdir=tom]::before{position:absolute;top:50%;transform:translateY(-50%);font-weight:700;font-size:13px}
+.tlrow[data-swdir=ok]::before{content:'✓ Hecha';left:64px;color:var(--green)}
+.tlrow[data-swdir=tom]::before{content:'Mañana →';right:10px;color:var(--blue)}
+.hoveracts{display:none;gap:4px;flex:none}
+@media (hover:hover) and (pointer:fine){.tlcard:hover .hoveracts{display:flex}}
+.nowmark{display:flex;align-items:center;margin:4px 0 10px 56px;position:relative}
+.nowmark::before{content:'';position:absolute;left:0;right:0;top:50%;height:2px;background:var(--red);opacity:.7}
+.nowmark::after{content:'';position:absolute;left:-5px;top:50%;width:10px;height:10px;border-radius:50%;background:var(--red);transform:translateY(-50%)}
+.nowmark span{position:relative;margin-left:12px;background:var(--card);color:var(--red);font-size:11px;font-weight:800;padding:0 8px;letter-spacing:.04em}
+.tlempty{padding:20px 8px;text-align:center;color:var(--green);font-weight:600}
+.donefold{margin-top:6px}
+.swipehint{text-align:center;margin:10px 0 2px}
+@media (max-width:820px){.tlrow{grid-template-columns:48px minmax(0,1fr)}.nowmark{margin-left:48px}.tlrow[data-swdir=ok]::before{left:56px}}
