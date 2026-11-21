@@ -332,7 +332,7 @@ function vAreaDetail(v, a) {
     <div class="sec-title">Actividades</div>
     ${usedTypes.length > 1 ? `<div class="chips" style="margin-bottom:8px"><button class="chip ${!UI.areaType ? 'on' : ''}" data-at="">Todas</button>${usedTypes.map(id => `<button class="chip ${UI.areaType === id ? 'on' : ''}" data-at="${id}">${typeById(id).icon} ${esc(typeById(id).name)}</button>`).join('')}</div>` : ''}
     ${pend.length ? pend.map(t => itemHTML('tk', t, {date: true})).join('') : '<div class="muted small">No hay tareas pendientes en esta área.</div>'}
-    ${done.length ? `<details class="fold"><summary>Completadas (${done.length})</summary>${done.map(t => itemHTML('tk', t, {date: true})).join('')}</details>` : ''}
+    ${done.length ? `<div class="donesec"><div class="sec-title">Completadas (${done.length})</div>${done.sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0)).map(t => itemHTML('tk', t, {date: true})).join('')}</div>` : ''}
     <div class="sec-title">Eventos</div>${evs.filter(e => e.date >= todayISO()).sort((x, y) => x.date.localeCompare(y.date)).map(e => itemHTML('ev', e, {date: true})).join('') || '<div class="muted small">Sin eventos próximos.</div>'}
     <div class="sec-title">Rutinas</div>${rts.map(r => itemHTML('rt', r)).join('') || '<div class="muted small">Sin rutinas.</div>'}
     <div class="sec-title">Notas</div>${nts.map(n => `<div class="nitem" data-note="${n.id}"><div class="body"><div class="t">${esc(noteTitle(n))}</div><div class="s">${fmtShort(n.date)}</div></div></div>`).join('') || '<div class="muted small">Sin notas.</div>'}`;
@@ -812,7 +812,7 @@ function vListaDetalle(v, l) {
       <div class="goal" style="margin-top:12px"><input id="liAdd" placeholder="Añadir a la lista…" maxlength="300" autocomplete="off"><button class="btn" id="liBtn">Añadir</button></div>
       <div class="xs muted" style="margin-top:6px">Consejo: separa con comas para añadir varias cosas a la vez (leche, pan, huevos).</div></div>
     <div style="margin-top:12px">${pend.length ? pend.map(row).join('') : `<div class="empty small">${q ? 'Nada coincide con “' + esc(UI.q) + '”.' : l.items.length ? '🎉 ¡Todo listo en esta lista!' : 'Escribe arriba lo primero de la lista.'}</div>`}</div>
-    ${done.length ? `<details class="fold" ${UI.showDoneItems ? 'open' : ''} id="lDone"><summary>Listos (${done.length})</summary>${done.map(row).join('')}<div class="row wrap" style="margin-top:6px"><button class="btn sec sm" id="lUn">↺ Desmarcar todos</button><button class="btn sec sm" id="lClr">Borrar los listos</button></div></details>` : ''}`;
+    ${done.length ? `<div class="donesec"><div class="sec-title">Listos (${done.length})</div>${done.map(row).join('')}<div class="row wrap" style="margin-top:6px"><button class="btn sec sm" id="lUn">↺ Desmarcar todos</button><button class="btn sec sm" id="lClr">Borrar los listos</button></div></div>` : ''}`;
   $('#lBack', v).onclick = () => { UI.openList = null; renderView(); };
   $('#lEd', v).onclick = () => openListForm(l);
   $('#lPin', v).onclick = () => { l.hideOnDay = !l.hideOnDay; save('lists'); renderView(); listBadge(); toast(l.hideOnDay ? 'Quitada del acceso rápido' : 'En el acceso rápido (botón de arriba)'); };
@@ -825,7 +825,6 @@ function vListaDetalle(v, l) {
   };
   $('#liBtn', v).onclick = add;
   inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
-  const ldn = $('#lDone', v); if (ldn) ldn.ontoggle = () => UI.showDoneItems = ldn.open;
   const toggle = id => { const i = l.items.find(x => x.id === id); i.done = !i.done; save('lists'); renderView(); };
   v.querySelectorAll('[data-lc]').forEach(b => b.onclick = e => { e.stopPropagation(); toggle(b.dataset.lc); });
   v.querySelectorAll('[data-li]').forEach(b => b.onclick = () => toggle(b.dataset.li));
@@ -977,7 +976,7 @@ function vDia2(v) {
       <div class="hint" id="qHint"></div>
       ${late.length ? `<div class="lateb"><div class="lateh">⚠️ Atrasadas (${late.length})<span class="sp"></span><button class="btn ghost sm" id="allToday">Traer todas a hoy</button></div>${late.map(x => `<div class="tlrow late" data-tk="${x.id}"><span class="tltime">${parseISO(x.date).getDate()} ${MESES[parseISO(x.date).getMonth()].slice(0, 3)}</span><div class="tlcard"><button class="check" data-chk="${x.id}" aria-label="Completar"></button><span class="em">${typeById(x.typeId).icon}</span><div class="body"><div class="t">${esc(x.title)}</div></div><button class="btn sec sm" data-totoday="${x.id}">A hoy</button></div></div>`).join('')}</div>` : ''}
       <div class="timeline" id="tline">${tl || (freeMsgOn(d) ? `<div class="tlempty" id="freeMsg">${isToday ? '✓ Día libre. Añade algo arriba o disfruta 🌿' : 'Nada para este día todavía.'}</div>` : '')}</div>
-      ${doneItems.length ? `<details class="fold donefold"><summary>Hechas (${doneItems.length})</summary>${doneItems.map(i => tlRow(i, false)).join('')}</details>` : ''}
+      ${doneItems.length ? `<div class="donesec"><div class="sec-title">Hechas (${doneItems.length})</div>${doneItems.map(i => tlRow(i, false)).join('')}</div>` : ''}
       ${pendItems.some(i => i.k === 'tk') ? `<div class="xs muted swipehint">${isMobile() ? 'Desliza una tarea → para completarla, ← para pasarla a mañana.' : 'Pasa el ratón sobre una tarea para completarla o pasarla a mañana.'}</div>` : ''}
     </div>`;
   wireHero(v);

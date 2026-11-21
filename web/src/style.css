@@ -641,3 +641,5 @@ textarea.inp{min-height:80px;resize:vertical}
 .hltx{white-space:normal;overflow:visible;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .hltime{font-size:13px}
 .hl{background-size:100% 62%;background-position:0 90%;padding:0 5px;border-radius:6px}
+.donesec{margin-top:10px;opacity:.85}
+.donesec .sec-title{margin:14px 0 8px}
