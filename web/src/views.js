@@ -25,7 +25,7 @@ const isMobile = () => window.matchMedia('(max-width:820px)').matches;
 function shell() {
   document.body.innerHTML = `<div class="app">
     <aside class="side"><div class="brand">${LOGO}<span>Mi Organizador<br>Personal</span></div><nav class="nav" id="nav">${SECTIONS.map(([k, n, i]) => `<button data-go="${k}">${ic(i)}${n}</button>`).join('')}</nav><div class="store storeLbl"></div></aside>
-    <main class="main"><header class="top"><h1 id="vt"></h1><button class="iconbtn sopen" id="sOpen" aria-label="Buscar">${ic('search')}</button><div class="search" id="sbox">${ic('search', 'si')}<input id="q" type="search" placeholder="Buscar…" autocomplete="off" aria-label="Buscar"><button class="sx hidden" id="qx" aria-label="Borrar">✕</button><div class="results hidden" id="res"></div></div></header>
+    <main class="main"><header class="top"><h1 id="vt"></h1><button class="iconbtn lsbtn hidden" id="lsBtn" aria-label="Mis listas"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg><span class="lsbadge" id="lsBadge"></span></button><button class="iconbtn sopen" id="sOpen" aria-label="Buscar">${ic('search')}</button><div class="search" id="sbox">${ic('search', 'si')}<input id="q" type="search" placeholder="Buscar…" autocomplete="off" aria-label="Buscar"><button class="sx hidden" id="qx" aria-label="Borrar">✕</button><div class="results hidden" id="res"></div></div></header>
     <section class="view" id="view"></section></main>
     <nav class="bottom" id="bnav">${[['dia', 'Mi Día', 'dia'], ['calendario', 'Calendario', 'cal'], ['tareas', 'Tareas', 'tareas'], ['notas', 'Notas', 'notas'], ['mas', 'Más', 'mas']].map(([k, n, i]) => `<button data-go="${k}">${ic(i)}${n}</button>`).join('')}</nav>
     <button class="fab" id="fab" aria-label="Añadir">+</button><div id="mini"></div><div class="toasts" id="toasts"></div></div>`;
@@ -43,6 +43,7 @@ function shell() {
     else openTaskForm(null, {areaId: UI.view === 'areas' ? UI.openArea : null});
   };
   const q = $('#q');
+  $('#lsBtn').onclick = openListsPopup;
   $('#sOpen').onclick = () => { const t = $('.top'); t.classList.toggle('srch'); if (t.classList.contains('srch')) q.focus(); else { q.value = ''; UI.q = ''; $('#res').classList.add('hidden'); renderView(); } };
   q.addEventListener('input', () => { UI.q = q.value; $('#qx').classList.toggle('hidden', !UI.q); if (UI.view === 'tareas' || UI.view === 'notas') renderView(); else globalResults(); });
   q.addEventListener('focus', () => { if (UI.q && UI.view !== 'tareas' && UI.view !== 'notas') globalResults(); });
@@ -78,12 +79,12 @@ function render() {
   $('#sbox').classList.toggle('hidden', UI.view === 'enfoque'); $('#sOpen').classList.toggle('hidden', UI.view === 'enfoque');
   $('#q').placeholder = UI.view === 'tareas' ? (UI.taskMode === 'listas' ? 'Buscar en listas…' : 'Buscar en tareas…') : UI.view === 'notas' ? 'Buscar en notas…' : 'Buscar en toda la app…';
   $('#fab').classList.toggle('hidden', ['enfoque', 'progreso', 'config'].includes(UI.view));
-  renderView(); renderMini(); setStoreLabel();
+  renderView(); renderMini(); setStoreLabel(); listBadge();
 }
 function renderView() {
   const v = $('#view');
   const fn = {dia: vDia, calendario: vCal, areas: vAreas, rutina: vRutina, tareas: vTareas, enfoque: vEnfoque, notas: vNotas, progreso: vProgreso, config: vConfig}[UI.view];
-  v.innerHTML = ''; fn(v);
+  v.innerHTML = ''; fn(v); listBadge();
 }
 
 /* ========== Búsqueda global ========== */
@@ -176,7 +177,6 @@ function vDia(v) {
       <div class="row wrap" style="margin-top:8px"><button class="chip" data-qw="hoy">Hoy</button><button class="chip" data-qw="man">Mañana</button><button class="chip" data-qw="otra">Otra fecha</button><input type="date" id="qDate" class="inp" style="width:auto;padding:5px 10px;display:none"></div><div class="hint" id="qHint"></div></div>
     ${nextIt ? `<div class="next"><span style="font-size:22px">${nextIt.k === 'ev' ? evType(nextIt.x.evType).icon : nextIt.k === 'rt' ? '🔁' : typeById(nextIt.x.typeId).icon}</span><div class="sp"><div class="k">Lo próximo</div><div style="font-weight:600">${esc(nextIt.x.title || nextIt.x.name)}</div></div><b>${fmtTime(nextIt.k === 'tk' ? nextIt.x.time : nextIt.x.start)}</b></div>`
       : `<div class="next"><span style="font-size:22px">🌿</span><div class="sp"><div class="k">Lo próximo</div><div>No tienes nada más con hora hoy.</div></div></div>`}
-    <div id="dayLists"></div>
     <div class="grid g2" style="margin-top:14px">
       <div class="card"><h3>Tu resumen</h3><div class="chips">${[['hoy', 'Hoy'], ['man', 'Mañana'], ['sem', 'Semana'], ['prox', 'Próxima']].map(([k, n]) => `<button class="chip ${UI.sumTab === k ? 'on' : ''}" data-st="${k}">${n}</button>`).join('')}</div>
         <div class="stats"><div class="stat"><b>${pend}</b><span>Pendientes</span></div><div class="stat ok"><b>${comp}</b><span>Completadas</span></div><div class="stat ${late ? 'warn' : ''}"><b>${late}</b><span>Atrasadas</span></div><div class="stat"><b>${upc}</b><span>${isMobile() ? 'Compromisos' : 'Próximos compromisos'}</span></div></div>
@@ -208,7 +208,6 @@ function vDia(v) {
   v.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { UI.sumTab = b.dataset.st; renderView(); });
   v.querySelectorAll('[data-side]').forEach(b => b.onclick = () => { UI.sideTab = b.dataset.side; const y = window.scrollY; renderView(); window.scrollTo(0, y); });
   const sl = $('#seeLate', v); if (sl) sl.onclick = () => { UI.taskTab = 'late'; go('tareas'); };
-  dayLists($('#dayLists', v));
   // Entrada rápida
   const qIn = $('#qIn', v), hint = $('#qHint', v), qd = $('#qDate', v);
   const paintQW = () => { v.querySelectorAll('[data-qw]').forEach(b => b.classList.toggle('on', b.dataset.qw === UI.qWhen)); qd.style.display = UI.qWhen === 'otra' ? '' : 'none'; if (UI.qWhen === 'otra') qd.value = UI.qDate || addDays(t, 2); };
@@ -888,7 +887,7 @@ function vListaDetalle(v, l) {
   const nd = l.items.filter(i => i.done).length;
   const row = i => `<div class="item ${i.done ? 'done' : ''}" data-li="${i.id}"><button class="check ${i.done ? 'on' : ''}" data-lc="${i.id}" aria-label="${i.done ? 'Desmarcar' : 'Marcar'}">${i.done ? '✓' : ''}</button><div class="body"><div class="t" style="white-space:normal">${esc(i.t)}</div></div><button class="btn ghost sm" data-ld="${i.id}" aria-label="Quitar de la lista" title="Quitar de la lista" style="color:var(--muted)">✕</button></div>`;
   v.innerHTML = `<button class="btn ghost sm" id="lBack">‹ Todas las listas</button>
-    <div class="card" style="border-top:6px solid ${l.color};margin-top:6px"><div class="row wrap"><h2 style="margin:0;font-size:20px">${l.icon} ${esc(l.name)}</h2><span class="sp"></span><button class="btn sec sm" id="lPin" title="Mostrar en Mi Día">${l.hideOnDay ? '📌 Mostrar en Mi Día' : '📌 En Mi Día ✓'}</button><button class="btn sec sm" id="lEd">✎ Editar</button><button class="btn sec sm" id="lDel">🗑 Eliminar lista</button></div>
+    <div class="card" style="border-top:6px solid ${l.color};margin-top:6px"><div class="row wrap"><h2 style="margin:0;font-size:20px">${l.icon} ${esc(l.name)}</h2><span class="sp"></span><button class="btn sec sm" id="lPin" title="Acceso rápido desde el botón 📋">${l.hideOnDay ? '📌 Poner en acceso rápido' : '📌 En acceso rápido ✓'}</button><button class="btn sec sm" id="lEd">✎ Editar</button><button class="btn sec sm" id="lDel">🗑 Eliminar lista</button></div>
       <div class="small muted" style="margin-top:6px">${l.items.length ? `${l.items.length - nd} por hacer · ${nd} listo${nd === 1 ? '' : 's'}` : 'Lista vacía'}</div>
       <div class="goal" style="margin-top:12px"><input id="liAdd" placeholder="Añadir a la lista…" maxlength="300" autocomplete="off"><button class="btn" id="liBtn">Añadir</button></div>
       <div class="xs muted" style="margin-top:6px">Consejo: separa con comas para añadir varias cosas a la vez (leche, pan, huevos).</div></div>
@@ -896,7 +895,7 @@ function vListaDetalle(v, l) {
     ${done.length ? `<details class="fold" ${UI.showDoneItems ? 'open' : ''} id="lDone"><summary>Listos (${done.length})</summary>${done.map(row).join('')}<div class="row wrap" style="margin-top:6px"><button class="btn sec sm" id="lUn">↺ Desmarcar todos</button><button class="btn sec sm" id="lClr">Borrar los listos</button></div></details>` : ''}`;
   $('#lBack', v).onclick = () => { UI.openList = null; renderView(); };
   $('#lEd', v).onclick = () => openListForm(l);
-  $('#lPin', v).onclick = () => { l.hideOnDay = !l.hideOnDay; save('lists'); renderView(); toast(l.hideOnDay ? 'Ya no saldrá en Mi Día' : 'Saldrá en Mi Día 📌'); };
+  $('#lPin', v).onclick = () => { l.hideOnDay = !l.hideOnDay; save('lists'); renderView(); listBadge(); toast(l.hideOnDay ? 'Quitada del acceso rápido 📋' : 'En el acceso rápido 📋 de arriba'); };
   $('#lDel', v).onclick = async () => { if (await ask(`¿Eliminar la lista “${esc(l.name)}” y todo lo que tiene?`)) { S.lists = S.lists.filter(x => x.id !== l.id); UI.openList = null; save('lists'); render(); toast('Lista eliminada'); } };
   const inp = $('#liAdd', v);
   const add = () => {
@@ -938,22 +937,33 @@ function openListForm(list) {
     }});
 }
 
-/* Listas a la mano en Mi Día: se ven y se marcan sin entrar a Tareas */
+/* Listas a la mano: ventana emergente desde el botón 📋 de arriba */
+function listBadge() {
+  const b = $('#lsBtn'); if (!b) return;
+  const n = S.lists.filter(l => !l.hideOnDay).reduce((a, l) => a + l.items.filter(i => !i.done).length, 0);
+  b.classList.toggle('hidden', !S.lists.some(l => !l.hideOnDay) || UI.view === 'enfoque');
+  $('#lsBadge').textContent = n ? (n > 99 ? '99+' : n) : '';
+}
+function openListsPopup() {
+  openSheet({title: '📋 Mis listas', body: '<div id="lsPop"></div>', cls: 'lspop',
+    onClose: () => { listBadge(); if (UI.view === 'tareas' && UI.taskMode === 'listas') renderView(); },
+    onMount: el => dayLists(el.querySelector('#lsPop'))});
+}
 function dayLists(box) {
   if (!box) return;
   const lists = S.lists.filter(l => !l.hideOnDay && (l.items.some(i => !i.done) || l.id === UI.dayList));
-  if (!lists.length) { box.innerHTML = ''; return; }
-  if (UI.dayList === undefined && lists.length === 1) UI.dayList = lists[0].id;
+  if (!lists.length) { box.innerHTML = `<div class="empty small">${S.lists.length ? '🎉 No tienes nada pendiente en tus listas.' : 'Aún no tienes listas.'}</div><button class="btn full" id="dlAll">${S.lists.length ? 'Ver mis listas' : '+ Crear una lista'}</button>`; $('#dlAll', box).onclick = () => { go('tareas'); UI.taskMode = 'listas'; render(); if (!S.lists.length) openListForm(); }; return; }
+  if (UI.dayList === undefined || (UI.dayList === null && lists.length === 1)) UI.dayList = lists.length === 1 ? lists[0].id : null;
   if (UI.dayList && !lists.some(l => l.id === UI.dayList)) UI.dayList = null;
   const open = lists.find(l => l.id === UI.dayList);
-  box.innerHTML = `<div class="card daylists"><h3>📋 Mis listas<span class="sp"></span><button class="btn ghost sm" id="dlAll">Ver todas</button></h3>
+  box.innerHTML = `<div class="daylists"><div class="row" style="margin-bottom:8px"><span class="xs muted">Toca una cosa para marcarla como lista.</span><span class="sp"></span><button class="btn ghost sm" id="dlAll">Ver todas ›</button></div>
     <div class="hscroll">${lists.map(l => { const n = l.items.filter(i => !i.done).length; return `<button class="lchip ${open === l ? 'on' : ''}" data-dl="${l.id}" style="--lc:${l.color}"><span>${l.icon}</span><b>${esc(l.name)}</b><span class="cnt">${n}</span></button>`; }).join('')}</div>
     ${open ? `<div class="dlpanel" style="--lc:${open.color}">
       ${open.items.filter(i => !i.done).map(i => `<button class="dlitem" data-dli="${i.id}"><span class="check"></span><span class="sp">${esc(i.t)}</span></button>`).join('') || '<div class="alldone">🎉 ¡Todo listo en esta lista!</div>'}
       ${open.items.some(i => i.done) ? `<div class="xs muted" style="margin:6px 2px">${open.items.filter(i => i.done).length} listo${open.items.filter(i => i.done).length === 1 ? '' : 's'} · <button class="btn ghost sm" id="dlUndo" style="padding:2px 4px">Desmarcar todos</button></div>` : ''}
       <div class="goal" style="margin-top:8px"><input id="dlAdd" placeholder="Añadir a ${esc(open.name)}…" maxlength="300" autocomplete="off"><button class="btn" id="dlBtn">Añadir</button></div>
-      <button class="btn ghost sm" id="dlOpen" style="margin-top:6px">Abrir la lista completa ›</button></div>` : '<div class="xs muted" style="margin-top:4px">Toca una lista para marcar o añadir aquí mismo.</div>'}</div>`;
-  const keep = fn => () => { const y = window.scrollY; fn(); dayLists(box); window.scrollTo(0, y); };
+      <button class="btn ghost sm" id="dlOpen" style="margin-top:6px">Abrir la lista completa ›</button></div>` : '<div class="xs muted" style="margin-top:8px">Toca una lista para abrirla aquí.</div>'}</div>`;
+  const keep = fn => () => { fn(); dayLists(box); listBadge(); };
   box.querySelectorAll('[data-dl]').forEach(b => b.onclick = keep(() => { UI.dayList = UI.dayList === b.dataset.dl ? null : b.dataset.dl; }));
   $('#dlAll', box).onclick = () => { go('tareas'); UI.taskMode = 'listas'; render(); };
   if (!open) return;
