@@ -582,6 +582,7 @@ function renderMini() {
 }
 function vEnfoque(v) {
   v.innerHTML = `<div class="focus-page"><div class="card focus-card"><div id="fBody" class="focus"></div></div><div class="card" id="fToday"></div></div>`;
+  Ambient.warm();
   fillFocus($('#fBody', v));
 }
 function clockState() {

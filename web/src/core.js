@@ -184,7 +184,7 @@ function nextMotiv() {
   let free = MOTIV.map((_, i) => i).filter(i => !used.includes(i));
   if (!free.length) { const last = used[used.length - 1]; used = []; free = MOTIV.map((_, i) => i).filter(i => i !== last); }
   const pick = free[Math.floor(Math.random() * free.length)];
-  used.push(pick); S.settings.motivUsed = used; save('meta');
+  used.push(pick); S.settings.motivUsed = used; Store.quiet = true; save('meta'); Store.quiet = false;
   return MOTIV[pick];
 }
 
@@ -204,12 +204,13 @@ const PARTS = ['areas', 'tasks', 'events', 'routines', 'notes', 'lists', 'meta']
 const Store = {
   mode: 'local', db: null, uid: null, timers: {}, writing: {}, again: {}, lastSent: {},
   partData(p) {
-    if (p === 'meta') return {types: S.types, settings: S.settings, weekGoals: S.weekGoals, focusLog: S.focusLog, notified: S.notified, v: S.v};
+    if (p === 'meta') return {types: S.types, settings: S.settings, weekGoals: S.weekGoals, focusLog: S.focusLog, notified: S.notified, v: S.v, savedAt: S.savedAt || 0};
     return {items: S[p]};
   },
   saveLocal() { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) {} },
   loadLocal() { try { const r = localStorage.getItem(LS_KEY); if (r) return JSON.parse(r); } catch (e) {} return null; },
   save(parts) {
+    if (!Store.quiet) S.savedAt = Date.now();
     this.saveLocal();
     if (window.NATIVE) { NATIVE.onSave(parts); return; }
     if (this.mode !== 'cloud') return;
@@ -244,7 +245,18 @@ const Store = {
       const snaps = await Promise.race([Promise.all(PARTS.map(p => db.doc('data/users/' + id + '/' + p).get())), timeout.then(() => null)]);
       if (!snaps) return;
       const any = snaps.some(s => s.exists);
-      if (any) {
+      const metaSnap = snaps[PARTS.indexOf('meta')];
+      const cloudAt = metaSnap && metaSnap.exists ? (metaSnap.data().savedAt || 0) : 0;
+      if (any && (S.savedAt || 0) > cloudAt && (S.tasks.length || S.lists.length || S.events.length || S.notes.length || S.areas.length || S.routines.length)) {
+        // lo de este dispositivo es más nuevo: se combina con lo de la nube (sin perder nada) y se sube
+        snaps.forEach((s, i) => {
+          const p = PARTS[i]; if (!s.exists || p === 'meta') return;
+          const items = JSON.parse(JSON.stringify(s.data().items || [])), have = new Set(S[p].map(x => x.id));
+          items.forEach(x => { if (x && x.id && !have.has(x.id)) S[p].push(x); });
+        });
+        applyTheme(); render();
+        this.mode = 'cloud'; this.save();
+      } else if (any) {
         const ns = blankState();
         snaps.forEach((s, i) => {
           if (!s.exists) return; const d = s.data(); const p = PARTS[i];
@@ -426,7 +438,7 @@ function checkReminders() {
   };
   S.tasks.forEach(t => { if (t.reminder != null && !isDone(t) && t.date) fire('t' + t.id + t.date + (t.time || '') + t.reminder, t.title, reminderTime(t.date, t.time, t.reminder)); });
   S.events.forEach(e => { if (e.reminder != null) fire('e' + e.id + e.date + (e.start || '') + e.reminder, e.title, reminderTime(e.date, e.allDay ? null : e.start, e.reminder)); });
-  if (changed) { const keys = Object.keys(S.notified); if (keys.length > 400) keys.slice(0, keys.length - 300).forEach(k => delete S.notified[k]); save('meta'); }
+  if (changed) { const keys = Object.keys(S.notified); if (keys.length > 400) keys.slice(0, keys.length - 300).forEach(k => delete S.notified[k]); Store.quiet = true; save('meta'); Store.quiet = false; }
 }
 let audioCtx = null;
 function beep(n = 3) {
@@ -439,3 +451,8 @@ function beep(n = 3) {
     }
   } catch (e) {}
 }
+
+/* Si algo falla, avisar en pantalla (ayuda a encontrar el problema) */
+let _errShown = 0;
+window.addEventListener('error', e => { if (_errShown++ < 2 && window.toast && document.getElementById('toasts')) toast('⚠️ Algo falló: ' + String(e.message || e).slice(0, 90)); });
+window.addEventListener('unhandledrejection', e => { const m = String((e.reason && (e.reason.message || e.reason.code)) || e.reason || ''); if (/AbortError|NotAllowed|play\(\)/i.test(m)) return; if (_errShown++ < 2 && document.getElementById('toasts')) toast('⚠️ Algo falló: ' + m.slice(0, 90)); });

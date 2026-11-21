@@ -30,7 +30,7 @@ const SOUND_ICONS = {
 /* Motor de sonido. Todo se programa por tiempo exacto del audio (sirve en vivo y para generar muestras). */
 const rnd = (a, b) => a + Math.random() * (b - a);
 function makeSynth(ctx) {
-  const sr = ctx.sampleRate, L = sr * 9;
+  const sr = ctx.sampleRate, L = sr * 6;
   const mk = kind => {
     const b = ctx.createBuffer(1, L, sr), d = b.getChannelData(0); let last = 0, b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0;
     for (let i = 0; i < L; i++) {
@@ -50,7 +50,7 @@ function makeSynth(ctx) {
   S.filter = (type, f, q = 1) => { const x = ctx.createBiquadFilter(); x.type = type; x.frequency.value = f; x.Q.value = q; return x; };
   S.gain = v => { const g = ctx.createGain(); g.gain.value = v; return g; };
   S.pan = (p, dest) => { if (!ctx.createStereoPanner) return dest; const n = ctx.createStereoPanner(); n.pan.value = p; n.connect(dest); return n; };
-  S.noise = (kind, dest, g = 1, t0 = 0) => { const s = ctx.createBufferSource(); s.buffer = buf[kind]; s.loop = true; const gg = S.gain(g); s.connect(gg); gg.connect(dest); s.start(t0, Math.random() * 8); return s; };
+  S.noise = (kind, dest, g = 1, t0 = 0) => { const s = ctx.createBufferSource(); s.buffer = buf[kind]; s.loop = true; const gg = S.gain(g); s.connect(gg); gg.connect(dest); s.start(t0, Math.random() * 5); return s; };
   S.reverb = (dest, kind = 'out', wet = 0.4) => { const c = ctx.createConvolver(); c.buffer = kind === 'out' ? S.irOut : S.irRoom; const w = S.gain(wet); c.connect(w); w.connect(dest); return c; };
   // tono con envolvente: f puede ser número o arreglo de frecuencias (curva)
   S.tone = (dest, t, {f, dur, gain = 0.3, attack = 0.01, release = 0.03, type = 'sine', vib = 0, vibRate = 30}) => {
@@ -238,7 +238,7 @@ const RECIPES = {
 
 /* Arranca una receta en un contexto. live = true programa poco a poco; si no, programa todo hasta "until" (para muestras). */
 function runRecipe(ctx, id, dest, {live = true, until = 0} = {}) {
-  const S = makeSynth(ctx), out = ctx.createGain(); out.gain.value = 0; out.connect(dest);
+  const S = ctx.__synth || (ctx.__synth = makeSynth(ctx)), out = ctx.createGain(); out.gain.value = 0; out.connect(dest);
   const gens = [];
   const sched = (min, max, fn, steady, first) => gens.push({min, max, fn, next: ctx.currentTime + (first !== undefined ? first : steady ? 0.05 : Math.random() * min)});
   const extra = RECIPES[id] ? RECIPES[id](S, out, sched) || [] : [];
@@ -257,13 +257,19 @@ function runRecipe(ctx, id, dest, {live = true, until = 0} = {}) {
 const Ambient = {
   ctx: null, master: null, cur: null, curId: 'none', vol: 0.6, audioEl: null,
   init() {
-    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return true; }
+    if (this.ctx) { if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {}); return true; }
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
       this.master = this.ctx.createGain(); this.master.gain.value = this.vol;
       const comp = this.ctx.createDynamicsCompressor(); this.master.connect(comp); comp.connect(this.ctx.destination);
+      if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
       return true;
     } catch (e) { return false; }
+  },
+  // Prepara los sonidos con calma (al abrir Enfoque) para que tocar un sonido sea instantáneo
+  warm() {
+    if (this.ctx && this.ctx.__synth) return;
+    setTimeout(() => { try { if (!this.ctx) { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this.master = this.ctx.createGain(); this.master.gain.value = this.vol; const comp = this.ctx.createDynamicsCompressor(); this.master.connect(comp); comp.connect(this.ctx.destination); } if (!this.ctx.__synth) this.ctx.__synth = makeSynth(this.ctx); } catch (e) {} }, 400);
   },
   setVolume(v) { this.vol = v; if (this.master) this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05); if (this.audioEl) this.audioEl.volume = v; },
   async play(id) {
@@ -288,3 +294,5 @@ const customSound = {
   async put(file) { const d = await this.db(); return new Promise((res, rej) => { const t = d.transaction('s', 'readwrite'); t.objectStore('s').put(file, 'mio'); t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); },
   async get() { try { const d = await this.db(); return await new Promise(res => { const r = d.transaction('s').objectStore('s').get('mio'); r.onsuccess = () => res(r.result || null); r.onerror = () => res(null); }); } catch (e) { return null; } }
 };
+
+['pointerdown', 'touchend', 'keydown'].forEach(ev => document.addEventListener(ev, () => { if (Ambient.ctx && Ambient.ctx.state !== 'running') Ambient.ctx.resume().catch(() => {}); }, {passive: true}));
