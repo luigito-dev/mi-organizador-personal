@@ -18,7 +18,7 @@ const SECTIONS = [
   ['dia', 'Mi Día', 'dia'], ['calendario', 'Calendario', 'cal'], ['areas', 'Áreas', 'areas'], ['rutina', 'Rutina semanal', 'rutina'],
   ['tareas', 'Tareas', 'tareas'], ['enfoque', 'Enfoque', 'enfoque'], ['notas', 'Mis notas', 'notas'], ['progreso', 'Progreso', 'progreso'], ['config', 'Configuración', 'config']
 ];
-const UI = {daySel: null, view: 'dia', q: '', calDate: todayISO(), selDate: todayISO(), sumTab: 'hoy', taskTab: 'todo', filters: {area: '', type: '', prio: '', sort: 'fecha'}, showHiddenNotes: false, sideTab: 'citas', taskMode: 'tareas', openList: null, openArea: null, areaType: '', motivHidden: false, motiv: '', qWhen: 'hoy', qDate: null};
+const UI = {freeShown: {}, daySel: null, view: 'dia', q: '', calDate: todayISO(), selDate: todayISO(), sumTab: 'hoy', taskTab: 'todo', filters: {area: '', type: '', prio: '', sort: 'fecha'}, showHiddenNotes: false, sideTab: 'citas', taskMode: 'tareas', openList: null, openArea: null, areaType: '', motivHidden: false, motiv: '', qWhen: 'hoy', qDate: null};
 const isMobile = () => window.matchMedia('(max-width:820px)').matches;
 
 /* ========== Estructura ========== */
@@ -978,12 +978,14 @@ function vDia2(v) {
       <div class="qadd daddbar"><input id="qIn" placeholder="Añadir a ${isToday ? 'hoy' : dayName.toLowerCase()}… (ej. dentista a las 3 pm)" maxlength="140" autocomplete="off"><button class="btn" id="qAdd" aria-label="Añadir">+</button></div>
       <div class="hint" id="qHint"></div>
       ${late.length ? `<div class="lateb"><div class="lateh">⚠️ Atrasadas (${late.length})<span class="sp"></span><button class="btn ghost sm" id="allToday">Traer todas a hoy</button></div>${late.map(x => `<div class="tlrow late" data-tk="${x.id}"><span class="tltime">${parseISO(x.date).getDate()} ${MESES[parseISO(x.date).getMonth()].slice(0, 3)}</span><div class="tlcard"><button class="check" data-chk="${x.id}" aria-label="Completar"></button><span class="em">${typeById(x.typeId).icon}</span><div class="body"><div class="t">${esc(x.title)}</div></div><button class="btn sec sm" data-totoday="${x.id}">A hoy</button></div></div>`).join('')}</div>` : ''}
-      <div class="timeline" id="tline">${tl || `<div class="tlempty">${isToday ? '✓ Día libre. Añade algo arriba o disfruta 🌿' : 'Nada para este día todavía.'}</div>`}</div>
+      <div class="timeline" id="tline">${tl || (freeMsgOn(d) ? `<div class="tlempty" id="freeMsg">${isToday ? '✓ Día libre. Añade algo arriba o disfruta 🌿' : 'Nada para este día todavía.'}</div>` : '')}</div>
       ${doneItems.length ? `<details class="fold donefold"><summary>Hechas (${doneItems.length})</summary>${doneItems.map(i => tlRow(i, false)).join('')}</details>` : ''}
       ${pendItems.some(i => i.k === 'tk') ? `<div class="xs muted swipehint">${isMobile() ? 'Desliza una tarea → para completarla, ← para pasarla a mañana.' : 'Pasa el ratón sobre una tarea para completarla o pasarla a mañana.'}</div>` : ''}
     </div>`;
   wireHero(v);
   wireItems(v);
+  const fm = $('#freeMsg', v);
+  if (fm) { clearTimeout(UI.freeTimer); UI.freeTimer = setTimeout(() => { const m = $('#freeMsg'); if (m) { m.classList.add('fade'); setTimeout(() => m.remove(), 600); } }, Math.max(0, 35000 - (Date.now() - UI.freeShown[d]))); }
   v.querySelectorAll('[data-dd]').forEach(b => b.onclick = () => { UI.daySel = b.dataset.dd; renderView(); });
   const sel = v.querySelector('.dpill.on'); if (sel && sel.scrollIntoView) { const strip = $('#dstrip', v); strip.scrollLeft = Math.max(0, sel.offsetLeft - 60); }
   $('#dMore', v).onclick = () => { const i = document.createElement('input'); i.type = 'date'; i.min = t; i.style.cssText = 'position:fixed;opacity:0;left:50%;top:50%'; document.body.appendChild(i); i.onchange = () => { if (i.value) { UI.daySel = i.value; renderView(); } i.remove(); }; i.onblur = () => setTimeout(() => i.remove(), 500); try { i.showPicker(); } catch (e) { i.click(); } };
@@ -1044,3 +1046,6 @@ function wireSwipes(root) {
     card.addEventListener('pointerup', end); card.addEventListener('pointercancel', end);
   });
 }
+
+// El mensaje verde de "día libre" se ve 35 segundos y desaparece (no vuelve ese día mientras la app siga abierta)
+function freeMsgOn(d) { const now = Date.now(); if (!UI.freeShown[d]) UI.freeShown[d] = now; return now - UI.freeShown[d] < 35000; }

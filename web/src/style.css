@@ -593,3 +593,5 @@ textarea.inp{min-height:80px;resize:vertical}
 .qdel:hover,.qdel:focus{opacity:1;background:var(--red-l)}
 .toast .tact{background:rgba(255,255,255,.18);color:inherit;font-weight:700;padding:6px 12px;border-radius:8px;flex:none}
 [data-theme=dark] .toast .tact{background:rgba(0,0,0,.12)}
+.tlempty{transition:opacity .6s,max-height .6s;max-height:80px;overflow:hidden}
+.tlempty.fade{opacity:0;max-height:0;padding:0}
