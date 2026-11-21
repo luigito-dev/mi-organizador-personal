@@ -805,7 +805,7 @@ function vListaDetalle(v, l) {
   const its = l.items.filter(i => !q || norm(i.t).includes(q));
   const pend = its.filter(i => !i.done), done = its.filter(i => i.done);
   const nd = l.items.filter(i => i.done).length;
-  const row = i => `<div class="item ${i.done ? 'done' : ''}" data-li="${i.id}"><button class="check ${i.done ? 'on' : ''}" data-lc="${i.id}" aria-label="${i.done ? 'Desmarcar' : 'Marcar'}">${i.done ? '✓' : ''}</button><div class="body"><div class="t" style="white-space:normal">${esc(i.t)}</div></div><button class="btn ghost sm" data-ld="${i.id}" aria-label="Quitar de la lista" title="Quitar de la lista" style="color:var(--muted)">✕</button></div>`;
+  const row = i => `<div class="item ${i.done ? 'done' : ''}" data-li="${i.id}"><button class="check ${i.done ? 'on' : ''}" data-lc="${i.id}" aria-label="${i.done ? 'Desmarcar' : 'Marcar'}">${i.done ? '✓' : ''}</button><div class="body"><div class="t" style="white-space:normal"><span class="hl" style="--hlbg:${hexA(itemHl(i), i.done ? .22 : .45)}">${esc(i.t)}</span></div></div><button class="btn ghost sm" data-ld="${i.id}" aria-label="Quitar de la lista" title="Quitar de la lista" style="color:var(--muted)">✕</button></div>`;
   v.innerHTML = `<button class="btn ghost sm" id="lBack">‹ Todas las listas</button>
     <div class="card" style="border-top:6px solid ${l.color};margin-top:6px"><div class="row wrap"><h2 style="margin:0;font-size:20px">${l.icon} ${esc(l.name)}</h2><span class="sp"></span><button class="btn sec sm" id="lPin" title="Acceso rápido desde el botón 📋">${l.hideOnDay ? '📌 Poner en acceso rápido' : '📌 En acceso rápido ✓'}</button><button class="btn sec sm" id="lEd">✎ Editar</button><button class="btn sec sm" id="lDel">🗑 Eliminar lista</button></div>
       <div class="small muted" style="margin-top:6px">${l.items.length ? `${l.items.length - nd} por hacer · ${nd} listo${nd === 1 ? '' : 's'}` : 'Lista vacía'}</div>
@@ -887,13 +887,13 @@ function dayLists(box) {
     const total = today.length + late.length;
     head = `<div class="qhead" style="--lc:var(--blue)"><span class="qtitle">HOY</span><span class="qcount">${done.length}/${total}</span></div>`;
     const tint = x => isLate(x) || x.priority === 'Urgente' ? 'r' : x.priority === 'Alta' ? 'o' : '';
-    rows = [...pend, ...done].map(x => `<div class="qrow ${isDone(x) ? 'done' : ''} ${isDone(x) ? '' : tint(x)}" data-qtk="${x.id}" role="button" tabindex="0"><span class="qbox"></span><span class="qtx">${esc(x.title)}${x.time ? ` <span class="qtime">${isLate(x) ? fmtShort(x.date) + ' · ' : ''}${fmtTime(x.time)}</span>` : isLate(x) ? ` <span class="qtime">${fmtShort(x.date)}</span>` : ''}</span><button class="qdel" data-qdel="${x.id}" aria-label="Borrar" title="Borrar">🗑</button></div>`).join('') || '<div class="qempty">✓ Nada pendiente para hoy</div>';
+    rows = [...pend, ...done].map(x => `<div class="qrow ${isDone(x) ? 'done' : ''} ${isDone(x) ? '' : tint(x)}" data-qtk="${x.id}" role="button" tabindex="0"><span class="qbox"></span><span class="qtx"><span class="hl" style="--hlbg:${hexA(hlColor({k: 'tk', x}), isDone(x) ? .22 : .45)}">${esc(x.title)}</span>${x.time ? ` <span class="qtime">${isLate(x) ? fmtShort(x.date) + ' · ' : ''}${fmtTime(x.time)}</span>` : isLate(x) ? ` <span class="qtime">${fmtShort(x.date)}</span>` : ''}</span><button class="qdel" data-qdel="${x.id}" aria-label="Borrar" title="Borrar">🗑</button></div>`).join('') || '<div class="qempty">✓ Nada pendiente para hoy</div>';
     addPh = 'Añadir para hoy…';
     foot = `<button class="btn ghost sm" id="qGo">Ver Mi Día ›</button>`;
   } else {
     const l = lists.find(x => x.id === UI.popTab), done = l.items.filter(i => i.done);
     head = `<div class="qhead" style="--lc:${l.color}"><span class="qtitle">${esc(l.name.toUpperCase())}</span><span class="qcount">${done.length}/${l.items.length}</span></div>`;
-    rows = [...l.items.filter(i => !i.done), ...done].map(i => `<div class="qrow ${i.done ? 'done' : ''}" data-qli="${i.id}" role="button" tabindex="0"><span class="qbox"></span><span class="qtx">${esc(i.t)}</span><button class="qdel" data-qdel="${i.id}" aria-label="Borrar" title="Borrar">🗑</button></div>`).join('') || '<div class="qempty">Lista vacía: añade lo primero abajo.</div>';
+    rows = [...l.items.filter(i => !i.done), ...done].map(i => `<div class="qrow ${i.done ? 'done' : ''}" data-qli="${i.id}" role="button" tabindex="0"><span class="qbox"></span><span class="qtx"><span class="hl" style="--hlbg:${hexA(itemHl(i), i.done ? .22 : .45)}">${esc(i.t)}</span></span><button class="qdel" data-qdel="${i.id}" aria-label="Borrar" title="Borrar">🗑</button></div>`).join('') || '<div class="qempty">Lista vacía: añade lo primero abajo.</div>';
     addPh = 'Añadir a ' + l.name + '…';
     foot = `${done.length ? '<button class="btn ghost sm" id="qUndo">↺ Desmarcar todos</button>' : ''}<span class="sp"></span><button class="btn ghost sm" id="qOpen">Abrir la lista ›</button>`;
   }
@@ -1100,3 +1100,6 @@ function calMonthClean(body, d) {
 }
 
 function hexA(c, a) { const m = String(c).trim().match(/^#?([0-9a-f]{6})$/i); if (!m) return 'rgba(31,95,191,' + a + ')'; const n = parseInt(m[1], 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+
+// Color de resaltador de cada cosa de una lista (fijo para cada una)
+function itemHl(i) { let h = 0; for (const ch of String(i.id || i.t)) h = (h * 31 + ch.charCodeAt(0)) | 0; return HL_PASTEL[Math.abs(h) % HL_PASTEL.length]; }

@@ -643,3 +643,6 @@ textarea.inp{min-height:80px;resize:vertical}
 .hl{background-size:100% 62%;background-position:0 90%;padding:0 5px;border-radius:6px}
 .donesec{margin-top:10px;opacity:.85}
 .donesec .sec-title{margin:14px 0 8px}
+.qrow.done .hl,.item.done .hl{text-decoration:line-through;color:var(--muted)}
+.qrow.done .qtx,.item.done .t{text-decoration:none}
+.qrow{padding:6px 10px}
