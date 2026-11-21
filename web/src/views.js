@@ -502,7 +502,7 @@ const presetNow = () => FOCUS_PRESETS[S.settings.focusPreset] || FOCUS_PRESETS[1
 const ACTS = [['🎯', 'Enfoque'], ['🧘', 'Meditar'], ['💼', 'Trabajo'], ['📖', 'Leer'], ['🏠', 'Casa'], ['🏃', 'Ejercicio'], ['✍️', 'Escribir'], ['🙏', 'Orar']];
 function fcfg() {
   const d = {mode: 'pomo', sound: 'none', vol: 0.6, style: 'ring', act: '🎯 Enfoque', cdMin: 30, acts: [], customName: ''};
-  const f = S.settings.focus || (S.settings.focus = {}); for (const k in d) if (f[k] === undefined) f[k] = d[k]; return f;
+  let f = S.settings.focus || (S.settings.focus = {}); if (Object.isFrozen(f)) f = S.settings.focus = JSON.parse(JSON.stringify(f)); for (const k in d) if (f[k] === undefined) f[k] = d[k]; return f;
 }
 const isRunning = () => ['work', 'short', 'long', 'cd', 'sw'].includes(F.phase);
 function focusLogAdd(min, block) {

@@ -260,11 +260,11 @@ const Store = {
         const ns = blankState();
         snaps.forEach((s, i) => {
           if (!s.exists) return; const d = s.data(); const p = PARTS[i];
-          if (p === 'meta') { Object.assign(ns, JSON.parse(JSON.stringify(d))); ns.settings = Object.assign(blankState().settings, d.settings || {}); }
+          if (p === 'meta') { const dd = JSON.parse(JSON.stringify(d)); Object.assign(ns, dd); ns.settings = Object.assign(blankState().settings, dd.settings || {}); }
           else ns[p] = JSON.parse(JSON.stringify(d.items || []));
           this.lastSent[p] = JSON.stringify(d);
         });
-        S = normalize(ns); this.mode = 'cloud'; this.saveLocal();
+        S = normalize(JSON.parse(JSON.stringify(ns))); this.mode = 'cloud'; this.saveLocal();
         applyTheme(); render();
       } else {
         this.mode = 'cloud';
