@@ -1049,7 +1049,13 @@ function wireSwipes(root) {
 function freeMsgOn(d) { const now = Date.now(); if (!UI.freeShown[d]) UI.freeShown[d] = now; return now - UI.freeShown[d] < 35000; }
 
 /* ===== Estilo "All Tasks": fecha grande a la izquierda, tareas con resaltador y hora a la derecha ===== */
-function hlColor(i) { return colorOf(i.k, i.x); }
+// Colores tipo resaltador; si la tarea es gris (sin área ni tipo de color), se le da uno alegre fijo
+const HL_PASTEL = ['#ff6b8a', '#ffb627', '#4cc46b', '#4a90ff', '#a46bff', '#ff8a3d', '#22c1c3'];
+function hlColor(i) {
+  const c = colorOf(i.k, i.x);
+  if (/^#?6b7487$/i.test(String(c).trim())) { const id = String(i.x.id || i.x.title || ''); let h = 0; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) | 0; return HL_PASTEL[Math.abs(h) % HL_PASTEL.length]; }
+  return c;
+}
 function hlRow(i) {
   const x = i.x, c = hlColor(i);
   const time = (i.k === 'tk' ? (x.time ? fmtTime(x.time) : '') : i.k === 'ev' ? (x.allDay ? 'Todo el día' : fmtTime(x.start)) : fmtTime(x.start)).replace(' a. m.', ' am').replace(' p. m.', ' pm');
@@ -1059,7 +1065,7 @@ function hlRow(i) {
     : `<span class="hlico">${i.k === 'ev' ? evType(x.evType).icon : '🔁'}</span>`;
   const flag = i.k === 'tk' && !dn && (x.priority === 'Urgente' || x.priority === 'Alta') ? `<span class="hlflag ${x.priority === 'Urgente' ? 'u' : ''}">!</span>` : '';
   const late = i.k === 'tk' && isLate(x);
-  return `<div class="hlrow ${dn ? 'done' : ''}" ${i.k === 'tk' ? `data-tk="${x.id}"` : i.k === 'ev' ? `data-ev="${x.id}"` : `data-rt="${x.id}"`}>${lead}<span class="hltx"><span class="hl" style="--hlbg:${hexA(c, dn ? .2 : .38)}">${esc(title)}</span>${flag}${x.reminder != null && !dn ? ' <span class="bell">🔔</span>' : ''}</span><span class="hltime ${late ? 'late' : ''}">${time}</span></div>`;
+  return `<div class="hlrow ${dn ? 'done' : ''}" ${i.k === 'tk' ? `data-tk="${x.id}"` : i.k === 'ev' ? `data-ev="${x.id}"` : `data-rt="${x.id}"`}>${lead}<span class="hltx"><span class="hl" style="--hlbg:${hexA(c, dn ? .22 : .45)}">${esc(title)}</span>${flag}${x.reminder != null && !dn ? ' <span class="bell">🔔</span>' : ''}</span><span class="hltime ${late ? 'late' : ''}">${time}</span></div>`;
 }
 function hlDay(d, items, {holidays = false, tasksView = false} = {}) {
   const dd = parseISO(d), ho = holidays ? holidaysOn(d) : [], t = todayISO();
