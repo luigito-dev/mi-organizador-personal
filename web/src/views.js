@@ -201,6 +201,7 @@ function pillHTML(i) {
   return `<span class="pill rt" style="border-color:${c}" data-rt="${i.x.id}">🔁 ${esc(i.x.name)}</span>`;
 }
 function calMonth(body, d) {
+  if (isMobile()) return calMonthClean(body, d);
   const cells = monthCells(d), m = parseISO(d).getMonth(), max = isMobile() ? 2 : 3;
   body.innerHTML = `<div class="month">${wdHeaders().map(w => `<div class="wd">${w}</div>`).join('')}${cells.map(c => {
     const its = sortedDay(c, {withDone: true}); const ho = holidaysOn(c);
@@ -217,12 +218,8 @@ function calMonth(body, d) {
   if (!isMobile()) wireItems(body);
 }
 function dayPanel(el, d) {
-  const its = sortedDay(d, {withDone: true}); const ho = holidaysOn(d);
-  el.innerHTML = `<h3>${fmtLong(d)}<span class="sp"></span><button class="btn sm" id="dpAdd">+ Añadir</button></h3>
-    ${ho.map(h => `<div class="tag" style="background:var(--holi);color:var(--holiText);margin-bottom:6px">🎉 ${esc(h.name)}</div>`).join('')}
-    ${its.length ? its.map(i => itemHTML(i.k, i.x)).join('') : '<div class="muted small">Nada para este día. Toca el día otra vez o “+ Añadir” para agendar.</div>'}`;
-  wireItems(el);
-  $('#dpAdd', el).onclick = () => openEventForm(null, {date: d}, S.settings.calView === 'month' ? 'month' : undefined);
+  el.innerHTML = hlDay(d, sortedDay(d, {withDone: true}), {holidays: true});
+  wireHl(el, () => openEventForm(null, {date: d}, S.settings.calView === 'month' ? 'month' : undefined));
 }
 const H0 = 0, H1 = 24, SLOT = 48;
 function timeGrid(body, days, onSlot, opts = {}) {
@@ -392,10 +389,11 @@ function vTareasList(v) {
   v.innerHTML = `<div class="row wrap" style="margin-bottom:10px"><div class="chips">${[['todo', 'Por hacer'], ['late', 'Atrasadas'], ['done', 'Completadas']].map(([k, n]) => `<button class="chip ${UI.taskTab === k ? 'on' : ''}" data-tt="${k}">${n} <span class="cnt">${counts[k]}</span></button>`).join('')}</div><span class="sp"></span>
     <button class="btn sec sm" id="fBtn">⚙︎ Filtros${active.length ? ` (${active.length})` : ''}</button><button class="btn sm" id="tNew">+ Nueva tarea</button></div>
     ${active.length ? `<div class="chips" style="margin-bottom:10px">${active.map(([k, n]) => `<span class="tag">${esc(n)}<button data-rf="${k}" aria-label="Quitar">✕</button></span>`).join('')}</div>` : ''}
-    <div id="tList">${list.length ? list.map(t => itemHTML('tk', t, {date: true})).join('') : `<div class="card empty"><div class="big">${UI.taskTab === 'done' ? '🏁' : '🎉'}</div>${q ? 'No hay tareas que coincidan con “' + esc(UI.q) + '”.' : UI.taskTab === 'late' ? '¡Nada atrasado! Vas al día.' : UI.taskTab === 'done' ? 'Aún no has completado tareas.' : 'No tienes tareas por hacer.'}</div>`}</div>`;
+    <div id="tList">${list.length ? (() => { const groups = []; list.forEach(t => { const g = groups.find(x => x[0] === t.date); g ? g[1].push({k: 'tk', x: t}) : groups.push([t.date, [{k: 'tk', x: t}]]); }); return groups.map(([dd, its]) => hlDay(dd, its, {tasksView: true})).join(''); })() : `<div class="card empty"><div class="big">${UI.taskTab === 'done' ? '🏁' : '🎉'}</div>${q ? 'No hay tareas que coincidan con “' + esc(UI.q) + '”.' : UI.taskTab === 'late' ? '¡Nada atrasado! Vas al día.' : UI.taskTab === 'done' ? 'Aún no has completado tareas.' : 'No tienes tareas por hacer.'}</div>`}</div>`;
   v.querySelectorAll('[data-tt]').forEach(b => b.onclick = () => { UI.taskTab = b.dataset.tt; renderView(); });
   v.querySelectorAll('[data-rf]').forEach(b => b.onclick = () => { UI.filters[b.dataset.rf] = b.dataset.rf === 'sort' ? 'fecha' : ''; renderView(); });
   $('#tNew', v).onclick = () => openTaskForm();
+  wireHl(v, null);
   $('#fBtn', v).onclick = openFilters;
   wireItems(v);
 }
@@ -1049,3 +1047,51 @@ function wireSwipes(root) {
 
 // El mensaje verde de "día libre" se ve 35 segundos y desaparece (no vuelve ese día mientras la app siga abierta)
 function freeMsgOn(d) { const now = Date.now(); if (!UI.freeShown[d]) UI.freeShown[d] = now; return now - UI.freeShown[d] < 35000; }
+
+/* ===== Estilo "All Tasks": fecha grande a la izquierda, tareas con resaltador y hora a la derecha ===== */
+function hlColor(i) { return colorOf(i.k, i.x); }
+function hlRow(i) {
+  const x = i.x, c = hlColor(i);
+  const time = (i.k === 'tk' ? (x.time ? fmtTime(x.time) : '') : i.k === 'ev' ? (x.allDay ? 'Todo el día' : fmtTime(x.start)) : fmtTime(x.start)).replace(' a. m.', ' am').replace(' p. m.', ' pm');
+  const title = i.k === 'rt' ? x.name : x.title;
+  const dn = i.k === 'tk' && isDone(x);
+  const lead = i.k === 'tk' ? `<button class="hlbox ${dn ? 'on' : ''}" data-chk="${x.id}" aria-label="${dn ? 'Desmarcar' : 'Completar'}"></button>`
+    : `<span class="hlico">${i.k === 'ev' ? evType(x.evType).icon : '🔁'}</span>`;
+  const flag = i.k === 'tk' && !dn && (x.priority === 'Urgente' || x.priority === 'Alta') ? `<span class="hlflag ${x.priority === 'Urgente' ? 'u' : ''}">!</span>` : '';
+  const late = i.k === 'tk' && isLate(x);
+  return `<div class="hlrow ${dn ? 'done' : ''}" ${i.k === 'tk' ? `data-tk="${x.id}"` : i.k === 'ev' ? `data-ev="${x.id}"` : `data-rt="${x.id}"`}>${lead}<span class="hltx"><span class="hl" style="--hlbg:${hexA(c, dn ? .2 : .38)}">${esc(title)}</span>${flag}${x.reminder != null && !dn ? ' <span class="bell">🔔</span>' : ''}</span><span class="hltime ${late ? 'late' : ''}">${time}</span></div>`;
+}
+function hlDay(d, items, {holidays = false, tasksView = false} = {}) {
+  const dd = parseISO(d), ho = holidays ? holidaysOn(d) : [], t = todayISO();
+  const rows = items.map(hlRow).join('');
+  return `<div class="hlday ${d === t ? 'today' : ''} ${d < t && tasksView ? 'past' : ''}">
+    <div class="hldate"><div class="hlnum">${dd.getDate()}</div><div class="hlwd">${cap(DCORTO[dd.getDay()])}, ${MESES[dd.getMonth()].slice(0, 3)}</div>${d === t ? '<div class="hltoday">Hoy</div>' : ''}<button class="hladd" data-hladd="${d}" aria-label="Añadir en esta fecha">+</button></div>
+    <div class="hllist">${ho.map(h => `<div class="hlholi">🎉 ${esc(h.name)}</div>`).join('')}${rows || `<div class="hlempty">Nada para este día.</div>`}</div></div>`;
+}
+function wireHl(root, onAdd) {
+  wireItems(root);
+  root.querySelectorAll('[data-hladd]').forEach(b => b.onclick = e => { e.stopPropagation(); onAdd ? onAdd(b.dataset.hladd) : openTaskForm(null, {date: b.dataset.hladd}); });
+}
+/* Mes limpio (teléfono): números sueltos, puntitos de colores, 🎂 en celebraciones, se puede plegar */
+function calMonthClean(body, d) {
+  const cells = monthCells(d), m = parseISO(d).getMonth(), t = todayISO();
+  let show = cells;
+  if (UI.monthFold) { const k = Math.max(0, cells.indexOf(UI.selDate)); const r = Math.floor(k / 7) * 7; show = cells.slice(r, r + 7); }
+  body.innerHTML = `<div class="cmonth">
+    <div class="cmwd">${wdHeaders().map(w => `<span>${w}</span>`).join('')}</div>
+    <div class="cmgrid">${show.map(c => {
+      const its = sortedDay(c, {withDone: true}), ho = holidaysOn(c), out = parseISO(c).getMonth() !== m;
+      const cake = S.events.some(e => e.date === c && e.evType === 'celebracion' && areaVisible(e.areaId));
+      const colors = [...new Set(its.map(i => hlColor(i)))].slice(0, 4);
+      return `<button class="cmday ${out ? 'out' : ''} ${c === t ? 'today' : ''} ${c === UI.selDate ? 'sel' : ''} ${ho.length ? 'holi' : ''}" data-day="${c}"><span class="cmn">${parseISO(c).getDate()}</span>${cake ? '<span class="cmcake">🎂</span>' : `<span class="cmdots">${colors.map(col => `<i style="background:${col}"></i>`).join('')}${ho.length ? '<i style="background:var(--red)"></i>' : ''}</span>`}</button>`;
+    }).join('')}</div>
+    <button class="cmfold" id="cmFold" aria-label="${UI.monthFold ? 'Ver el mes' : 'Plegar el mes'}">${UI.monthFold ? '▾ Ver todo el mes' : '▴ Plegar'}</button></div>`;
+  body.querySelectorAll('[data-day]').forEach(c => c.onclick = () => {
+    const day = c.dataset.day;
+    if (UI.selDate === day) { openEventForm(null, {date: day}, 'month'); return; }
+    UI.selDate = day; if (parseISO(day).getMonth() !== m) UI.calDate = day; renderView();
+  });
+  $('#cmFold', body).onclick = () => { UI.monthFold = !UI.monthFold; renderView(); };
+}
+
+function hexA(c, a) { const m = String(c).trim().match(/^#?([0-9a-f]{6})$/i); if (!m) return 'rgba(31,95,191,' + a + ')'; const n = parseInt(m[1], 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
