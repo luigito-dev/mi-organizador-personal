@@ -55,22 +55,22 @@ function irFor(sr) {
   const ir = (secs, decay) => { const n = Math.floor(sr * secs); return [0, 1].map(() => { const d = new Float32Array(n); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, decay); return d; }); };
   return IRS[sr] = {irOut: ir(1.6, 4.5), irRoom: ir(0.9, 3)};
 }
-function makeSynth(ctx) {
+function makeSynth(ctx, safe) {
   const R = rawNoise(), sr = RAW.sr;
   const toBuf = (chans, rate) => { const b = ctx.createBuffer(chans.length, chans[0].length, rate); chans.forEach((d, c) => b.getChannelData(c).set(d)); return b; };
   const buf = {white: toBuf([R.white], sr), pink: toBuf([R.pink], sr), brown: toBuf([R.brown], sr)};
   const I = irFor(ctx.sampleRate);
-  const S = {ctx, buf, irOut: toBuf(I.irOut, ctx.sampleRate), irRoom: toBuf(I.irRoom, ctx.sampleRate)};
+  const S = {ctx, buf, safe, irOut: safe ? null : toBuf(I.irOut, ctx.sampleRate), irRoom: safe ? null : toBuf(I.irRoom, ctx.sampleRate)};
   S.filter = (type, f, q = 1) => { const x = ctx.createBiquadFilter(); x.type = type; x.frequency.value = f; x.Q.value = q; return x; };
   S.gain = v => { const g = ctx.createGain(); g.gain.value = v; return g; };
-  S.pan = (p, dest) => { if (!ctx.createStereoPanner) return dest; const n = ctx.createStereoPanner(); n.pan.value = p; n.connect(dest); return n; };
+  S.pan = (p, dest) => { if (safe || !ctx.createStereoPanner) return dest; const n = ctx.createStereoPanner(); n.pan.value = p; n.connect(dest); return n; };
   S.noise = (kind, dest, g = 1, t0 = 0) => { const s = ctx.createBufferSource(); s.buffer = buf[kind]; s.loop = true; const gg = S.gain(g); s.connect(gg); gg.connect(dest); s.start(t0, Math.random() * 5); return s; };
-  S.reverb = (dest, kind = 'out', wet = 0.4) => { const c = ctx.createConvolver(); c.buffer = kind === 'out' ? S.irOut : S.irRoom; const w = S.gain(wet); c.connect(w); w.connect(dest); return c; };
+  S.reverb = (dest, kind = 'out', wet = 0.4) => { if (safe) { const g = S.gain(wet * 0.6); g.connect(dest); return g; } const c = ctx.createConvolver(); c.buffer = kind === 'out' ? S.irOut : S.irRoom; const w = S.gain(wet); c.connect(w); w.connect(dest); return c; };
   // tono con envolvente: f puede ser número o arreglo de frecuencias (curva)
   S.tone = (dest, t, {f, dur, gain = 0.3, attack = 0.01, release = 0.03, type = 'sine', vib = 0, vibRate = 30}) => {
     const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type;
-    if (Array.isArray(f)) { o.frequency.setValueAtTime(f[0], t); o.frequency.setValueCurveAtTime(Float32Array.from(f), t, dur); } else o.frequency.setValueAtTime(f, t);
-    if (vib) { const l = ctx.createOscillator(), lg = S.gain(vib); l.frequency.value = vibRate; l.connect(lg); lg.connect(o.frequency); l.start(t); l.stop(t + dur + 0.05); }
+    if (Array.isArray(f)) { o.frequency.setValueAtTime(f[0], t); for (let i = 1; i < f.length; i++) o.frequency.linearRampToValueAtTime(f[i], t + dur * i / (f.length - 1)); } else o.frequency.setValueAtTime(f, t);
+    if (vib && !safe) { const l = ctx.createOscillator(), lg = S.gain(vib); l.frequency.value = vibRate; l.connect(lg); lg.connect(o.frequency); l.start(t); l.stop(t + dur + 0.05); }
     const hold = Math.max(t + attack, t + dur - release);
     g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(gain, t + attack); g.gain.setValueAtTime(gain, hold); g.gain.linearRampToValueAtTime(0, t + dur);
     o.connect(g); g.connect(dest); o.start(t); o.stop(t + dur + 0.02);
@@ -251,12 +251,22 @@ const RECIPES = {
 };
 
 /* Arranca una receta en un contexto. live = true programa poco a poco; si no, programa todo hasta "until" (para muestras). */
-function runRecipe(ctx, id, dest, {live = true, until = 0} = {}) {
-  const S = ctx.__synth || (ctx.__synth = makeSynth(ctx)), out = ctx.createGain(); out.gain.value = 0; out.connect(dest);
+function runRecipe(ctx, id, dest, opts = {}) {
+  try { return buildRecipe(ctx, id, dest, opts, !!ctx.__safe); }
+  catch (e) {
+    if (ctx.__safe) throw e;
+    ctx.__safe = true; ctx.__safeWhy = String(e && (e.name + ': ' + e.message));
+    return buildRecipe(ctx, id, dest, opts, true);
+  }
+}
+function buildRecipe(ctx, id, dest, {live = true, until = 0} = {}, safe) {
+  const key = safe ? '__synthSafe' : '__synth';
+  const S = ctx[key] || (ctx[key] = makeSynth(ctx, safe)), out = ctx.createGain(); out.gain.value = 0;
   const gens = [];
   const sched = (min, max, fn, steady, first) => gens.push({min, max, fn, next: ctx.currentTime + (first !== undefined ? first : steady ? 0.05 : Math.random() * min)});
   const extra = RECIPES[id] ? RECIPES[id](S, out, sched) || [] : [];
-  const pump = horizon => gens.forEach(g => { while (g.next < horizon) { try { g.fn(g.next); } catch (e) {} g.next += rnd(g.min, g.max); } });
+  out.connect(dest);
+  const pump = horizon => gens.forEach(g => { while (g.next < horizon) { try { g.fn(g.next); } catch (e) { if (!ctx.__safe) { ctx.__safe = true; ctx.__safeWhy = String(e && (e.name + ': ' + e.message)); } } g.next += rnd(g.min, g.max); } });
   const LEVEL = {birds: 3, forest: 2.4, tick: 1.6, coqui: 1.5, cafe: 1.3, wood: 1.2, fire: 0.6, boil: 0.6, storm: 0.55, rain: 0.7, white: 0.75, cicada: 0.85, far: 1, waves: 0.9, stream: 1.1, wind: 1};
   out.gain.setValueAtTime(0, ctx.currentTime); out.gain.linearRampToValueAtTime(LEVEL[id] || 1, ctx.currentTime + 0.8);
   if (!live) { if (until) pump(until); return {pump}; }
@@ -307,11 +317,16 @@ const Ambient = {
       try { await this.audioEl.play(); } catch (e) {} return true;
     }
     if (this.ctx && this.mode === 'webaudio') {
-      try { this.cur = runRecipe(this.ctx, id, this.master); } catch (e) { this.cur = null; if (typeof toast === 'function') toast('⚠️ No pude crear el sonido: ' + String(e.message || e).slice(0, 80)); return false; }
+      try { this.cur = runRecipe(this.ctx, id, this.master); if (this.ctx.__safe) this.cur.safe = true; } catch (e) { this.cur = null; this.lastError = String(e && (e.name + ': ' + e.message)); }
       // si el audio no arranca en un momento, usar la pista grabada
-      await new Promise(r => setTimeout(r, 700));
-      if (tk !== this.token) return true;
-      if (this.running() && this.ctx.currentTime > 0.05) return true;
+      // ¿el audio realmente avanza? (algunos teléfonos informan mal su estado)
+      const t0 = this.ctx.currentTime; let ok = false;
+      for (let i = 0; i < 10; i++) { await new Promise(r => setTimeout(r, 200)); if (tk !== this.token) return true; if (this.ctx.currentTime - t0 > 0.12) { ok = true; break; } this.ctx.resume().catch(() => {}); }
+      if (ok) {
+        // si en este teléfono falló algo, se rehace el sonido en modo sencillo
+        if (this.ctx.__safe && this.cur && !this.cur.safe) { this.cur.stop(); try { this.cur = runRecipe(this.ctx, id, this.master); this.cur.safe = true; } catch (e) {} }
+        return true;
+      }
       if (this.cur) { this.cur.stop(); this.cur = null; }
       this.mode = 'track';
     }
@@ -322,7 +337,7 @@ const Ambient = {
     try {
       let url = this.recCache[id];
       if (!url) {
-        if (typeof toast === 'function') toast('Preparando el sonido…');
+        if (typeof toast === 'function' && !this.toldPrep) { this.toldPrep = true; toast('Preparando el sonido…'); }
         const sr = 32000, secs = 30, off = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, sr * secs, sr);
         const g = off.createGain(); const comp = off.createDynamicsCompressor(); g.connect(comp); comp.connect(off.destination);
         const r = runRecipe(off, id, g, {live: false}); r.pump(1.5);
@@ -336,7 +351,7 @@ const Ambient = {
       if (tk !== this.token) return true;
       const el = this.el || (this.el = new Audio()); el.loop = true; el.volume = this.vol; el.src = url;
       await el.play(); return true;
-    } catch (e) { if (typeof toast === 'function') toast('Este teléfono no deja reproducir sonidos aquí. Prueba abriendo la app en Chrome.'); return false; }
+    } catch (e) { this.lastError = String(e && (e.name + ': ' + e.message)); if (typeof toast === 'function') toast('⚠️ Sin sonido aquí (' + this.lastError.slice(0, 60) + '). Prueba en Chrome.'); return false; }
   },
   stop() {
     this.token++;
