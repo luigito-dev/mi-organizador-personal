@@ -1,7 +1,7 @@
 /* ========== Ventanas emergentes ========== */
 const sheets = [];
-function openSheet({title = '', body = '', foot = '', cls = '', onMount, onClose, head = true}) {
-  const ov = document.createElement('div'); ov.className = 'ov';
+function openSheet({title = '', body = '', foot = '', cls = '', onMount, onClose, head = true, float = false}) {
+  const ov = document.createElement('div'); ov.className = 'ov' + (float ? ' float' : '');
   ov.innerHTML = `<div class="sheet ${cls}" role="dialog" aria-modal="true"><div class="grab"></div>${head ? `<div class="sh-head"><h2>${title}</h2><button class="iconbtn" data-close aria-label="Cerrar">✕</button></div>` : ''}<div class="sh-body">${body}</div>${foot ? `<div class="sh-foot">${foot}</div>` : ''}</div>`;
   document.body.appendChild(ov);
   const api = {el: ov.firstElementChild, close: () => { ov.remove(); const i = sheets.indexOf(api); if (i >= 0) sheets.splice(i, 1); onClose && onClose(); }};

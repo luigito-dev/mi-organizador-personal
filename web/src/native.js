@@ -96,7 +96,8 @@
           n: it.x.title || it.x.name
         }));
       }
-      return Org.updateWidget({data: JSON.stringify({days})}).catch(() => {});
+      const stats = {}; Object.keys(days).forEach(d => { const tk = S.tasks.filter(x => x.date === d); stats[d] = [tk.filter(isDone).length, tk.length]; });
+      return Org.updateWidget({data: JSON.stringify({days, stats})}).catch(() => {});
     },
     handleAction(a) {
       whenReady(() => {

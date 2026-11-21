@@ -44,20 +44,24 @@ public class HoyWidget extends AppWidgetProvider {
         RemoteViews v = new RemoteViews(ctx.getPackageName(), R.layout.widget_hoy);
         Calendar c = Calendar.getInstance();
         String dia = DIAS[c.get(Calendar.DAY_OF_WEEK) - 1];
-        v.setTextViewText(R.id.wDate, "Hoy · " + dia + " " + c.get(Calendar.DAY_OF_MONTH) + " " + MESES[c.get(Calendar.MONTH)]);
+        v.setTextViewText(R.id.wDate, "HOY");
+        v.setTextViewText(R.id.wSub, dia + " " + c.get(Calendar.DAY_OF_MONTH) + " " + MESES[c.get(Calendar.MONTH)]);
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(c.getTime());
-        int shown = 0, total = 0;
+        int shown = 0, total = 0; String counter = "";
         try {
             String raw = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, "{}");
             JSONObject data = new JSONObject(raw);
             JSONObject days = data.optJSONObject("days");
             JSONArray items = days != null ? days.optJSONArray(today) : null;
+            JSONObject stats = data.optJSONObject("stats");
+            JSONArray st = stats != null ? stats.optJSONArray(today) : null;
+            if (st != null && st.optInt(1) > 0) counter = st.optInt(0) + "/" + st.optInt(1);
             if (items != null) {
                 total = items.length();
                 for (int k = 0; k < items.length() && shown < ROWS.length; k++) {
                     JSONObject it = items.getJSONObject(k);
                     String time = it.optString("h", "");
-                    String line = it.optString("i", "•") + "  " + (time.isEmpty() ? "" : time + " · ") + it.optString("n", "");
+                    String line = "☐  " + it.optString("n", "") + (time.isEmpty() ? "" : "  · " + time);
                     v.setTextViewText(ROWS[shown], line);
                     v.setViewVisibility(ROWS[shown], View.VISIBLE);
                     shown++;
@@ -74,7 +78,8 @@ public class HoyWidget extends AppWidgetProvider {
         } else {
             v.setViewVisibility(R.id.wEmpty, View.GONE);
         }
-        v.setTextViewText(R.id.wCount, total == 0 ? "" : String.valueOf(total));
+        v.setTextViewText(R.id.wCount, counter);
+        v.setViewVisibility(R.id.wCount, counter.isEmpty() ? View.GONE : View.VISIBLE);
         v.setOnClickPendingIntent(R.id.wRoot, open(ctx, "dia", 1));
         v.setOnClickPendingIntent(R.id.wAdd, open(ctx, "nueva", 2));
         return v;

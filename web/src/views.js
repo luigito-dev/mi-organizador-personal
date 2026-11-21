@@ -25,7 +25,7 @@ const isMobile = () => window.matchMedia('(max-width:820px)').matches;
 function shell() {
   document.body.innerHTML = `<div class="app">
     <aside class="side"><div class="brand">${LOGO}<span>Mi Organizador<br>Personal</span></div><nav class="nav" id="nav">${SECTIONS.map(([k, n, i]) => `<button data-go="${k}">${ic(i)}${n}</button>`).join('')}</nav><div class="store storeLbl"></div></aside>
-    <main class="main"><header class="top"><h1 id="vt"></h1><button class="iconbtn lsbtn hidden" id="lsBtn" aria-label="Mis listas"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg><span class="lsbadge" id="lsBadge"></span></button><button class="iconbtn sopen" id="sOpen" aria-label="Buscar">${ic('search')}</button><div class="search" id="sbox">${ic('search', 'si')}<input id="q" type="search" placeholder="Buscar…" autocomplete="off" aria-label="Buscar"><button class="sx hidden" id="qx" aria-label="Borrar">✕</button><div class="results hidden" id="res"></div></div></header>
+    <main class="main"><header class="top"><h1 id="vt"></h1><button class="iconbtn lsbtn hidden" id="lsBtn" aria-label="Hoy y mis listas"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="4" height="4" rx="1"/><path d="M4.5 7l1 1 1.5-2"/><rect x="3.5" y="14" width="4" height="4" rx="1"/><path d="M11 7h9M11 16h9"/></svg><span class="lsbadge" id="lsBadge"></span></button><button class="iconbtn sopen" id="sOpen" aria-label="Buscar">${ic('search')}</button><div class="search" id="sbox">${ic('search', 'si')}<input id="q" type="search" placeholder="Buscar…" autocomplete="off" aria-label="Buscar"><button class="sx hidden" id="qx" aria-label="Borrar">✕</button><div class="results hidden" id="res"></div></div></header>
     <section class="view" id="view"></section></main>
     <nav class="bottom" id="bnav">${[['dia', 'Mi Día', 'dia'], ['calendario', 'Calendario', 'cal'], ['tareas', 'Tareas', 'tareas'], ['notas', 'Notas', 'notas'], ['mas', 'Más', 'mas']].map(([k, n, i]) => `<button data-go="${k}">${ic(i)}${n}</button>`).join('')}</nav>
     <button class="fab" id="fab" aria-label="Añadir">+</button><div id="mini"></div><div class="toasts" id="toasts"></div></div>`;
@@ -894,7 +894,7 @@ function vListaDetalle(v, l) {
     ${done.length ? `<details class="fold" ${UI.showDoneItems ? 'open' : ''} id="lDone"><summary>Listos (${done.length})</summary>${done.map(row).join('')}<div class="row wrap" style="margin-top:6px"><button class="btn sec sm" id="lUn">↺ Desmarcar todos</button><button class="btn sec sm" id="lClr">Borrar los listos</button></div></details>` : ''}`;
   $('#lBack', v).onclick = () => { UI.openList = null; renderView(); };
   $('#lEd', v).onclick = () => openListForm(l);
-  $('#lPin', v).onclick = () => { l.hideOnDay = !l.hideOnDay; save('lists'); renderView(); listBadge(); toast(l.hideOnDay ? 'Quitada del acceso rápido 📋' : 'En el acceso rápido 📋 de arriba'); };
+  $('#lPin', v).onclick = () => { l.hideOnDay = !l.hideOnDay; save('lists'); renderView(); listBadge(); toast(l.hideOnDay ? 'Quitada del acceso rápido' : 'En el acceso rápido (botón de arriba)'); };
   $('#lDel', v).onclick = async () => { if (await ask(`¿Eliminar la lista “${esc(l.name)}” y todo lo que tiene?`)) { S.lists = S.lists.filter(x => x.id !== l.id); UI.openList = null; save('lists'); render(); toast('Lista eliminada'); } };
   const inp = $('#liAdd', v);
   const add = () => {
@@ -936,43 +936,65 @@ function openListForm(list) {
     }});
 }
 
-/* Listas a la mano: ventana emergente desde el botón 📋 de arriba */
+/* Acceso rápido: tarjeta flotante con "Hoy" (estilo TODAY) y tus listas, desde el botón 📋 */
+function quickCount() {
+  const t = todayISO();
+  const tk = S.tasks.filter(x => x.date === t && !isDone(x)).length + S.tasks.filter(isLate).length;
+  const li = S.lists.filter(l => !l.hideOnDay).reduce((a, l) => a + l.items.filter(i => !i.done).length, 0);
+  return tk + li;
+}
 function listBadge() {
   const b = $('#lsBtn'); if (!b) return;
-  const n = S.lists.filter(l => !l.hideOnDay).reduce((a, l) => a + l.items.filter(i => !i.done).length, 0);
-  b.classList.toggle('hidden', !S.lists.some(l => !l.hideOnDay) || UI.view === 'enfoque');
+  const n = quickCount();
+  b.classList.toggle('hidden', UI.view === 'enfoque');
   $('#lsBadge').textContent = n ? (n > 99 ? '99+' : n) : '';
 }
 function openListsPopup() {
-  openSheet({title: '📋 Mis listas', body: '<div id="lsPop"></div>', cls: 'lspop',
-    onClose: () => { listBadge(); if (UI.view === 'tareas' && UI.taskMode === 'listas') renderView(); },
+  openSheet({head: false, float: true, cls: 'qcard', body: '<div id="lsPop"></div>',
+    onClose: () => { listBadge(); if (['dia', 'tareas'].includes(UI.view)) renderView(); },
     onMount: el => dayLists(el.querySelector('#lsPop'))});
 }
 function dayLists(box) {
   if (!box) return;
-  const lists = S.lists.filter(l => !l.hideOnDay && (l.items.some(i => !i.done) || l.id === UI.dayList));
-  if (!lists.length) { box.innerHTML = `<div class="empty small">${S.lists.length ? '🎉 No tienes nada pendiente en tus listas.' : 'Aún no tienes listas.'}</div><button class="btn full" id="dlAll">${S.lists.length ? 'Ver mis listas' : '+ Crear una lista'}</button>`; $('#dlAll', box).onclick = () => { go('tareas'); UI.taskMode = 'listas'; render(); if (!S.lists.length) openListForm(); }; return; }
-  if (UI.dayList === undefined || (UI.dayList === null && lists.length === 1)) UI.dayList = lists.length === 1 ? lists[0].id : null;
-  if (UI.dayList && !lists.some(l => l.id === UI.dayList)) UI.dayList = null;
-  const open = lists.find(l => l.id === UI.dayList);
-  box.innerHTML = `<div class="daylists"><div class="row" style="margin-bottom:8px"><span class="xs muted">Toca una cosa para marcarla como lista.</span><span class="sp"></span><button class="btn ghost sm" id="dlAll">Ver todas ›</button></div>
-    <div class="hscroll">${lists.map(l => { const n = l.items.filter(i => !i.done).length; return `<button class="lchip ${open === l ? 'on' : ''}" data-dl="${l.id}" style="--lc:${l.color}"><span>${l.icon}</span><b>${esc(l.name)}</b><span class="cnt">${n}</span></button>`; }).join('')}</div>
-    ${open ? `<div class="dlpanel" style="--lc:${open.color}">
-      ${open.items.filter(i => !i.done).map(i => `<button class="dlitem" data-dli="${i.id}"><span class="check"></span><span class="sp">${esc(i.t)}</span></button>`).join('') || '<div class="alldone">🎉 ¡Todo listo en esta lista!</div>'}
-      ${open.items.some(i => i.done) ? `<div class="xs muted" style="margin:6px 2px">${open.items.filter(i => i.done).length} listo${open.items.filter(i => i.done).length === 1 ? '' : 's'} · <button class="btn ghost sm" id="dlUndo" style="padding:2px 4px">Desmarcar todos</button></div>` : ''}
-      <div class="goal" style="margin-top:8px"><input id="dlAdd" placeholder="Añadir a ${esc(open.name)}…" maxlength="300" autocomplete="off"><button class="btn" id="dlBtn">Añadir</button></div>
-      <button class="btn ghost sm" id="dlOpen" style="margin-top:6px">Abrir la lista completa ›</button></div>` : '<div class="xs muted" style="margin-top:8px">Toca una lista para abrirla aquí.</div>'}</div>`;
-  const keep = fn => () => { fn(); dayLists(box); listBadge(); };
-  box.querySelectorAll('[data-dl]').forEach(b => b.onclick = keep(() => { UI.dayList = UI.dayList === b.dataset.dl ? null : b.dataset.dl; }));
-  $('#dlAll', box).onclick = () => { go('tareas'); UI.taskMode = 'listas'; render(); };
-  if (!open) return;
-  box.querySelectorAll('[data-dli]').forEach(b => b.onclick = () => {
-    const it = open.items.find(x => x.id === b.dataset.dli); it.done = true; save('lists');
-    b.classList.add('gone'); setTimeout(keep(() => {}), 220);
-  });
-  const un = $('#dlUndo', box); if (un) un.onclick = keep(() => { open.items.forEach(i => i.done = false); save('lists'); });
+  const t = todayISO(), lists = S.lists.filter(l => !l.hideOnDay);
+  if (!UI.popTab || (UI.popTab !== 'hoy' && !lists.some(l => l.id === UI.popTab))) UI.popTab = 'hoy';
+  const tabs = `<div class="qtabs hscroll"><button class="qtab ${UI.popTab === 'hoy' ? 'on' : ''}" data-qt="hoy" style="--lc:var(--blue)">☀️ Hoy</button>${lists.map(l => { const n = l.items.filter(i => !i.done).length; return `<button class="qtab ${UI.popTab === l.id ? 'on' : ''}" data-qt="${l.id}" style="--lc:${l.color}">${l.icon} ${esc(l.name)}${n ? ` <span class="cnt">${n}</span>` : ''}</button>`; }).join('')}</div>`;
+  let head, rows, addPh, foot;
+  if (UI.popTab === 'hoy') {
+    const late = S.tasks.filter(isLate), today = S.tasks.filter(x => x.date === t);
+    const pend = [...late, ...today.filter(x => !isDone(x))].sort((a, b) => (a.date + (a.time || '99')).localeCompare(b.date + (b.time || '99')));
+    const done = today.filter(isDone);
+    const total = today.length + late.length;
+    head = `<div class="qhead" style="--lc:var(--blue)"><span class="qtitle">HOY</span><span class="qcount">${done.length}/${total}</span></div>`;
+    const tint = x => isLate(x) || x.priority === 'Urgente' ? 'r' : x.priority === 'Alta' ? 'o' : '';
+    rows = [...pend, ...done].map(x => `<button class="qrow ${isDone(x) ? 'done' : ''} ${isDone(x) ? '' : tint(x)}" data-qtk="${x.id}"><span class="qbox"></span><span class="qtx">${esc(x.title)}${x.time ? ` <span class="qtime">${isLate(x) ? fmtShort(x.date) + ' · ' : ''}${fmtTime(x.time)}</span>` : isLate(x) ? ` <span class="qtime">${fmtShort(x.date)}</span>` : ''}</span></button>`).join('') || '<div class="qempty">✓ Nada pendiente para hoy</div>';
+    addPh = 'Añadir para hoy…';
+    foot = `<button class="btn ghost sm" id="qGo">Ver Mi Día ›</button>`;
+  } else {
+    const l = lists.find(x => x.id === UI.popTab), done = l.items.filter(i => i.done);
+    head = `<div class="qhead" style="--lc:${l.color}"><span class="qtitle">${esc(l.name.toUpperCase())}</span><span class="qcount">${done.length}/${l.items.length}</span></div>`;
+    rows = [...l.items.filter(i => !i.done), ...done].map(i => `<button class="qrow ${i.done ? 'done' : ''}" data-qli="${i.id}"><span class="qbox"></span><span class="qtx">${esc(i.t)}</span></button>`).join('') || '<div class="qempty">Lista vacía: añade lo primero abajo.</div>';
+    addPh = 'Añadir a ' + l.name + '…';
+    foot = `${done.length ? '<button class="btn ghost sm" id="qUndo">↺ Desmarcar todos</button>' : ''}<span class="sp"></span><button class="btn ghost sm" id="qOpen">Abrir la lista ›</button>`;
+  }
+  box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div>${head}<div class="qrows">${rows}</div>
+    <div class="qadd"><input id="dlAdd" placeholder="${esc(addPh)}" maxlength="300" autocomplete="off"><button class="btn" id="dlBtn" aria-label="Añadir">+</button></div>
+    <div class="row qfoot">${foot}${UI.popTab === 'hoy' && !lists.length ? '<span class="sp"></span><button class="btn ghost sm" id="qNewList">+ Nueva lista</button>' : ''}</div>`;
+  const redraw = () => { dayLists(box); listBadge(); };
+  box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; redraw(); });
+  box.querySelectorAll('[data-qtk]').forEach(b => b.onclick = () => { const x = S.tasks.find(y => y.id === b.dataset.qtk); x.status = isDone(x) ? 'Pendiente' : 'Completada'; x.completedAt = isDone(x) ? Date.now() : null; save('tasks'); b.classList.toggle('done'); setTimeout(redraw, 180); });
+  box.querySelectorAll('[data-qli]').forEach(b => b.onclick = () => { const l = S.lists.find(y => y.id === UI.popTab), i = l.items.find(y => y.id === b.dataset.qli); i.done = !i.done; save('lists'); b.classList.toggle('done'); setTimeout(redraw, 180); });
   const inp = $('#dlAdd', box);
-  const add = () => { const raw = inp.value.trim(); if (!raw) { inp.focus(); return; } raw.split(/\n|,/).map(x => x.trim()).filter(Boolean).forEach(t => open.items.push({id: uid(), t: cap(t), done: false})); save('lists'); keep(() => {})(); const n = $('#dlAdd'); n && n.focus(); };
+  const add = () => {
+    const raw = inp.value.trim(); if (!raw) { inp.focus(); return; }
+    if (UI.popTab === 'hoy') { const g = guess(raw); S.tasks.push({id: uid(), title: raw, date: t, time: g.time, typeId: g.typeId, areaId: g.areaId, priority: 'Media', details: '', steps: [], status: 'Pendiente', obs: '', reminder: null, createdAt: Date.now()}); save('tasks'); }
+    else { const l = S.lists.find(y => y.id === UI.popTab); raw.split(/\n|,/).map(x => x.trim()).filter(Boolean).forEach(x => l.items.push({id: uid(), t: cap(x), done: false})); save('lists'); }
+    redraw(); const n = $('#dlAdd'); n && n.focus();
+  };
   $('#dlBtn', box).onclick = add; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
-  $('#dlOpen', box).onclick = () => { const id = open.id; go('tareas'); UI.taskMode = 'listas'; UI.openList = id; render(); };
+  const q = id => $(id, box);
+  if (q('#qGo')) q('#qGo').onclick = () => go('dia');
+  if (q('#qOpen')) q('#qOpen').onclick = () => { const id = UI.popTab; go('tareas'); UI.taskMode = 'listas'; UI.openList = id; render(); };
+  if (q('#qUndo')) q('#qUndo').onclick = () => { S.lists.find(y => y.id === UI.popTab).items.forEach(i => i.done = false); save('lists'); redraw(); };
+  if (q('#qNewList')) q('#qNewList').onclick = () => { go('tareas'); UI.taskMode = 'listas'; render(); openListForm(); };
 }
