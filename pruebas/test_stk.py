@@ -1,0 +1,38 @@
+from playwright.sync_api import sync_playwright
+R=[]
+def ok(n,c,x=''): R.append(c); print(('PASS ' if c else 'FAIL ')+n+('' if c else ' -- '+str(x)))
+with sync_playwright() as p:
+  b=p.chromium.launch()
+  for lab,kw in [('tel',dict(p.devices['Pixel 7'])),('pc',{'viewport':{'width':1366,'height':860}})]:
+    ctx=b.new_context(**kw); pg=ctx.new_page(); errs=[]; pg.on('pageerror',lambda e: errs.append(str(e)))
+    tap=(lambda s: pg.tap(s)) if lab=='tel' else (lambda s: pg.click(s))
+    pg.goto('file:///home/claude/org/index.html'); pg.wait_for_timeout(300)
+    pg.evaluate("S.settings.tutorialSeen=true;sheets.slice().forEach(s=>s.close());go('calendario');S.settings.calView='month';UI.selDate=todayISO();renderView()"); pg.wait_for_timeout(300)
+    d=pg.evaluate("addDays(todayISO(),2)")
+    pg.evaluate(f"openEventForm(null,{{date:'{d}'}},'month')"); pg.wait_for_timeout(300)
+    pg.fill('#eTitle','Viaje a Ponce'); tap('[data-stk="✈️"]'); tap('#eSave'); pg.wait_for_timeout(300)
+    ok(f'[{lab}] sticker en el evento', pg.evaluate("S.events[0].sticker")=='✈️')
+    sel='.cmcake' if lab=='tel' else '.mstk'
+    ok(f'[{lab}] ✈️ aparece en el día', pg.locator(f'[data-day="{d}"] {sel}').inner_text()=='✈️')
+    d2=pg.evaluate("addDays(todayISO(),4)")
+    pg.evaluate(f"openEventForm(null,{{date:'{d2}'}},'month')"); pg.wait_for_timeout(300); pg.fill('#eTitle','Cumple de Ana'); tap('[data-et="celebracion"]'); pg.wait_for_timeout(100)
+    ok(f'[{lab}] celebración pone 🎂 sola', pg.locator('#eStk .opt.on').inner_text()=='🎂')
+    tap('#eSave'); pg.wait_for_timeout(300)
+    ok(f'[{lab}] 🎂 en el día', pg.locator(f'[data-day="{d2}"] {sel}').inner_text()=='🎂')
+    pg.evaluate("openTaskForm(null,{})"); pg.wait_for_timeout(300); pg.fill('#tTitle','Recorte'); tap('[data-stk="💈"]'); tap('#tSave'); pg.wait_for_timeout(300)
+    ok(f'[{lab}] sticker en tarea', pg.locator(f'[data-day="{pg.evaluate("todayISO()")}"] {sel}').inner_text()=='💈')
+    tap('#calBg'); pg.wait_for_timeout(300)
+    ok(f'[{lab}] elegir fondo', pg.locator('.bgopt').count()==8)
+    tap('[data-bg="escritorio"]'); pg.wait_for_timeout(300)
+    box='.cmonth' if lab=='tel' else '.month'
+    ok(f'[{lab}] fondo aplicado', 'svg' in pg.locator(box).get_attribute('style'))
+    pg.screenshot(path=f'shots/{lab}-bg-escritorio.png')
+    tap('#calBg'); pg.wait_for_timeout(300); pg.set_input_files('#bgFile','/tmp/foto.jpg'); pg.wait_for_timeout(1200)
+    ok(f'[{lab}] mi foto de fondo', 'blob:' in (pg.locator(box).get_attribute('style') or ''))
+    pg.reload(); pg.wait_for_timeout(600); pg.evaluate("go('calendario')"); pg.wait_for_timeout(800)
+    ok(f'[{lab}] la foto sigue al recargar', 'blob:' in (pg.locator(box).get_attribute('style') or ''))
+    pg.evaluate("S.settings.calBg='noche';renderView()"); pg.wait_for_timeout(300); pg.screenshot(path=f'shots/{lab}-bg-noche.png')
+    ok(f'[{lab}] sin scroll horizontal', pg.evaluate("document.documentElement.scrollWidth<=document.documentElement.clientWidth"))
+    ok(f'[{lab}] sin errores', not errs, errs); ctx.close()
+  b.close()
+print('FALLAS', R.count(False))

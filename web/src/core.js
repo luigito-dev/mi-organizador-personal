@@ -52,6 +52,7 @@ const EVENT_TYPES = [
   {id:'celebracion', name:'Celebración', icon:'🎂'}, {id:'social', name:'Social', icon:'🎉'}, {id:'deporte', name:'Deporte', icon:'🏃'}
 ];
 const EMOJIS = ['📝','🏠','💼','🩺','💰','👨‍👩‍👧','🛒','🚗','📅','🏃','🔔','⭐','🎯','🐶','🙏','✈️'];
+const STICKERS = ['🎂', '🎉', '🎁', '❤️', '⭐', '✈️', '🏖️', '🩺', '💼', '🏋️', '⚽', '🎵', '🍽️', '🐶', '⛪', '💍', '👶', '🎄', '🧳', '🚗', '💈', '💰', '🏠', '🌴'];
 const AREA_COLORS = ['#1f5fbf','#0f9d8f','#2e9d5b','#e0566b','#f08a24','#7b4fd6','#b3519c','#c97b2a','#5c6bc0','#d4a017','#00838f','#6b7487'];
 const PRIOS = ['Baja','Media','Alta','Urgente'];
 const REMINDERS = [[0,'En el momento'],[5,'5 min antes'],[10,'10 min antes'],[15,'15 min antes'],[30,'30 min antes'],[45,'45 min antes'],[60,'1 hora antes'],[120,'2 horas antes'],[180,'3 horas antes'],[360,'6 horas antes'],[720,'12 horas antes'],[1440,'1 día antes'],[2880,'2 días antes'],[4320,'3 días antes'],[10080,'1 semana antes']];

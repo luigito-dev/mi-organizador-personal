@@ -132,6 +132,7 @@ function openTaskForm(task, preset = {}) {
     <div class="fld row" id="tTimeRow" style="flex-wrap:nowrap"></div>
     <div class="fld"><label>Tipo</label><div class="opts hscroll" id="tTypes"></div></div>
     <div class="fld"><label>Área</label><div class="opts hscroll" id="tAreas"></div></div>
+<div class="fld"><label>Sticker en el calendario</label><div class="opts hscroll stk" id="tStk"></div></div>
     <div class="fld"><label>Prioridad</label><div class="seg full" id="tPrio">${PRIOS.map(p => `<button type="button" class="opt" data-p="${p}">${p}</button>`).join('')}</div></div>
     <details class="fold" ${t.details ? 'open' : ''}><summary>Añadir más detalles</summary>
       <div class="fld"><label>¿De qué se trata?</label><textarea class="inp" id="tDet" placeholder="Escribe aquí… Usa “+ Añadir” para crear pasos con •">${esc(t.details)}</textarea>
@@ -170,6 +171,7 @@ function openTaskForm(task, preset = {}) {
       paintAreas();
       const paintPrio = () => el.querySelectorAll('[data-p]').forEach(b => { b.classList.toggle('on', b.dataset.p === t.priority); b.onclick = () => { t.priority = b.dataset.p; paintPrio(); }; });
       paintPrio();
+      wireStickers(el.querySelector('#tStk'), t);
       if (editing) { const ps = () => el.querySelectorAll('[data-s]').forEach(b => { b.classList.toggle('on', b.dataset.s === t.status); b.onclick = () => { t.status = b.dataset.s; ps(); }; }); ps(); }
       el.querySelector('#tAddLine').onclick = () => { const ta = el.querySelector('#tDet'); ta.value = ta.value.replace(/\s*$/, '') + (ta.value.trim() ? '\n' : '') + '• '; ta.focus(); ta.selectionStart = ta.selectionEnd = ta.value.length; };
       const sw = el.querySelector('[data-sw]'); if (sw) sw.onclick = () => { const title = el.querySelector('#tTitle').value; s.close(); openEventForm(null, {title, date: t.date, start: t.time}); };
@@ -238,6 +240,7 @@ function openEventForm(ev, preset = {}, mode) {
     <div class="fld"><button type="button" class="row" id="eAllRow" style="padding:4px 0;font-weight:600"><span class="switch blue ${e.allDay ? 'on' : ''}" id="eAll"></span>Todo el día</button></div>
     <div class="fld row" id="eTimes"></div>
     <div class="fld"><label>Tipo de evento</label><div class="opts hscroll" id="eTypes"></div></div>
+    <div class="fld"><label>Sticker en el calendario</label><div class="opts hscroll stk" id="eStk"></div></div>
     <div class="fld"><label>Lugar</label><input class="inp" id="ePlace" value="${esc(e.place)}" placeholder="¿Dónde?"></div>
     <div class="fld"><label>Área</label><div class="opts hscroll" id="eAreas"></div></div>
     <div class="fld row"><span class="lab" style="margin:0">Recordatorio</span><span class="sp"></span><span id="eBell">${bellHTML(e.reminder)}</span></div>
@@ -254,7 +257,8 @@ function openEventForm(ev, preset = {}, mode) {
       };
       paintTimes();
       el.querySelector('#eAllRow').onclick = () => { e.allDay = !e.allDay; el.querySelector('#eAll').classList.toggle('on', e.allDay); paintTimes(); };
-      const pt = () => { el.querySelector('#eTypes').innerHTML = EVENT_TYPES.map(t => `<button type="button" class="opt ${t.id === e.evType ? 'on' : ''}" data-et="${t.id}">${t.icon} ${t.name}</button>`).join(''); el.querySelectorAll('[data-et]').forEach(b => b.onclick = () => { e.evType = b.dataset.et; pt(); }); };
+      const pt = () => { el.querySelector('#eTypes').innerHTML = EVENT_TYPES.map(t => `<button type="button" class="opt ${t.id === e.evType ? 'on' : ''}" data-et="${t.id}">${t.icon} ${t.name}</button>`).join(''); el.querySelectorAll('[data-et]').forEach(b => b.onclick = () => { e.evType = b.dataset.et; if (e.evType === 'celebracion' && !e.sticker) { e.sticker = '🎂'; wireStickers(el.querySelector('#eStk'), e); } pt(); }); };
+      wireStickers(el.querySelector('#eStk'), e);
       pt();
       const pa = () => { el.querySelector('#eAreas').innerHTML = areaButtons(e.areaId); el.querySelectorAll('[data-area]').forEach(b => b.onclick = () => { e.areaId = b.dataset.area || null; pa(); }); };
       pa();
@@ -438,4 +442,14 @@ function openNote(id) {
         setTimeout(() => { const d = $('#tDet'); if (d && rest) { d.value = rest; d.closest('details').open = true; } }, 80);
       };
     }});
+}
+
+// Selector de sticker: lo que eliges aquí aparece en el día del calendario
+function wireStickers(box, obj) {
+  if (!box) return;
+  const paint = () => {
+    box.innerHTML = `<button type="button" class="opt ${!obj.sticker ? 'on' : ''}" data-stk="">Ninguno</button>` + STICKERS.map(s => `<button type="button" class="opt stkb ${obj.sticker === s ? 'on' : ''}" data-stk="${s}">${s}</button>`).join('');
+    box.querySelectorAll('[data-stk]').forEach(b => b.onclick = () => { obj.sticker = b.dataset.stk || null; paint(); });
+  };
+  paint();
 }

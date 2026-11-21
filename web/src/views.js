@@ -174,7 +174,7 @@ function vCal(v) {
   const view = S.settings.calView || 'month', d = UI.calDate;
   v.innerHTML = `<div class="cal-wrap"><div class="cal-side"><div class="card mini" id="mini1"></div><div class="card" style="margin-top:12px"><h3>Mis áreas</h3><div class="areas-list" id="aList"></div></div></div>
     <div><div class="calbar"><button class="iconbtn" id="cPrev" aria-label="Anterior">‹</button><button class="iconbtn" id="cNext" aria-label="Siguiente">›</button><button class="btn sec sm" id="cToday">Hoy</button><h2>${calTitle(view, d)}</h2><span class="sp"></span>
-      <div class="seg">${[['month', 'Mes'], ['week', 'Semana'], ['day', 'Día']].map(([k, n]) => `<button data-cv="${k}" class="${view === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
+      <div class="seg">${[['month', 'Mes'], ['week', 'Semana'], ['day', 'Día']].map(([k, n]) => `<button data-cv="${k}" class="${view === k ? 'on' : ''}">${n}</button>`).join('')}</div>${view === 'month' ? '<button class="iconbtn" id="calBg" aria-label="Fondo del calendario" title="Fondo del calendario">🎨</button>' : ''}</div>
       <div id="calBody"></div><div id="calExtra"></div></div></div>`;
   // Minicalendario
   const mc = monthCells(d), md = parseISO(d);
@@ -188,6 +188,7 @@ function vCal(v) {
   const step = n => { const x = parseISO(d); if (view === 'month') x.setMonth(x.getMonth() + n, 1); else x.setDate(x.getDate() + (view === 'week' ? 7 : 1) * n); UI.calDate = iso(x); if (view === 'day') UI.selDate = UI.calDate; renderView(); };
   $('#cPrev', v).onclick = () => step(-1); $('#cNext', v).onclick = () => step(1);
   $('#cToday', v).onclick = () => { UI.calDate = UI.selDate = todayISO(); renderView(); };
+  const cb = $('#calBg', v); if (cb) cb.onclick = openCalBg;
   v.querySelectorAll('[data-cv]').forEach(b => b.onclick = () => { S.settings.calView = b.dataset.cv; if (b.dataset.cv !== 'month') UI.calDate = UI.selDate; save('meta'); renderView(); });
   const body = $('#calBody', v), extra = $('#calExtra', v);
   if (view === 'month') { calMonth(body, d); extra.innerHTML = '<div class="daypanel card" id="dp"></div>'; dayPanel($('#dp', v), UI.selDate); }
@@ -203,10 +204,10 @@ function pillHTML(i) {
 function calMonth(body, d) {
   if (isMobile()) return calMonthClean(body, d);
   const cells = monthCells(d), m = parseISO(d).getMonth(), max = isMobile() ? 2 : 3;
-  body.innerHTML = `<div class="month">${wdHeaders().map(w => `<div class="wd">${w}</div>`).join('')}${cells.map(c => {
+  body.innerHTML = `<div class="month mbg ${calBgDark() ? 'bgdark' : ''}" style="${calBgStyle()}">${wdHeaders().map(w => `<div class="wd">${w}</div>`).join('')}${cells.map(c => {
     const its = sortedDay(c, {withDone: true}); const ho = holidaysOn(c);
     const pills = [...ho.map(h => `<span class="pill ho" title="${esc(h.name)}">🎉 ${esc(h.name)}</span>`), ...its.map(pillHTML)];
-    return `<div class="mcell ${parseISO(c).getMonth() !== m ? 'out' : ''} ${c === todayISO() ? 'today' : ''} ${c === UI.selDate ? 'sel' : ''} ${ho.length ? 'holi' : ''}" data-day="${c}"><div class="n">${parseISO(c).getDate()}</div>${isMobile() ? `<div class="dots2">${its.slice(0, 6).map(i => `<i class="${i.k}" style="background:${colorOf(i.k, i.x)};color:${colorOf(i.k, i.x)}"></i>`).join('')}</div>${its.length > 6 ? '<div class="more">+' + (its.length - 6) + '</div>' : ''}` : pills.slice(0, max).join('') + (pills.length > max ? `<div class="more">+${pills.length - max} más</div>` : '')}</div>`;
+    return `<div class="mcell ${parseISO(c).getMonth() !== m ? 'out' : ''} ${c === todayISO() ? 'today' : ''} ${c === UI.selDate ? 'sel' : ''} ${ho.length ? 'holi' : ''}" data-day="${c}"><div class="n">${parseISO(c).getDate()}</div>${daySticker(c) ? `<span class="mstk">${daySticker(c)}</span>` : ''}${isMobile() ? `<div class="dots2">${its.slice(0, 6).map(i => `<i class="${i.k}" style="background:${colorOf(i.k, i.x)};color:${colorOf(i.k, i.x)}"></i>`).join('')}</div>${its.length > 6 ? '<div class="more">+' + (its.length - 6) + '</div>' : ''}` : pills.slice(0, max).join('') + (pills.length > max ? `<div class="more">+${pills.length - max} más</div>` : '')}</div>`;
   }).join('')}</div>`;
   body.querySelectorAll('[data-day]').forEach(c => c.onclick = e => {
     if (e.target.closest('[data-ev],[data-tk],[data-rt]') && !isMobile()) return;
@@ -1082,13 +1083,13 @@ function calMonthClean(body, d) {
   const cells = monthCells(d), m = parseISO(d).getMonth(), t = todayISO();
   let show = cells;
   if (UI.monthFold) { const k = Math.max(0, cells.indexOf(UI.selDate)); const r = Math.floor(k / 7) * 7; show = cells.slice(r, r + 7); }
-  body.innerHTML = `<div class="cmonth">
+  body.innerHTML = `<div class="cmonth ${calBgDark() ? 'bgdark' : ''}" style="${calBgStyle()}">
     <div class="cmwd">${wdHeaders().map(w => `<span>${w}</span>`).join('')}</div>
     <div class="cmgrid">${show.map(c => {
       const its = sortedDay(c, {withDone: true}), ho = holidaysOn(c), out = parseISO(c).getMonth() !== m;
-      const cake = S.events.some(e => e.date === c && e.evType === 'celebracion' && areaVisible(e.areaId));
+      const cake = daySticker(c);
       const colors = [...new Set(its.map(i => hlColor(i)))].slice(0, 4);
-      return `<button class="cmday ${out ? 'out' : ''} ${c === t ? 'today' : ''} ${c === UI.selDate ? 'sel' : ''} ${ho.length ? 'holi' : ''}" data-day="${c}"><span class="cmn">${parseISO(c).getDate()}</span>${cake ? '<span class="cmcake">🎂</span>' : `<span class="cmdots">${colors.map(col => `<i style="background:${col}"></i>`).join('')}${ho.length ? '<i style="background:var(--red)"></i>' : ''}</span>`}</button>`;
+      return `<button class="cmday ${out ? 'out' : ''} ${c === t ? 'today' : ''} ${c === UI.selDate ? 'sel' : ''} ${ho.length ? 'holi' : ''}" data-day="${c}"><span class="cmn">${parseISO(c).getDate()}</span>${cake ? `<span class="cmcake">${cake}</span>` : `<span class="cmdots">${colors.map(col => `<i style="background:${col}"></i>`).join('')}${ho.length ? '<i style="background:var(--red)"></i>' : ''}</span>`}</button>`;
     }).join('')}</div>
     <button class="cmfold" id="cmFold" aria-label="${UI.monthFold ? 'Ver el mes' : 'Plegar el mes'}">${UI.monthFold ? '▾ Ver todo el mes' : '▴ Plegar'}</button></div>`;
   body.querySelectorAll('[data-day]').forEach(c => c.onclick = () => {
@@ -1103,3 +1104,52 @@ function hexA(c, a) { const m = String(c).trim().match(/^#?([0-9a-f]{6})$/i); if
 
 // Color de resaltador de cada cosa de una lista (fijo para cada una)
 function itemHl(i) { let h = 0; for (const ch of String(i.id || i.t)) h = (h * 31 + ch.charCodeAt(0)) | 0; return HL_PASTEL[Math.abs(h) % HL_PASTEL.length]; }
+
+/* ===== Stickers del día y fondo del calendario ===== */
+function daySticker(d) {
+  const e = S.events.find(x => x.date === d && x.sticker && areaVisible(x.areaId)) || S.tasks.find(x => x.date === d && x.sticker && areaVisible(x.areaId));
+  if (e) return e.sticker;
+  return S.events.some(x => x.date === d && x.evType === 'celebracion' && areaVisible(x.areaId)) ? '🎂' : '';
+}
+const svgBg = (body, bg) => 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMax slice"><rect width="400" height="300" fill="${bg}"/>${body}</svg>`);
+const CAL_BGS = {
+  escritorio: ['Escritorio', svgBg('<g opacity=".55"><rect x="230" y="150" width="130" height="120" rx="12" fill="#e3ecfb" stroke="#b9cdee" stroke-width="3"/><rect x="230" y="150" width="130" height="28" rx="10" fill="#cfdcf5"/>' + [0,1,2,3,4,5,6,7].map(i => `<circle cx="${245 + i * 15}" cy="146" r="6" fill="none" stroke="#b9cdee" stroke-width="3"/>`).join('') + '<path d="M245 195h100M245 215h100M245 235h100M265 185v80M290 185v80M315 185v80" stroke="#c7d6f1" stroke-width="2"/><path d="M70 230h90l-8 50H78z" fill="#eaf2fb" stroke="#c8d9ef" stroke-width="3"/><path d="M160 240c25 0 25 30 0 30" fill="none" stroke="#c8d9ef" stroke-width="3"/><path d="M95 215c-8-12 8-18 0-30M120 215c-8-12 8-18 0-30" stroke="#d3e0f2" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="0" y="278" width="400" height="22" fill="#eef3fb"/></g>', '#f6f9fe')],
+  plantas: ['Plantas', svgBg('<g opacity=".5" fill="#bfe3c9"><path d="M40 300c0-90 40-150 90-170-30 50-40 110-40 170z"/><path d="M90 300c10-70 60-120 120-130-50 40-70 90-80 130z" fill="#cfead6"/><path d="M360 300c0-80-30-140-80-160 25 45 35 105 30 160z"/><path d="M330 300c-5-60-40-100-90-115 40 35 55 75 55 115z" fill="#d8efde"/><circle cx="320" cy="60" r="28" fill="#fdebc8"/></g>', '#f5fbf6')],
+  playa: ['Playa', svgBg('<g opacity=".6"><circle cx="320" cy="70" r="34" fill="#ffe2a8"/><path d="M0 220c50-20 100 20 150 0s100 20 150 0 75 10 100 0v80H0z" fill="#bfe3f5"/><path d="M0 250c50-18 100 18 150 0s100 18 150 0 75 9 100 0v50H0z" fill="#a9d8ef"/><path d="M0 285h400v15H0z" fill="#f4e3c2"/><path d="M70 285c0-60 6-100 14-120" stroke="#cbb08a" stroke-width="6" fill="none"/><path d="M84 165c-30-5-50 5-60 20 20-8 40-8 60-20zm0 0c25-15 50-12 65 0-22-2-42 2-65 0zm0 0c10-25 30-35 50-35-15 10-30 22-50 35z" fill="#b5ddb9"/></g>', '#f3faff')],
+  montanas: ['Montañas', svgBg('<g opacity=".55"><circle cx="90" cy="80" r="30" fill="#ffe0b8"/><path d="M0 300l110-150 70 80 60-110 160 180z" fill="#d9e2f2"/><path d="M0 300l80-90 60 60 80-70 180 100z" fill="#c9d6ec"/><path d="M240 120l-20 28h40z" fill="#fff"/></g>', '#f7f9fd')],
+  noche: ['Noche', svgBg('<g opacity=".8"><circle cx="320" cy="70" r="30" fill="#f6f1c8"/><circle cx="333" cy="62" r="26" fill="#25335a"/>' + [[40,40],[90,90],[150,30],[210,80],[60,150],[260,140],[120,190],[360,170],[30,230],[190,220]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.2" fill="#e8ecff"/>`).join('') + '<path d="M0 300c60-40 120-30 200-10s150 0 200-20v30z" fill="#1d2a4c"/></g>', '#2b3a64'), true],
+  flores: ['Flores', svgBg('<g opacity=".5">' + [[50,250,'#ffc9d6'],[110,270,'#ffe0a3'],[300,255,'#d9c8ff'],[360,275,'#ffc9d6'],[200,280,'#c8ecff']].map(([x, y, col]) => `<path d="M${x} 300v-${300 - y}" stroke="#bfe0c4" stroke-width="4"/>${[0, 72, 144, 216, 288].map(a => `<ellipse cx="${x}" cy="${y - 12}" rx="7" ry="13" fill="${col}" transform="rotate(${a} ${x} ${y})"/>`).join('')}<circle cx="${x}" cy="${y}" r="6" fill="#ffe7a0"/>`).join('') + '</g>', '#fff9fb')]
+};
+function calBgStyle() {
+  const k = S.settings.calBg;
+  if (!k || k === 'none') return '';
+  if (k === 'custom') { if (UI.bgUrl) return `background-image:linear-gradient(rgba(255,255,255,.72),rgba(255,255,255,.72)),url(${UI.bgUrl});background-size:cover;background-position:center`; loadCustomBg(); return ''; }
+  const b = CAL_BGS[k]; return b ? `background-image:url('${b[1]}');background-size:cover;background-position:center bottom` : '';
+}
+async function loadCustomBg() {
+  if (UI.bgLoading || UI.bgUrl) return; UI.bgLoading = true;
+  try { const d = await customSound.db(); const blob = await new Promise(r => { const q = d.transaction('s').objectStore('s').get('calbg'); q.onsuccess = () => r(q.result || null); q.onerror = () => r(null); }); if (blob) { UI.bgUrl = URL.createObjectURL(blob); if (UI.view === 'calendario') renderView(); } } catch (e) {}
+  UI.bgLoading = false;
+}
+function shrinkImage(file, max = 900) {
+  return new Promise((res, rej) => { const img = new Image(); img.onload = () => { const k = Math.min(1, max / Math.max(img.width, img.height)), cv = document.createElement('canvas'); cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); cv.toBlob(b => b ? res(b) : rej(new Error('imagen')), 'image/jpeg', 0.82); URL.revokeObjectURL(img.src); }; img.onerror = () => rej(new Error('imagen')); img.src = URL.createObjectURL(file); });
+}
+function openCalBg() {
+  const cur = S.settings.calBg || 'none';
+  const s = openSheet({title: '🎨 Fondo del calendario', body: `<div class="bggrid">
+      <button class="bgopt ${cur === 'none' ? 'on' : ''}" data-bg="none"><span class="bgprev" style="background:var(--card)"></span><span>Sin fondo</span></button>
+      ${Object.entries(CAL_BGS).map(([k, [n, url]]) => `<button class="bgopt ${cur === k ? 'on' : ''}" data-bg="${k}"><span class="bgprev" style="background-image:url('${url}')"></span><span>${n}</span></button>`).join('')}
+      <label class="bgopt ${cur === 'custom' ? 'on' : ''}" style="cursor:pointer"><span class="bgprev bgup" style="${UI.bgUrl ? `background-image:url(${UI.bgUrl})` : ''}">${UI.bgUrl ? '' : '📷'}</span><span>${UI.bgUrl ? 'Mi foto · cambiar' : 'Subir mi foto'}</span><input type="file" id="bgFile" accept="image/*" hidden></label>
+    </div><p class="xs muted" style="margin:10px 0 0">Tu foto se guarda solo en este dispositivo y se aclara un poco para que se lean los números.</p>`,
+    onMount: el => {
+      el.querySelectorAll('[data-bg]').forEach(b => b.onclick = () => { S.settings.calBg = b.dataset.bg; save('meta'); s.close(); renderView(); });
+      el.querySelector('#bgFile').onchange = async e => {
+        const f = e.target.files[0]; if (!f) return;
+        try { const blob = await shrinkImage(f); const d = await customSound.db(); await new Promise((r, j) => { const t = d.transaction('s', 'readwrite'); t.objectStore('s').put(blob, 'calbg'); t.oncomplete = r; t.onerror = () => j(t.error); });
+          if (UI.bgUrl) URL.revokeObjectURL(UI.bgUrl); UI.bgUrl = URL.createObjectURL(blob); S.settings.calBg = 'custom'; save('meta'); s.close(); renderView(); toast('Fondo listo 🎨');
+        } catch (err) { toast('No pude usar esa imagen'); }
+      };
+    }});
+}
+
+const calBgDark = () => { const b = CAL_BGS[S.settings.calBg]; return !!(b && b[2]); };
