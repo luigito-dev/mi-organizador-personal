@@ -29,10 +29,12 @@ const SOUND_ICONS = {
 
 /* Motor de sonido. Todo se programa por tiempo exacto del audio (sirve en vivo y para generar muestras). */
 const rnd = (a, b) => a + Math.random() * (b - a);
-function makeSynth(ctx) {
-  const sr = ctx.sampleRate, L = sr * 6;
+const RAW = {sr: 44100, data: null};
+function rawNoise() {
+  if (RAW.data) return RAW.data;
+  const sr = RAW.sr, L = sr * 6;
   const mk = kind => {
-    const b = ctx.createBuffer(1, L, sr), d = b.getChannelData(0); let last = 0, b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0;
+    const d = new Float32Array(L); let last = 0, b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0;
     for (let i = 0; i < L; i++) {
       const w = Math.random() * 2 - 1;
       if (kind === 'white') d[i] = w * 0.5;
@@ -41,12 +43,24 @@ function makeSynth(ctx) {
     }
     // suaviza la unión del bucle
     for (let i = 0; i < 2000; i++) { const k = i / 2000; d[L - 2000 + i] = d[L - 2000 + i] * (1 - k) + d[i] * k; }
-    return b;
+    return d;
   };
-  const buf = {white: mk('white'), pink: mk('pink'), brown: mk('brown')};
-  // reverberación (respuesta de sala generada)
-  const ir = (secs, decay) => { const n = Math.floor(sr * secs), b = ctx.createBuffer(2, n, sr); for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, decay); } return b; };
-  const S = {ctx, buf, irOut: ir(1.6, 4.5), irRoom: ir(0.9, 3)};
+  RAW.data = {white: mk('white'), pink: mk('pink'), brown: mk('brown')};
+  return RAW.data;
+}
+// El eco debe tener la misma velocidad de audio que el teléfono (44.100, 48.000…)
+const IRS = {};
+function irFor(sr) {
+  if (IRS[sr]) return IRS[sr];
+  const ir = (secs, decay) => { const n = Math.floor(sr * secs); return [0, 1].map(() => { const d = new Float32Array(n); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, decay); return d; }); };
+  return IRS[sr] = {irOut: ir(1.6, 4.5), irRoom: ir(0.9, 3)};
+}
+function makeSynth(ctx) {
+  const R = rawNoise(), sr = RAW.sr;
+  const toBuf = (chans, rate) => { const b = ctx.createBuffer(chans.length, chans[0].length, rate); chans.forEach((d, c) => b.getChannelData(c).set(d)); return b; };
+  const buf = {white: toBuf([R.white], sr), pink: toBuf([R.pink], sr), brown: toBuf([R.brown], sr)};
+  const I = irFor(ctx.sampleRate);
+  const S = {ctx, buf, irOut: toBuf(I.irOut, ctx.sampleRate), irRoom: toBuf(I.irRoom, ctx.sampleRate)};
   S.filter = (type, f, q = 1) => { const x = ctx.createBiquadFilter(); x.type = type; x.frequency.value = f; x.Q.value = q; return x; };
   S.gain = v => { const g = ctx.createGain(); g.gain.value = v; return g; };
   S.pan = (p, dest) => { if (!ctx.createStereoPanner) return dest; const n = ctx.createStereoPanner(); n.pan.value = p; n.connect(dest); return n; };
@@ -245,7 +259,7 @@ function runRecipe(ctx, id, dest, {live = true, until = 0} = {}) {
   const pump = horizon => gens.forEach(g => { while (g.next < horizon) { try { g.fn(g.next); } catch (e) {} g.next += rnd(g.min, g.max); } });
   const LEVEL = {birds: 3, forest: 2.4, tick: 1.6, coqui: 1.5, cafe: 1.3, wood: 1.2, fire: 0.6, boil: 0.6, storm: 0.55, rain: 0.7, white: 0.75, cicada: 0.85, far: 1, waves: 0.9, stream: 1.1, wind: 1};
   out.gain.setValueAtTime(0, ctx.currentTime); out.gain.linearRampToValueAtTime(LEVEL[id] || 1, ctx.currentTime + 0.8);
-  if (!live) { pump(until); return null; }
+  if (!live) { if (until) pump(until); return {pump}; }
   pump(ctx.currentTime + 0.5);
   const iv = setInterval(() => pump(ctx.currentTime + 0.5), 150);
   return {stop() {
@@ -254,38 +268,82 @@ function runRecipe(ctx, id, dest, {live = true, until = 0} = {}) {
   }};
 }
 
+const SILENT = 'data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==';
+function toWav(buf) {
+  const ch = buf.numberOfChannels, n = buf.length, sr = buf.sampleRate, bytes = 44 + n * ch * 2, ab = new ArrayBuffer(bytes), v = new DataView(ab);
+  const w = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, bytes - 8, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, ch, true);
+  v.setUint32(24, sr, true); v.setUint32(28, sr * ch * 2, true); v.setUint16(32, ch * 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * ch * 2, true);
+  const data = [...Array(ch)].map((_, c) => buf.getChannelData(c)); let o = 44;
+  for (let i = 0; i < n; i++) for (let c = 0; c < ch; c++) { const x = Math.max(-1, Math.min(1, data[c][i])); v.setInt16(o, x * 32767, true); o += 2; }
+  return new Blob([ab], {type: 'audio/wav'});
+}
 const Ambient = {
-  ctx: null, master: null, cur: null, curId: 'none', vol: 0.6, audioEl: null,
+  ctx: null, master: null, cur: null, curId: 'none', vol: 0.6, audioEl: null, el: null, mode: 'webaudio', recCache: {}, token: 0,
+  // Debe llamarse dentro de un toque del usuario
   init() {
-    if (this.ctx) { if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {}); return true; }
     try {
-      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-      this.master = this.ctx.createGain(); this.master.gain.value = this.vol;
-      const comp = this.ctx.createDynamicsCompressor(); this.master.connect(comp); comp.connect(this.ctx.destination);
+      if (!this.ctx) {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        this.master = this.ctx.createGain(); this.master.gain.value = this.vol;
+        const comp = this.ctx.createDynamicsCompressor(); this.master.connect(comp); comp.connect(this.ctx.destination);
+      }
       if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
-      return true;
-    } catch (e) { return false; }
+    } catch (e) { this.ctx = null; }
+    // también "desbloquea" un reproductor normal, por si el otro audio está bloqueado
+    try { if (!this.el) { this.el = new Audio(); this.el.setAttribute('playsinline', ''); } if (!this.unlocked) { this.unlocked = true; this.el.loop = true; this.el.src = SILENT; const p = this.el.play(); if (p) p.catch(() => {}); } } catch (e) {}
+    return !!this.ctx || !!this.el;
   },
-  // Prepara los sonidos con calma (al abrir Enfoque) para que tocar un sonido sea instantáneo
-  warm() {
-    if (this.ctx && this.ctx.__synth) return;
-    setTimeout(() => { try { if (!this.ctx) { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this.master = this.ctx.createGain(); this.master.gain.value = this.vol; const comp = this.ctx.createDynamicsCompressor(); this.master.connect(comp); comp.connect(this.ctx.destination); } if (!this.ctx.__synth) this.ctx.__synth = makeSynth(this.ctx); } catch (e) {} }, 400);
-  },
-  setVolume(v) { this.vol = v; if (this.master) this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05); if (this.audioEl) this.audioEl.volume = v; },
+  warm() { setTimeout(() => { try { rawNoise(); } catch (e) {} }, 300); },
+  setVolume(v) { this.vol = v; if (this.master) this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05); if (this.audioEl) this.audioEl.volume = v; if (this.el) this.el.volume = v; },
+  running() { return this.ctx && this.ctx.state === 'running'; },
   async play(id) {
-    this.stop(); this.curId = id;
+    this.stop(); this.curId = id; const tk = ++this.token;
     if (id === 'none') return;
+    this.init();
     if (id === 'custom') {
-      const blob = await customSound.get(); if (!blob || this.curId !== 'custom') return false;
+      const blob = await customSound.get(); if (!blob || tk !== this.token) return false;
       this.audioEl = new Audio(URL.createObjectURL(blob)); this.audioEl.loop = true; this.audioEl.volume = this.vol;
       try { await this.audioEl.play(); } catch (e) {} return true;
     }
-    if (!this.init()) return false;
-    this.cur = runRecipe(this.ctx, id, this.master); return true;
+    if (this.ctx && this.mode === 'webaudio') {
+      try { this.cur = runRecipe(this.ctx, id, this.master); } catch (e) { this.cur = null; if (typeof toast === 'function') toast('⚠️ No pude crear el sonido: ' + String(e.message || e).slice(0, 80)); return false; }
+      // si el audio no arranca en un momento, usar la pista grabada
+      await new Promise(r => setTimeout(r, 700));
+      if (tk !== this.token) return true;
+      if (this.running() && this.ctx.currentTime > 0.05) return true;
+      if (this.cur) { this.cur.stop(); this.cur = null; }
+      this.mode = 'track';
+    }
+    return this.playTrack(id, tk);
+  },
+  // Respaldo: graba 40 s del sonido y lo repite con un reproductor normal
+  async playTrack(id, tk) {
+    try {
+      let url = this.recCache[id];
+      if (!url) {
+        if (typeof toast === 'function') toast('Preparando el sonido…');
+        const sr = 32000, secs = 30, off = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, sr * secs, sr);
+        const g = off.createGain(); const comp = off.createDynamicsCompressor(); g.connect(comp); comp.connect(off.destination);
+        const r = runRecipe(off, id, g, {live: false}); r.pump(1.5);
+        // se programa por partes (cada medio segundo) para que sea rápido
+        for (let k = 0.5; k < secs; k += 0.5) off.suspend(k).then(() => { r.pump(k + 1.5); off.resume(); });
+        // suaviza el final para que la repetición no se note
+        g.gain.setValueAtTime(1, secs - 1.2); g.gain.linearRampToValueAtTime(0.0001, secs);
+        const buf = await off.startRendering();
+        url = this.recCache[id] = URL.createObjectURL(toWav(buf));
+      }
+      if (tk !== this.token) return true;
+      const el = this.el || (this.el = new Audio()); el.loop = true; el.volume = this.vol; el.src = url;
+      await el.play(); return true;
+    } catch (e) { if (typeof toast === 'function') toast('Este teléfono no deja reproducir sonidos aquí. Prueba abriendo la app en Chrome.'); return false; }
   },
   stop() {
+    this.token++;
     if (this.cur) { this.cur.stop(); this.cur = null; }
     if (this.audioEl) { this.audioEl.pause(); URL.revokeObjectURL(this.audioEl.src); this.audioEl = null; }
+    // el reproductor sigue "vivo" en silencio para poder volver a sonar sin otro toque
+    if (this.el && this.el.src && this.el.src !== SILENT) { this.el.src = SILENT; this.el.loop = true; const p = this.el.play(); if (p) p.catch(() => {}); }
   }
 };
 // Sonido importado: se guarda en el dispositivo (IndexedDB)
