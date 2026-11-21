@@ -1,5 +1,8 @@
 import sys, json, datetime
 from playwright.sync_api import sync_playwright
+def fillq(pg, txt):
+    if not pg.locator('#q').is_visible() and pg.locator('#sOpen').is_visible(): pg.click('#sOpen')
+    pg.fill('#q', txt)
 
 URL = 'file:///home/claude/org/index.html'
 results = []
@@ -69,6 +72,7 @@ def run(width, height, label, full=True):
         pg.locator('#tList .item', has_text='Comprar medicina').locator('.check').click(); pg.wait_for_timeout(200)
         ok(f'[{label}] sale de Por hacer', pg.locator('#tList >> text=Comprar medicina').count() == 0)
         go('dia'); pg.wait_for_timeout(200)
+        if pg.locator('[data-side="done"]').count(): pg.click('[data-side="done"]'); pg.wait_for_timeout(150)
         n_ag = pg.locator('#agenda >> text=Comprar medicina').count(); n_all = pg.locator('.view >> text=Comprar medicina').count()
         ok(f'[{label}] completada aparece una sola vez', n_ag == 0 and n_all == 1, (n_ag, n_all))
         go('progreso'); pg.wait_for_timeout(200)
@@ -130,7 +134,7 @@ def run(width, height, label, full=True):
         sh('rutina')
         go('calendario'); pg.wait_for_timeout(200); pg.click('[data-cv="month"]'); pg.wait_for_timeout(200)
         pg.click('#cNext'); pg.wait_for_timeout(250)
-        ok(f'[{label}] rutina en el mes siguiente', pg.locator('.pill.rt >> text=Gimnasio').count() >= 4 or (width < 380))
+        ok(f'[{label}] rutina en el mes siguiente', (pg.locator('.pill.rt >> text=Gimnasio').count() if width > 820 else pg.locator('.dots2 i.rt').count()) >= 4)
         pg.click('#cToday')
         # 6 reloj: horas giran, minutos de 5 en 5
         pg.click('#fab'); pg.wait_for_timeout(200); pg.click('[data-sw]'); pg.wait_for_timeout(200)
@@ -223,16 +227,16 @@ def run(width, height, label, full=True):
         pg.locator('.nitem', has_text='Lista para la fiesta').locator('[data-nd]').click(); pg.wait_for_timeout(150); pg.click('[data-a="yes"]'); pg.wait_for_timeout(150)
         ok(f'[{label}] nota eliminada', pg.locator('.nitem', has_text='Lista para la fiesta').count() == 0)
         # 13 buscar
-        pg.fill('#q', 'portón'); pg.wait_for_timeout(200)
+        fillq(pg, 'portón'); pg.wait_for_timeout(200)
         ok(f'[{label}] buscar en notas', pg.locator('.nitem').count() == 0 or True)
-        pg.fill('#q', 'xyz'); pg.wait_for_timeout(150)
+        fillq(pg, 'xyz'); pg.wait_for_timeout(150)
         ok(f'[{label}] buscar en notas filtra', pg.locator('.nitem').count() == 0)
         pg.click('#qx')
         go('tareas'); pg.wait_for_timeout(150); pg.click('[data-tt="todo"]')
-        pg.fill('#q', 'luz'); pg.wait_for_timeout(200)
+        fillq(pg, 'luz'); pg.wait_for_timeout(200)
         ok(f'[{label}] buscar en tareas', pg.locator('#tList .item').count() == 1)
         pg.click('#qx'); pg.wait_for_timeout(100)
-        go('dia'); pg.fill('#q', 'baile'); pg.wait_for_timeout(200)
+        go('dia'); fillq(pg, 'baile'); pg.wait_for_timeout(200)
         ok(f'[{label}] busqueda global', pg.locator('#res button', has_text='Clase de baile').count() >= 1)
         pg.click('#qx')
         # filtros

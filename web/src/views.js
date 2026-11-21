@@ -18,14 +18,14 @@ const SECTIONS = [
   ['dia', 'Mi Día', 'dia'], ['calendario', 'Calendario', 'cal'], ['areas', 'Áreas', 'areas'], ['rutina', 'Rutina semanal', 'rutina'],
   ['tareas', 'Tareas', 'tareas'], ['enfoque', 'Enfoque', 'enfoque'], ['notas', 'Mis notas', 'notas'], ['progreso', 'Progreso', 'progreso'], ['config', 'Configuración', 'config']
 ];
-const UI = {view: 'dia', q: '', calDate: todayISO(), selDate: todayISO(), sumTab: 'hoy', taskTab: 'todo', filters: {area: '', type: '', prio: '', sort: 'fecha'}, showHiddenNotes: false, taskMode: 'tareas', openList: null, openArea: null, areaType: '', motivHidden: false, motiv: '', qWhen: 'hoy', qDate: null};
+const UI = {view: 'dia', q: '', calDate: todayISO(), selDate: todayISO(), sumTab: 'hoy', taskTab: 'todo', filters: {area: '', type: '', prio: '', sort: 'fecha'}, showHiddenNotes: false, sideTab: 'citas', taskMode: 'tareas', openList: null, openArea: null, areaType: '', motivHidden: false, motiv: '', qWhen: 'hoy', qDate: null};
 const isMobile = () => window.matchMedia('(max-width:820px)').matches;
 
 /* ========== Estructura ========== */
 function shell() {
   document.body.innerHTML = `<div class="app">
     <aside class="side"><div class="brand">${LOGO}<span>Mi Organizador<br>Personal</span></div><nav class="nav" id="nav">${SECTIONS.map(([k, n, i]) => `<button data-go="${k}">${ic(i)}${n}</button>`).join('')}</nav><div class="store storeLbl"></div></aside>
-    <main class="main"><header class="top"><h1 id="vt"></h1><div class="search" id="sbox">${ic('search', 'si')}<input id="q" type="search" placeholder="Buscar…" autocomplete="off" aria-label="Buscar"><button class="sx hidden" id="qx" aria-label="Borrar">✕</button><div class="results hidden" id="res"></div></div></header>
+    <main class="main"><header class="top"><h1 id="vt"></h1><button class="iconbtn sopen" id="sOpen" aria-label="Buscar">${ic('search')}</button><div class="search" id="sbox">${ic('search', 'si')}<input id="q" type="search" placeholder="Buscar…" autocomplete="off" aria-label="Buscar"><button class="sx hidden" id="qx" aria-label="Borrar">✕</button><div class="results hidden" id="res"></div></div></header>
     <section class="view" id="view"></section></main>
     <nav class="bottom" id="bnav">${[['dia', 'Mi Día', 'dia'], ['calendario', 'Calendario', 'cal'], ['tareas', 'Tareas', 'tareas'], ['notas', 'Notas', 'notas'], ['mas', 'Más', 'mas']].map(([k, n, i]) => `<button data-go="${k}">${ic(i)}${n}</button>`).join('')}</nav>
     <button class="fab" id="fab" aria-label="Añadir">+</button><div id="mini"></div><div class="toasts" id="toasts"></div></div>`;
@@ -43,6 +43,7 @@ function shell() {
     else openTaskForm(null, {areaId: UI.view === 'areas' ? UI.openArea : null});
   };
   const q = $('#q');
+  $('#sOpen').onclick = () => { const t = $('.top'); t.classList.toggle('srch'); if (t.classList.contains('srch')) q.focus(); else { q.value = ''; UI.q = ''; $('#res').classList.add('hidden'); renderView(); } };
   q.addEventListener('input', () => { UI.q = q.value; $('#qx').classList.toggle('hidden', !UI.q); if (UI.view === 'tareas' || UI.view === 'notas') renderView(); else globalResults(); });
   q.addEventListener('focus', () => { if (UI.q && UI.view !== 'tareas' && UI.view !== 'notas') globalResults(); });
   $('#qx').onclick = () => { q.value = ''; UI.q = ''; $('#qx').classList.add('hidden'); $('#res').classList.add('hidden'); renderView(); };
@@ -61,7 +62,7 @@ function shell() {
 function go(v) {
   if (v === 'dia' && UI.view !== 'dia') { UI.motiv = nextMotiv(); UI.motivHidden = false; clearTimeout(motivTimer); motivTimer = null; }
   UI.view = v; if (v !== 'areas') UI.openArea = null; if (v !== 'tareas') UI.openList = null;
-  UI.q = ''; $('#q').value = ''; $('#qx').classList.add('hidden'); $('#res').classList.add('hidden');
+  UI.q = ''; $('#q').value = ''; $('#qx').classList.add('hidden'); $('#res').classList.add('hidden'); $('.top').classList.remove('srch');
   sheets.slice().forEach(s => s.close());
   render(); window.scrollTo(0, 0);
 }
@@ -74,7 +75,7 @@ function render() {
   $('#vt').textContent = sec ? sec[1] : '';
   $$('#nav [data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === UI.view));
   $$('#bnav [data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === UI.view || (b.dataset.go === 'mas' && !['dia', 'calendario', 'tareas', 'notas'].includes(UI.view))));
-  $('#sbox').classList.toggle('hidden', UI.view === 'enfoque');
+  $('#sbox').classList.toggle('hidden', UI.view === 'enfoque'); $('#sOpen').classList.toggle('hidden', UI.view === 'enfoque');
   $('#q').placeholder = UI.view === 'tareas' ? (UI.taskMode === 'listas' ? 'Buscar en listas…' : 'Buscar en tareas…') : UI.view === 'notas' ? 'Buscar en notas…' : 'Buscar en toda la app…';
   $('#fab').classList.toggle('hidden', ['enfoque', 'progreso', 'config'].includes(UI.view));
   renderView(); renderMini(); setStoreLabel();
@@ -170,21 +171,24 @@ function vDia(v) {
   v.innerHTML = `
     <div class="hero"><div class="hero-main"><div class="hero-top"><div><div class="date">${cap(DIAS[dt.getDay()])}, ${dt.getDate()} de ${MESES[dt.getMonth()]} de ${dt.getFullYear()}</div><div class="hi">${greeting()} 👋</div></div>
       <div class="ring" title="Avance de la semana">${ringSVG(wd, wt)}<div class="lbl">${wd}/${wt}<small>semana</small></div></div></div>
-      ${UI.motivHidden ? '' : `<div class="hero-msg" id="motiv"><button class="x" id="mX" aria-label="Cerrar mensaje">✕</button><p>✨ ${esc(UI.motiv)}</p><div class="row wrap"><button class="btn sm hb1" id="m1">Organizar mi día</button><button class="btn sm hb2" id="m2">Planificar mi semana</button><button class="btn sm hb2" id="m3">Modo enfoque</button></div></div>`}</div></div>
+      ${UI.motivHidden ? '' : `<div class="hero-msg" id="motiv"><button class="x" id="mX" aria-label="Cerrar mensaje">✕</button><p>✨ ${esc(UI.motiv)}</p><div class="hscroll"><button class="btn sm hb1" id="m1">Organizar mi día</button><button class="btn sm hb2" id="m2">Planificar mi semana</button><button class="btn sm hb2" id="m3">Modo enfoque</button></div></div>`}</div></div>
     <div class="card quick"><h3>¿Qué tienes pendiente?</h3><div class="in"><input id="qIn" placeholder="Ej. cita con el dentista a las 3 pm" maxlength="140"><button class="btn" id="qAdd">Añadir</button></div>
       <div class="row wrap" style="margin-top:8px"><button class="chip" data-qw="hoy">Hoy</button><button class="chip" data-qw="man">Mañana</button><button class="chip" data-qw="otra">Otra fecha</button><input type="date" id="qDate" class="inp" style="width:auto;padding:5px 10px;display:none"></div><div class="hint" id="qHint"></div></div>
     ${nextIt ? `<div class="next"><span style="font-size:22px">${nextIt.k === 'ev' ? evType(nextIt.x.evType).icon : nextIt.k === 'rt' ? '🔁' : typeById(nextIt.x.typeId).icon}</span><div class="sp"><div class="k">Lo próximo</div><div style="font-weight:600">${esc(nextIt.x.title || nextIt.x.name)}</div></div><b>${fmtTime(nextIt.k === 'tk' ? nextIt.x.time : nextIt.x.start)}</b></div>`
       : `<div class="next"><span style="font-size:22px">🌿</span><div class="sp"><div class="k">Lo próximo</div><div>No tienes nada más con hora hoy.</div></div></div>`}
     <div class="grid g2" style="margin-top:14px">
       <div class="card"><h3>Tu resumen</h3><div class="chips">${[['hoy', 'Hoy'], ['man', 'Mañana'], ['sem', 'Semana'], ['prox', 'Próxima']].map(([k, n]) => `<button class="chip ${UI.sumTab === k ? 'on' : ''}" data-st="${k}">${n}</button>`).join('')}</div>
-        <div class="stats"><div class="stat"><b>${pend}</b><span>Pendientes</span></div><div class="stat ok"><b>${comp}</b><span>Completadas</span></div><div class="stat ${late ? 'warn' : ''}"><b>${late}</b><span>Atrasadas</span></div><div class="stat"><b>${upc}</b><span>Próximos compromisos</span></div></div>
+        <div class="stats"><div class="stat"><b>${pend}</b><span>Pendientes</span></div><div class="stat ok"><b>${comp}</b><span>Completadas</span></div><div class="stat ${late ? 'warn' : ''}"><b>${late}</b><span>Atrasadas</span></div><div class="stat"><b>${upc}</b><span>${isMobile() ? 'Compromisos' : 'Próximos compromisos'}</span></div></div>
         ${late ? `<button class="btn sec sm" id="seeLate" style="margin-bottom:6px">⚠️ Ver ${late} atrasada${late === 1 ? '' : 's'}</button>` : ''}
         <div id="agenda"></div></div>
-      <div class="grid" style="align-content:start">
-        <div class="card"><h3>📅 Próximas citas</h3>${citas.length ? citas.map(e => itemHTML('ev', e, {date: true})).join('') : '<div class="muted small">Nada agendado por ahora.</div>'}</div>
-        <div class="card"><h3>🔔 Recordatorios personales</h3>${rems.length ? rems.map(([k, x]) => itemHTML(k, x, {date: true})).join('') : '<div class="muted small">Enciende la campanita 🔔 en una tarea o evento para verla aquí.</div>'}</div>
-        <div class="card"><h3>✅ Completadas</h3>${doneList.length ? doneList.map(x => itemHTML('tk', x)).join('') : '<div class="muted small">Lo que completes aparecerá aquí.</div>'}</div>
-      </div></div>`;
+      ${(() => {
+        const panes = [['citas', '📅 Próximas citas', citas.length ? citas.map(e => itemHTML('ev', e, {date: true})).join('') : '<div class="muted small">Nada agendado por ahora.</div>'],
+          ['rem', '🔔 Recordatorios personales', rems.length ? rems.map(([k, x]) => itemHTML(k, x, {date: true})).join('') : '<div class="muted small">Enciende la campanita 🔔 en una tarea o evento para verla aquí.</div>'],
+          ['done', '✅ Completadas', doneList.length ? doneList.map(x => itemHTML('tk', x)).join('') : '<div class="muted small">Lo que completes aparecerá aquí.</div>']];
+        if (!isMobile()) return `<div class="grid" style="align-content:start">${panes.map(p => `<div class="card"><h3>${p[1]}</h3>${p[2]}</div>`).join('')}</div>`;
+        const cur = panes.find(p => p[0] === UI.sideTab) || panes[0];
+        return `<div class="card"><div class="tabs3">${panes.map(p => `<button data-side="${p[0]}" class="${p === cur ? 'on' : ''}">${{citas: 'Próximas citas', rem: 'Recordatorios', done: 'Completadas'}[p[0]]}</button>`).join('')}</div>${cur[2]}</div>`;
+      })()}</div>`;
   const ag = $('#agenda', v);
   ag.innerHTML = days.map(d => {
     const its = sortedDay(d); const ho = holidaysOn(d);
@@ -201,6 +205,7 @@ function vDia(v) {
     $('#m3', v).onclick = () => go('enfoque');
   }
   v.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { UI.sumTab = b.dataset.st; renderView(); });
+  v.querySelectorAll('[data-side]').forEach(b => b.onclick = () => { UI.sideTab = b.dataset.side; const y = window.scrollY; renderView(); window.scrollTo(0, y); });
   const sl = $('#seeLate', v); if (sl) sl.onclick = () => { UI.taskTab = 'late'; go('tareas'); };
   // Entrada rápida
   const qIn = $('#qIn', v), hint = $('#qHint', v), qd = $('#qDate', v);
@@ -277,7 +282,7 @@ function calMonth(body, d) {
   body.innerHTML = `<div class="month">${wdHeaders().map(w => `<div class="wd">${w}</div>`).join('')}${cells.map(c => {
     const its = sortedDay(c, {withDone: true}); const ho = holidaysOn(c);
     const pills = [...ho.map(h => `<span class="pill ho" title="${esc(h.name)}">🎉 ${esc(h.name)}</span>`), ...its.map(pillHTML)];
-    return `<div class="mcell ${parseISO(c).getMonth() !== m ? 'out' : ''} ${c === todayISO() ? 'today' : ''} ${c === UI.selDate ? 'sel' : ''} ${ho.length ? 'holi' : ''}" data-day="${c}"><div class="n">${parseISO(c).getDate()}</div>${pills.slice(0, max).join('')}${pills.length > max ? `<div class="more">+${pills.length - max} más</div>` : ''}<div class="dots2">${its.slice(0, 6).map(i => `<i style="background:${colorOf(i.k, i.x)}"></i>`).join('')}</div></div>`;
+    return `<div class="mcell ${parseISO(c).getMonth() !== m ? 'out' : ''} ${c === todayISO() ? 'today' : ''} ${c === UI.selDate ? 'sel' : ''} ${ho.length ? 'holi' : ''}" data-day="${c}"><div class="n">${parseISO(c).getDate()}</div>${isMobile() ? `<div class="dots2">${its.slice(0, 6).map(i => `<i class="${i.k}" style="background:${colorOf(i.k, i.x)};color:${colorOf(i.k, i.x)}"></i>`).join('')}</div>${its.length > 6 ? '<div class="more">+' + (its.length - 6) + '</div>' : ''}` : pills.slice(0, max).join('') + (pills.length > max ? `<div class="more">+${pills.length - max} más</div>` : '')}</div>`;
   }).join('')}</div>`;
   body.querySelectorAll('[data-day]').forEach(c => c.onclick = e => {
     if (e.target.closest('[data-ev],[data-tk],[data-rt]') && !isMobile()) return;
@@ -492,19 +497,38 @@ function openFilters() {
 }
 
 /* ========== ENFOQUE ========== */
-const F = {phase: 'idle', endAt: 0, remain: 0, total: 0, paused: false, blocks: 0, tick: null, startedAt: 0};
+const F = {phase: 'idle', endAt: 0, remain: 0, total: 0, paused: false, blocks: 0, tick: null, startedAt: 0, swBase: 0, swAt: 0};
 const presetNow = () => FOCUS_PRESETS[S.settings.focusPreset] || FOCUS_PRESETS[1];
-function focusLogAdd(min, block) { const d = todayISO(); const l = S.focusLog[d] || {blocks: 0, minutes: 0}; l.minutes += Math.round(min); if (block) l.blocks++; S.focusLog[d] = l; save('meta'); }
-function focusStart(phase) {
-  const [w, b] = presetNow();
-  const mins = phase === 'work' ? w : phase === 'long' ? b * 3 : b;
-  F.phase = phase; F.total = mins * 60; F.remain = F.total; F.endAt = Date.now() + F.total * 1000; F.paused = false; F.startedAt = Date.now();
-  focusLoop();
+const ACTS = [['🎯', 'Enfoque'], ['🧘', 'Meditar'], ['💼', 'Trabajo'], ['📖', 'Leer'], ['🏠', 'Casa'], ['🏃', 'Ejercicio'], ['✍️', 'Escribir'], ['🙏', 'Orar']];
+function fcfg() {
+  const d = {mode: 'pomo', sound: 'none', vol: 0.6, style: 'ring', act: '🎯 Enfoque', cdMin: 30, acts: [], customName: ''};
+  const f = S.settings.focus || (S.settings.focus = {}); for (const k in d) if (f[k] === undefined) f[k] = d[k]; return f;
 }
+const isRunning = () => ['work', 'short', 'long', 'cd', 'sw'].includes(F.phase);
+function focusLogAdd(min, block) {
+  const d = todayISO(); const l = S.focusLog[d] || {blocks: 0, minutes: 0}; const m = Math.round(min);
+  l.minutes += m; if (block) l.blocks++;
+  if (m > 0) { l.acts = l.acts || {}; const a = fcfg().act; l.acts[a] = (l.acts[a] || 0) + m; }
+  S.focusLog[d] = l; save('meta');
+}
+function soundFor() { const c = fcfg(); const want = (F.phase === 'work' || F.phase === 'cd' || F.phase === 'sw') && !F.paused ? c.sound : 'none'; if (Ambient.curId !== want) { Ambient.setVolume(c.vol); Ambient.play(want); } }
+let wakeLock = null;
+async function keepAwake(on) { try { if (on && !wakeLock && navigator.wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => wakeLock = null); } else if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; } } catch (e) {} }
+function focusStart(phase) {
+  const [w, b] = presetNow(), c = fcfg();
+  const mins = phase === 'work' ? w : phase === 'long' ? b * 3 : phase === 'cd' ? c.cdMin : b;
+  F.phase = phase; F.paused = false; F.startedAt = Date.now();
+  if (phase === 'sw') { F.swBase = 0; F.swAt = Date.now(); F.total = 0; F.remain = 0; }
+  else { F.total = mins * 60; F.remain = F.total; F.endAt = Date.now() + F.total * 1000; }
+  try { Ambient.init(); } catch (e) {}
+  keepAwake(true); focusLoop();
+}
+const swElapsed = () => Math.floor((F.swBase + (F.paused ? 0 : Date.now() - F.swAt)) / 1000);
 function focusLoop() {
   clearInterval(F.tick);
   F.tick = setInterval(() => {
-    if (F.paused || F.phase === 'idle' || F.phase === 'wait') return;
+    if (F.paused || !isRunning()) return;
+    if (F.phase === 'sw') { F.remain = swElapsed(); paintFocus(); return; }
     F.remain = Math.max(0, Math.round((F.endAt - Date.now()) / 1000));
     if (F.remain <= 0) focusPhaseEnd(); else paintFocus();
   }, 250);
@@ -515,63 +539,176 @@ function focusPhaseEnd() {
   if (F.phase === 'work') {
     F.blocks++; focusLogAdd(F.total / 60, true); toast('¡Bloque completo! Toma un descanso ☕');
     focusStart(F.blocks % 4 === 0 ? 'long' : 'short');
-  } else { F.phase = 'wait'; clearInterval(F.tick); toast('Descanso terminado. ¿Listo para el siguiente?'); paintFocus(); }
+  } else if (F.phase === 'cd') {
+    focusLogAdd(F.total / 60, true); clearInterval(F.tick); F.phase = 'idle'; keepAwake(false); toast('⏰ ¡Tiempo cumplido! Buen trabajo.'); paintFocus();
+  } else { F.phase = 'wait'; clearInterval(F.tick); keepAwake(false); toast('Descanso terminado. ¿Listo para el siguiente?'); paintFocus(); }
 }
 async function focusStop(askSave = true) {
-  const wasWork = F.phase === 'work'; const elapsed = (F.total - F.remain) / 60;
-  const p = F.paused; F.paused = true;
-  if (wasWork && askSave && elapsed >= 1) {
-    const r = await ask(`Terminaste antes de tiempo. ¿Guardar ${Math.floor(elapsed)} minuto${Math.floor(elapsed) === 1 ? '' : 's'} de enfoque?`, {yes: 'Guardar minutos', no: 'No guardar', danger: false});
-    if (r === true) focusLogAdd(Math.floor(elapsed), false);
+  const ph = F.phase;
+  if (ph === 'sw') { const m = Math.floor(swElapsed() / 60); F.paused = true; if (m >= 1) focusLogAdd(m, false); if (m >= 1) toast(`Guardé ${m} minuto${m === 1 ? '' : 's'} de ${fcfg().act.replace(/^\S+\s/, '')}`); }
+  else if ((ph === 'work' || ph === 'cd') && askSave) {
+    const elapsed = (F.total - F.remain) / 60; F.paused = true; paintFocus();
+    if (elapsed >= 1) {
+      const r = await ask(`Terminaste antes de tiempo. ¿Guardar ${Math.floor(elapsed)} minuto${Math.floor(elapsed) === 1 ? '' : 's'} de enfoque?`, {yes: 'Guardar minutos', no: 'No guardar', danger: false});
+      if (r === true) focusLogAdd(Math.floor(elapsed), false);
+    }
   }
-  clearInterval(F.tick); F.phase = 'idle'; F.paused = false; F.remain = 0; F.blocks = 0; paintFocus(); renderMini();
-  void p;
+  clearInterval(F.tick); F.phase = 'idle'; F.paused = false; F.remain = 0; F.blocks = 0; keepAwake(false); paintFocus(); renderMini();
 }
 function focusTogglePause() {
-  if (F.phase === 'idle' || F.phase === 'wait') return;
-  if (F.paused) { F.endAt = Date.now() + F.remain * 1000; F.paused = false; } else { F.remain = Math.max(0, Math.round((F.endAt - Date.now()) / 1000)); F.paused = true; }
+  if (!isRunning()) return;
+  if (F.phase === 'sw') { if (F.paused) { F.swAt = Date.now(); F.paused = false; } else { F.swBase += Date.now() - F.swAt; F.paused = true; } }
+  else if (F.paused) { F.endAt = Date.now() + F.remain * 1000; F.paused = false; } else { F.remain = Math.max(0, Math.round((F.endAt - Date.now()) / 1000)); F.paused = true; }
   paintFocus();
 }
 function focusSkip() {
   if (F.phase === 'work') { F.blocks++; focusLogAdd((F.total - F.remain) / 60, false); focusStart(F.blocks % 4 === 0 ? 'long' : 'short'); }
   else if (F.phase === 'short' || F.phase === 'long') { F.phase = 'wait'; clearInterval(F.tick); paintFocus(); }
 }
-const mmss = s => pad(Math.floor(s / 60)) + ':' + pad(s % 60);
+const mmss = s => s >= 3600 ? Math.floor(s / 3600) + ':' + pad(Math.floor(s % 3600 / 60)) + ':' + pad(s % 60) : pad(Math.floor(s / 60)) + ':' + pad(s % 60);
 function paintFocus() {
+  soundFor();
   if (UI.view === 'enfoque') { const b = $('#fBody'); if (b) fillFocus(b); }
-  renderMini();
+  paintFullscreen(); renderMini();
 }
 function renderMini() {
   const m = $('#mini'); if (!m) return;
-  if (UI.view === 'enfoque' || F.phase === 'idle') { m.innerHTML = ''; return; }
-  const lbl = F.phase === 'wait' ? 'Descanso listo' : (F.phase === 'work' ? '🎯 ' : '☕ ') + mmss(F.remain);
+  if (UI.view === 'enfoque' || F.phase === 'idle' || $('#fsOv')) { m.innerHTML = ''; return; }
+  const lbl = F.phase === 'wait' ? 'Descanso listo' : (F.phase === 'short' || F.phase === 'long' ? '☕ ' : '🎯 ') + mmss(F.remain);
   m.innerHTML = `<div class="minitimer" role="timer"><span id="miniGo" style="cursor:pointer">${lbl}</span>${F.phase === 'wait' ? '' : `<button id="miniP" aria-label="Pausar">${F.paused ? '▶' : '❚❚'}</button>`}<button id="miniS" aria-label="Detener">■</button></div>`;
   $('#miniGo').onclick = () => go('enfoque');
   const mp = $('#miniP'); if (mp) mp.onclick = focusTogglePause;
   $('#miniS').onclick = () => focusStop(true);
 }
 function vEnfoque(v) {
-  v.innerHTML = `<div class="grid g2"><div class="card"><div id="fBody" class="focus"></div></div><div class="grid" style="align-content:start"><div class="card" id="fToday"></div><div class="card"><h3>¿Cómo funciona?</h3><p class="small muted" style="margin:0">Trabaja concentrado un bloque, descansa unos minutos y repite. Cada 4 bloques tienes un descanso largo. Enfoque es un temporizador independiente: no cambia tus tareas ni tu calendario.</p></div></div></div>`;
+  v.innerHTML = `<div class="focus-page"><div class="card focus-card"><div id="fBody" class="focus"></div></div><div class="card" id="fToday"></div></div>`;
   fillFocus($('#fBody', v));
 }
-function fillFocus(b) {
-  const [w, br] = presetNow();
-  const color = F.phase === 'work' ? 'var(--orange)' : F.phase === 'idle' ? 'var(--orange)' : 'var(--teal)';
-  const total = F.phase === 'idle' ? w * 60 : F.total || 1, rem = F.phase === 'idle' ? w * 60 : F.phase === 'wait' ? 0 : F.remain;
-  const r = 118, c = 2 * Math.PI * r;
-  const lbl = {idle: 'Listo para empezar', work: F.paused ? 'En pausa' : 'Enfocado', short: F.paused ? 'En pausa' : 'Descanso corto', long: F.paused ? 'En pausa' : 'Descanso largo', wait: 'Descanso terminado'}[F.phase];
-  b.innerHTML = `${F.phase === 'idle' ? `<div class="lab" style="text-align:center">Elige tu tiempo</div><div class="chips" style="justify-content:center">${FOCUS_PRESETS.map(([a, d], i) => `<button class="chip ${S.settings.focusPreset === i ? 'on' : ''}" data-fp="${i}">${a} min <span class="cnt">☕ ${d}</span></button>`).join('')}</div>` : `<div class="small muted">Bloque ${F.phase === 'work' ? F.blocks + 1 : F.blocks} · ${w} min de enfoque, ${br} de descanso</div>`}
-    <div class="fring"><svg width="100%" height="100%" viewBox="0 0 260 260"><circle cx="130" cy="130" r="${r}" stroke="var(--soft)" stroke-width="14" fill="none"/><circle cx="130" cy="130" r="${r}" stroke="${color}" stroke-width="14" fill="none" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - rem / total)}"/></svg><div class="c"><b>${mmss(rem)}</b><span>${lbl}</span></div></div>
-    <div class="row wrap" style="justify-content:center">${F.phase === 'idle' ? `<button class="btn" id="fGo" style="padding:12px 34px;background:var(--orange)">▶ Empezar</button>` : F.phase === 'wait' ? `<button class="btn" id="fNext" style="background:var(--orange)">▶ Empezar siguiente</button><button class="btn sec" id="fEnd">Terminar</button>` : `<button class="btn" id="fP">${F.paused ? '▶ Seguir' : '❚❚ Pausar'}</button><button class="btn sec" id="fSk">⏭ Saltar</button><button class="btn sec" id="fEnd">■ Terminar</button>`}</div>`;
-  b.querySelectorAll('[data-fp]').forEach(x => x.onclick = () => { S.settings.focusPreset = +x.dataset.fp; save('meta'); fillFocus(b); });
-  const g = $('#fGo', b); if (g) g.onclick = () => { try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume && audioCtx.resume(); } catch (e) {} F.blocks = 0; focusStart('work'); };
-  const n = $('#fNext', b); if (n) n.onclick = () => focusStart('work');
-  const p = $('#fP', b); if (p) p.onclick = focusTogglePause;
-  const sk = $('#fSk', b); if (sk) sk.onclick = focusSkip;
-  const e = $('#fEnd', b); if (e) e.onclick = () => focusStop(true);
-  const ft = $('#fToday'); if (ft) { const l = S.focusLog[todayISO()] || {blocks: 0, minutes: 0}; ft.innerHTML = `<h3>🎯 Hoy</h3><div class="stats" style="grid-template-columns:1fr 1fr;margin:0"><div class="stat"><b>${l.blocks}</b><span>Bloques completos</span></div><div class="stat"><b>${l.minutes}</b><span>Minutos de enfoque</span></div></div>`; }
+function clockState() {
+  const c = fcfg(), [w, br] = presetNow();
+  const idleSecs = c.mode === 'pomo' ? w * 60 : c.mode === 'cd' ? c.cdMin * 60 : 0;
+  const total = F.phase === 'idle' ? (idleSecs || 1) : F.phase === 'sw' ? 3600 : (F.total || 1);
+  const rem = F.phase === 'idle' ? idleSecs : F.phase === 'wait' ? 0 : F.remain;
+  const brk = F.phase === 'short' || F.phase === 'long';
+  const lbl = F.paused ? 'En pausa' : {idle: 'Listo para empezar', work: 'Enfocado', short: 'Descanso corto', long: 'Descanso largo', wait: 'Descanso terminado', cd: 'Cuenta regresiva', sw: 'Cronómetro'}[F.phase];
+  const frac = F.phase === 'sw' ? (rem % 3600) / 3600 : rem / total;
+  return {rem, frac, lbl, color: brk || F.phase === 'wait' ? 'var(--teal)' : c.mode === 'sw' ? 'var(--purple)' : c.mode === 'cd' ? 'var(--blue)' : 'var(--orange)', w, br};
 }
-
+function clockHTML(big) {
+  const c = fcfg(), st = clockState();
+  if (c.style === 'flip') {
+    const t = mmss(st.rem).split(':');
+    return `<div class="flip ${big ? 'big' : ''}">${t.map((g, i) => `${i ? '<span class="fcol">:</span>' : ''}${g.split('').map(d => `<span class="fcard">${d}</span>`).join('')}`).join('')}</div><div class="flip-lbl">${st.lbl}</div>`;
+  }
+  const r = 118, cc = 2 * Math.PI * r;
+  return `<div class="fring ${big ? 'big' : ''}"><svg width="100%" height="100%" viewBox="0 0 260 260"><circle cx="130" cy="130" r="${r}" stroke="var(--soft)" stroke-width="12" fill="none"/><circle cx="130" cy="130" r="${r}" stroke="${st.color}" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="${cc}" stroke-dashoffset="${cc * (1 - st.frac)}" style="transition:stroke-dashoffset .3s linear"/></svg><div class="c"><b>${mmss(st.rem)}</b><span>${st.lbl}</span></div></div>`;
+}
+function controlsHTML(prefix = 'f') {
+  const c = fcfg();
+  if (F.phase === 'idle') return `<button class="btn fgo" id="${prefix}Go">▶ Empezar</button>`;
+  if (F.phase === 'wait') return `<button class="btn fgo" id="${prefix}Next">▶ Empezar siguiente</button><button class="btn sec" id="${prefix}End">Terminar</button>`;
+  return `<button class="btn" id="${prefix}P">${F.paused ? '▶ Seguir' : '❚❚ Pausar'}</button>${c.mode === 'pomo' ? `<button class="btn sec" id="${prefix}Sk">⏭ Saltar</button>` : ''}<button class="btn sec" id="${prefix}End">■ ${c.mode === 'sw' ? 'Detener' : 'Terminar'}</button>`;
+}
+function wireControls(root, prefix = 'f') {
+  const c = fcfg();
+  const g = $('#' + prefix + 'Go', root); if (g) g.onclick = () => { try { Ambient.init(); } catch (e) {} F.blocks = 0; focusStart(c.mode === 'pomo' ? 'work' : c.mode); };
+  const n = $('#' + prefix + 'Next', root); if (n) n.onclick = () => focusStart('work');
+  const p = $('#' + prefix + 'P', root); if (p) p.onclick = focusTogglePause;
+  const sk = $('#' + prefix + 'Sk', root); if (sk) sk.onclick = focusSkip;
+  const e = $('#' + prefix + 'End', root); if (e) e.onclick = () => focusStop(true);
+}
+function fillFocus(b) {
+  const c = fcfg(), st = clockState(), idle = F.phase === 'idle';
+  const snd = SOUNDS.find(x => x[0] === c.sound) || SOUNDS[0];
+  let setup = '';
+  if (idle && c.mode === 'pomo') setup = `<div class="hscroll">${FOCUS_PRESETS.map(([a, d], i) => `<button class="chip ${S.settings.focusPreset === i ? 'on' : ''}" data-fp="${i}">${a} min <span class="cnt">☕ ${d}</span></button>`).join('')}</div>`;
+  else if (idle && c.mode === 'cd') setup = `<div class="hscroll">${[5, 10, 15, 20, 30, 45, 60, 90].map(m => `<button class="chip ${c.cdMin === m ? 'on' : ''}" data-cd="${m}">${m} min</button>`).join('')}<button class="chip ${[5, 10, 15, 20, 30, 45, 60, 90].includes(c.cdMin) ? '' : 'on'}" id="cdOther">${[5, 10, 15, 20, 30, 45, 60, 90].includes(c.cdMin) ? 'Otro' : c.cdMin + ' min'}</button></div>`;
+  else if (idle && c.mode === 'sw') setup = `<div class="small muted">Cuenta hacia arriba hasta que lo detengas.</div>`;
+  else if (c.mode === 'pomo' && F.phase !== 'wait') setup = `<div class="small muted">Bloque ${F.phase === 'work' ? F.blocks + 1 : F.blocks} · ${st.w} min de enfoque, ${st.br} de descanso</div>`;
+  b.innerHTML = `<div class="seg fmodes ${idle ? '' : 'locked'}">${[['pomo', 'Pomodoro'], ['cd', 'Cuenta regresiva'], ['sw', 'Cronómetro']].map(([k, n]) => `<button data-fm="${k}" class="${c.mode === k ? 'on' : ''}" ${idle ? '' : 'disabled'}>${n}</button>`).join('')}</div>
+    <button class="actchip" id="fAct">${esc(c.act)} <span class="muted">▾</span></button>
+    ${clockHTML(false)}
+    <div class="fsetup">${setup}</div>
+    <div class="fctl">${controlsHTML('f')}</div>
+    <div class="ftools">
+      <button id="fSnd" class="${c.sound !== 'none' ? 'on' : ''}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${SOUND_ICONS[snd[0]]}</svg><span>${snd[0] === 'custom' && c.customName ? esc(c.customName.slice(0, 14)) : snd[1]}</span></button>
+      <button id="fSty"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${c.style === 'flip' ? '<rect x="3" y="5" width="7" height="14" rx="2"/><rect x="14" y="5" width="7" height="14" rx="2"/><path d="M3 12h7M14 12h7"/>' : '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 8 8"/>'}</svg><span>${c.style === 'flip' ? 'Tarjetas' : 'Anillo'}</span></button>
+      <button id="fFull"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span>Pantalla completa</span></button>
+    </div>`;
+  b.querySelectorAll('[data-fm]').forEach(x => x.onclick = () => { c.mode = x.dataset.fm; save('meta'); fillFocus(b); });
+  b.querySelectorAll('[data-fp]').forEach(x => x.onclick = () => { S.settings.focusPreset = +x.dataset.fp; save('meta'); fillFocus(b); });
+  b.querySelectorAll('[data-cd]').forEach(x => x.onclick = () => { c.cdMin = +x.dataset.cd; save('meta'); fillFocus(b); });
+  const co = $('#cdOther', b); if (co) co.onclick = () => openCdOther(b);
+  $('#fAct', b).onclick = openActivities;
+  $('#fSnd', b).onclick = openSounds;
+  $('#fSty', b).onclick = () => { c.style = c.style === 'flip' ? 'ring' : 'flip'; save('meta'); fillFocus(b); };
+  $('#fFull', b).onclick = openFullscreen;
+  wireControls(b, 'f');
+  const ft = $('#fToday');
+  if (ft) {
+    const l = S.focusLog[todayISO()] || {blocks: 0, minutes: 0}; const acts = Object.entries(l.acts || {}).sort((x, y) => y[1] - x[1]);
+    ft.innerHTML = `<h3>🎯 Hoy</h3><div class="stats" style="grid-template-columns:1fr 1fr;margin:0"><div class="stat"><b>${l.blocks}</b><span>Bloques completos</span></div><div class="stat"><b>${l.minutes}</b><span>Minutos de enfoque</span></div></div>${acts.length ? `<div class="chips" style="margin-top:10px">${acts.map(([a, m]) => `<span class="tag">${esc(a)} · ${m} min</span>`).join('')}</div>` : ''}<p class="xs muted" style="margin:10px 0 0">Enfoque es un temporizador aparte: no cambia tus tareas ni tu calendario. En Pomodoro, cada 4 bloques tienes un descanso largo.</p>`;
+  }
+}
+function openCdOther(b) {
+  const c = fcfg();
+  const s = openSheet({title: 'Cuenta regresiva', cls: 'small', body: `<div class="fld"><label>Minutos</label><input class="inp" type="number" id="cdN" min="1" max="600" value="${c.cdMin}" inputmode="numeric"></div>`,
+    foot: `<button class="btn sec" data-close>Cancelar</button><button class="btn" id="cdOk">Listo</button>`,
+    onMount: el => { const i = el.querySelector('#cdN'); setTimeout(() => i.select(), 50); el.querySelector('#cdOk').onclick = () => { const v = Math.round(+i.value); if (!v || v < 1 || v > 600) { toast('Escribe entre 1 y 600 minutos'); return; } c.cdMin = v; save('meta'); s.close(); fillFocus(b); }; }});
+}
+function openActivities() {
+  const c = fcfg();
+  const s = openSheet({title: '¿En qué te vas a enfocar?', cls: 'small', body: '<div id="acL" class="opts"></div><details class="fold"><summary>Nueva actividad</summary><div class="goal"><input id="acN" placeholder="Ej. Pintar" maxlength="24"><button class="btn" id="acAdd">Añadir</button></div><div class="emojis" id="acE" style="margin-top:8px"></div></details>',
+    onMount: el => {
+      let em = '⭐';
+      const paint = () => {
+        const all = [...ACTS.map(([e, n]) => e + ' ' + n), ...c.acts];
+        el.querySelector('#acL').innerHTML = all.map(a => `<button class="opt ${a === c.act ? 'on' : ''}" data-ac="${esc(a)}">${esc(a)}</button>`).join('');
+        el.querySelectorAll('[data-ac]').forEach(x => x.onclick = () => { c.act = x.dataset.ac; save('meta'); s.close(); renderView(); paintFullscreen(); });
+        el.querySelector('#acE').innerHTML = EMOJIS.map(e => `<button type="button" class="${e === em ? 'on' : ''}" data-e="${e}">${e}</button>`).join('');
+        el.querySelectorAll('[data-e]').forEach(x => x.onclick = () => { em = x.dataset.e; paint(); });
+      };
+      paint();
+      el.querySelector('#acAdd').onclick = () => { const n = el.querySelector('#acN').value.trim(); if (!n) return; const a = em + ' ' + n; if (!c.acts.includes(a)) c.acts.push(a); c.act = a; save('meta'); s.close(); renderView(); };
+    }});
+}
+function openSounds() {
+  const c = fcfg(); const running = isRunning() && !F.paused && F.phase !== 'short' && F.phase !== 'long';
+  const s = openSheet({title: 'Sonido de ambiente', body: `<div class="sgrid" id="sg"></div>
+      <div class="fld row"><span>🔈</span><input type="range" id="sVol" min="0" max="1" step="0.05" value="${c.vol}" style="flex:1;accent-color:var(--blue)" aria-label="Volumen"><span>🔊</span></div>
+      <label class="btn sec full" style="cursor:pointer;margin-top:4px">⬆ Importar mi sonido<input type="file" id="sImpS" accept="audio/*" hidden></label>
+      <p class="xs muted" style="margin:10px 0 0">Toca un sonido para escucharlo. Suena mientras corre el reloj y se pausa en los descansos.</p>`,
+    foot: `<button class="btn" data-close>Listo</button>`,
+    onClose: () => { if (!running) Ambient.play('none'); else soundFor(); renderView(); },
+    onMount: el => {
+      const paint = () => {
+        el.querySelector('#sg').innerHTML = SOUNDS.filter(x => x[0] !== 'custom' || c.customName).map(([k, n]) => `<button class="sitem ${c.sound === k ? 'on' : ''}" data-snd="${k}"><span class="scirc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${SOUND_ICONS[k]}</svg></span><span class="sname">${k === 'custom' ? esc(c.customName.slice(0, 16)) : n}</span></button>`).join('');
+        el.querySelectorAll('[data-snd]').forEach(x => x.onclick = async () => { c.sound = x.dataset.snd; save('meta'); paint(); Ambient.setVolume(c.vol); const ok = await Ambient.play(c.sound); if (ok === false) toast('No pude reproducir ese sonido'); });
+      };
+      paint();
+      el.querySelector('#sVol').oninput = e => { c.vol = +e.target.value; Ambient.setVolume(c.vol); };
+      el.querySelector('#sVol').onchange = () => save('meta');
+      el.querySelector('#sImpS').onchange = async e => {
+        const f = e.target.files[0]; if (!f) return;
+        if (f.size > 25 * 1024 * 1024) { toast('El audio es muy grande (máximo 25 MB)'); return; }
+        try { await customSound.put(f); c.customName = f.name.replace(/\.[^.]+$/, ''); c.sound = 'custom'; save('meta'); paint(); Ambient.setVolume(c.vol); await Ambient.play('custom'); toast('Sonido importado ✓'); }
+        catch (err) { toast('No pude guardar ese audio'); }
+      };
+    }});
+}
+/* Pantalla completa */
+function openFullscreen() {
+  if ($('#fsOv')) return;
+  const ov = document.createElement('div'); ov.id = 'fsOv'; ov.className = 'fsov'; document.body.appendChild(ov);
+  try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {}); } catch (e) {}
+  keepAwake(true); paintFullscreen(); renderMini();
+}
+function closeFullscreen() { const o = $('#fsOv'); if (o) o.remove(); try { document.fullscreenElement && document.exitFullscreen(); } catch (e) {} if (!isRunning()) keepAwake(false); renderMini(); }
+function paintFullscreen() {
+  const ov = $('#fsOv'); if (!ov) return;
+  ov.innerHTML = `<button class="fsx" id="fsX" aria-label="Salir de pantalla completa"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button><div class="fsact">${esc(fcfg().act)}</div>${clockHTML(true)}<div class="fctl">${controlsHTML('fs')}</div>`;
+  $('#fsX').onclick = closeFullscreen; wireControls(ov, 'fs');
+}
 /* ========== NOTAS ========== */
 function vNotas(v) {
   const q = norm(UI.q.trim());

@@ -1,4 +1,7 @@
 from playwright.sync_api import sync_playwright
+def fillq(pg, txt):
+    if not pg.locator('#q').is_visible() and pg.locator('#sOpen').is_visible(): pg.click('#sOpen')
+    pg.fill('#q', txt)
 R=[]
 def ok(n,c,x=''): R.append(c); print(('PASS ' if c else 'FAIL ')+n+('' if c else ' -- '+str(x)))
 for W,H,lab in [(1366,860,'pc'),(390,844,'tel')]:
@@ -24,11 +27,11 @@ for W,H,lab in [(1366,860,'pc'),(390,844,'tel')]:
     pg.click('#lBack'); pg.wait_for_timeout(150)
     ok(f'[{lab}] dos listas separadas', pg.locator('[data-ol]').count()==2 and pg.evaluate("S.lists.map(l=>l.items.length).join()")=='4,1')
     pg.screenshot(path=f'shots/{lab}-listas.png')
-    pg.fill('#q','huevos'); pg.wait_for_timeout(150)
+    fillq(pg,'huevos'); pg.wait_for_timeout(150)
     ok(f'[{lab}] buscar en listas', pg.locator('[data-ol]').count()==1)
     pg.click('#qx'); pg.click('[data-tm="tareas"]'); pg.wait_for_timeout(150)
     ok(f'[{lab}] mis tareas intactas', pg.locator('[data-tt="todo"]').count()==1)
-    pg.evaluate("go('dia')"); pg.fill('#q','café'); pg.wait_for_timeout(200)
+    pg.evaluate("go('dia')"); fillq(pg,'café'); pg.wait_for_timeout(200)
     ok(f'[{lab}] búsqueda global encuentra lista', pg.locator('#res [data-r^="l:"]').count()==1)
     pg.locator('#res [data-r^="l:"]').click(); pg.wait_for_timeout(200)
     ok(f'[{lab}] abre la lista desde búsqueda', pg.locator('h2:has-text("Compras")').count()==1)

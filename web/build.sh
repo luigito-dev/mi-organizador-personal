@@ -10,7 +10,7 @@ echo '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="vie
 echo '<style>'; cat web/src/style.css; echo '</style></head><body>'
 echo '<script>'; cat $NM/core/dist/capacitor.js; echo; cat $NM/local-notifications/dist/plugin.js $NM/preferences/dist/plugin.js $NM/app/dist/plugin.js $NM/browser/dist/plugin.js; echo '</script>'
 echo '<script>'
-cat web/src/core.js web/src/ui.js web/src/views.js web/src/native.js
+cat web/src/core.js web/src/ui.js web/src/sounds.js web/src/views.js web/src/native.js
 echo '</script></body></html>'
 } | sed "s/__APP_VERSION__/$VER/g" > www/index.html
 echo "www/index.html listo (versión $VER)"

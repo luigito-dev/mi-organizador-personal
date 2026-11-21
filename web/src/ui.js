@@ -130,9 +130,9 @@ function openTaskForm(task, preset = {}) {
       <button type="button" class="opt" data-w="hoy">Hoy</button><button type="button" class="opt" data-w="man">Mañana</button><button type="button" class="opt" data-w="otra">Otra fecha</button>
       <input type="date" class="inp" id="tDate" style="width:auto;padding:6px 10px" value="${t.date}"></div></div>
     <div class="fld row" id="tTimeRow" style="flex-wrap:nowrap"></div>
-    <div class="fld"><label>Tipo</label><div class="opts" id="tTypes"></div></div>
-    <div class="fld"><label>Área</label><div class="opts" id="tAreas"></div></div>
-    <div class="fld"><label>Prioridad</label><div class="opts" id="tPrio">${PRIOS.map(p => `<button type="button" class="opt" data-p="${p}">${p}</button>`).join('')}</div></div>
+    <div class="fld"><label>Tipo</label><div class="opts hscroll" id="tTypes"></div></div>
+    <div class="fld"><label>Área</label><div class="opts hscroll" id="tAreas"></div></div>
+    <div class="fld"><label>Prioridad</label><div class="seg full" id="tPrio">${PRIOS.map(p => `<button type="button" class="opt" data-p="${p}">${p}</button>`).join('')}</div></div>
     <details class="fold" ${t.details ? 'open' : ''}><summary>Añadir más detalles</summary>
       <div class="fld"><label>¿De qué se trata?</label><textarea class="inp" id="tDet" placeholder="Escribe aquí… Usa “+ Añadir” para crear pasos con •">${esc(t.details)}</textarea>
       <button type="button" class="btn ghost sm" id="tAddLine">+ Añadir</button></div></details>
@@ -237,9 +237,9 @@ function openEventForm(ev, preset = {}, mode) {
     ${editing ? `<div class="fld"><label>Fecha</label><input type="date" class="inp" id="eDate" value="${e.date}"></div>` : ''}
     <div class="fld"><button type="button" class="row" id="eAllRow" style="padding:4px 0;font-weight:600"><span class="switch blue ${e.allDay ? 'on' : ''}" id="eAll"></span>Todo el día</button></div>
     <div class="fld row" id="eTimes"></div>
-    <div class="fld"><label>Tipo de evento</label><div class="opts" id="eTypes"></div></div>
+    <div class="fld"><label>Tipo de evento</label><div class="opts hscroll" id="eTypes"></div></div>
     <div class="fld"><label>Lugar</label><input class="inp" id="ePlace" value="${esc(e.place)}" placeholder="¿Dónde?"></div>
-    <div class="fld"><label>Área</label><div class="opts" id="eAreas"></div></div>
+    <div class="fld"><label>Área</label><div class="opts hscroll" id="eAreas"></div></div>
     <div class="fld row"><span class="lab" style="margin:0">Recordatorio</span><span class="sp"></span><span id="eBell">${bellHTML(e.reminder)}</span></div>
     <details class="fold" ${e.note ? 'open' : ''}><summary>Añadir una nota</summary><textarea class="inp" id="eNote">${esc(e.note)}</textarea></details>`;
   const s = openSheet({title, cls, body,
@@ -381,7 +381,7 @@ function openRoutineForm(r0, preset = {}) {
   const order = [0,1,2,3,4,5,6].map(i => (i + S.settings.weekStart) % 7);
   const s = openSheet({title: editing ? 'Editar rutina' : 'Nueva rutina',
     body: `<input class="inp title" id="rN" placeholder="Nombre (ej. Gimnasio, Turno de trabajo)" value="${esc(r.name)}" maxlength="60">
-      <div class="fld"><label>Área</label><div class="opts" id="rA"></div></div>
+      <div class="fld"><label>Área</label><div class="opts hscroll" id="rA"></div></div>
       <div class="fld"><label>¿Qué días?</label><div class="opts" id="rD">${order.map(d => `<button type="button" class="opt" data-d="${d}">${DCORTO[d]}</button>`).join('')}</div></div>
       <div class="fld row" id="rT"></div>
       <div class="fld"><label>Lugar</label><input class="inp" id="rL" value="${esc(r.place)}"></div>
@@ -422,7 +422,7 @@ function openNote(id) {
     body: `<textarea class="inp" id="nT" style="min-height:180px">${esc(n.text)}</textarea>
       <details class="fold" ${n.category || n.areaId ? 'open' : ''}><summary>Más opciones</summary>
         <div class="fld"><label>Categoría</label><input class="inp" id="nC" value="${esc(n.category || '')}" placeholder="Ej. Ideas, Recetas, Compras"></div>
-        <div class="fld"><label>Área</label><div class="opts" id="nA"></div></div></details>`,
+        <div class="fld"><label>Área</label><div class="opts hscroll" id="nA"></div></div></details>`,
     foot: `<button class="btn sec" id="nDel">🗑</button><button class="btn sec" id="nTask">→ Convertir en tarea</button><button class="btn" id="nS">Guardar</button>`,
     onMount: el => {
       let areaId = n.areaId || null;
