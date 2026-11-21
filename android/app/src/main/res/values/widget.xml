@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widgetBg">#FFFFFF</color>
+    <color name="widgetTitle">#174A96</color>
+    <color name="widgetText">#1D2433</color>
+    <color name="widgetMuted">#6B7487</color>
+    <color name="widgetGreen">#2E9D5B</color>
+    <color name="widgetBlue">#1F5FBF</color>
+    <string name="widget_desc">Lo que tienes para hoy</string>
+    <style name="WidgetRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">6dp</item>
+        <item name="android:textColor">@color/widgetText</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:visibility">gone</item>
+    </style>
+</resources>

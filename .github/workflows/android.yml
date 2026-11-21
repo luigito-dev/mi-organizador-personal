@@ -1,0 +1,66 @@
+name: Fabricar app de Android
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar piezas
+        run: npm ci
+
+      - name: Número de versión
+        run: |
+          echo "APP_VERSION_CODE=${{ github.run_number }}" >> $GITHUB_ENV
+          echo "APP_VERSION_NAME=1.0.${{ github.run_number }}" >> $GITHUB_ENV
+
+      - name: Armar la app
+        run: |
+          ./web/build.sh
+          npx cap sync android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Llave de firma
+        env:
+          KS: ${{ secrets.KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KS" ]; then echo "::error::Falta el secreto KEYSTORE_B64 (ver GUIA.md)"; exit 1; fi
+          echo "$KS" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> $GITHUB_ENV
+
+      - name: Compilar APK
+        env:
+          KEYSTORE_PASSWORD: MiOrganizador2026
+          KEY_PASSWORD: MiOrganizador2026
+          KEY_ALIAS: miorganizador
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+          cp app/build/outputs/apk/release/app-release.apk ../mi-organizador.apk
+
+      - name: Publicar versión
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.APP_VERSION_NAME }}
+          name: Mi Organizador ${{ env.APP_VERSION_NAME }}
+          body: Toca mi-organizador.apk para descargar e instalar. Se instala encima de la anterior sin perder tus datos.
+          files: mi-organizador.apk
+          make_latest: true

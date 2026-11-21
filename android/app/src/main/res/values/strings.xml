@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mi Organizador</string>
+    <string name="title_activity_main">Mi Organizador</string>
+    <string name="package_name">com.luigito.miorganizador</string>
+    <string name="custom_url_scheme">com.luigito.miorganizador</string>
+</resources>

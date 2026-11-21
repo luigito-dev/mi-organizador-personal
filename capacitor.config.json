@@ -1,0 +1,9 @@
+{
+  "appId": "com.luigito.miorganizador",
+  "appName": "Mi Organizador",
+  "webDir": "www",
+  "android": { "backgroundColor": "#1f5fbf" },
+  "plugins": {
+    "LocalNotifications": { "smallIcon": "ic_stat_notify", "iconColor": "#1f5fbf" }
+  }
+}
