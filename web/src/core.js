@@ -417,9 +417,11 @@ function calLinks(o) {
 }
 
 /* ========== Avisos ========== */
-function toast(msg, cls = '') {
-  const box = $('#toasts'); const el = document.createElement('div'); el.className = 'toast ' + cls; el.textContent = msg;
-  box.appendChild(el); setTimeout(() => el.remove(), cls === 'rem' ? 9000 : 2800);
+function toast(msg, cls = '', action) {
+  const box = $('#toasts'); const el = document.createElement('div'); el.className = 'toast ' + cls;
+  const sp = document.createElement('span'); sp.textContent = msg; sp.style.flex = '1'; el.appendChild(sp);
+  if (action) { const b = document.createElement('button'); b.className = 'tact'; b.textContent = action.label; b.onclick = () => { action.fn(); el.remove(); }; el.appendChild(b); }
+  box.appendChild(el); setTimeout(() => el.remove(), action ? 5000 : cls === 'rem' ? 9000 : 2800);
 }
 function reminderTime(dateStr, timeStr, before) {
   const d = parseISO(dateStr); const m = timeStr ? toMin(timeStr) : 9 * 60; d.setHours(0, m, 0, 0);

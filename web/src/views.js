@@ -831,7 +831,7 @@ function vListaDetalle(v, l) {
   const toggle = id => { const i = l.items.find(x => x.id === id); i.done = !i.done; save('lists'); renderView(); };
   v.querySelectorAll('[data-lc]').forEach(b => b.onclick = e => { e.stopPropagation(); toggle(b.dataset.lc); });
   v.querySelectorAll('[data-li]').forEach(b => b.onclick = () => toggle(b.dataset.li));
-  v.querySelectorAll('[data-ld]').forEach(b => b.onclick = e => { e.stopPropagation(); l.items = l.items.filter(x => x.id !== b.dataset.ld); save('lists'); renderView(); });
+  v.querySelectorAll('[data-ld]').forEach(b => b.onclick = e => { e.stopPropagation(); const k = l.items.findIndex(x => x.id === b.dataset.ld), it = l.items[k]; l.items.splice(k, 1); save('lists'); renderView(); toast('“' + it.t + '” borrado', '', {label: 'Deshacer', fn: () => { l.items.splice(k, 0, it); save('lists'); renderView(); }}); });
   const un = $('#lUn', v); if (un) un.onclick = () => { l.items.forEach(i => i.done = false); save('lists'); renderView(); toast('Lista lista para usar otra vez'); };
   const cl = $('#lClr', v); if (cl) cl.onclick = async () => { if (await ask('¿Borrar de la lista todo lo que está marcado como listo?', {yes: 'Borrar'})) { l.items = l.items.filter(i => !i.done); save('lists'); renderView(); } };
 }
@@ -890,13 +890,13 @@ function dayLists(box) {
     const total = today.length + late.length;
     head = `<div class="qhead" style="--lc:var(--blue)"><span class="qtitle">HOY</span><span class="qcount">${done.length}/${total}</span></div>`;
     const tint = x => isLate(x) || x.priority === 'Urgente' ? 'r' : x.priority === 'Alta' ? 'o' : '';
-    rows = [...pend, ...done].map(x => `<button class="qrow ${isDone(x) ? 'done' : ''} ${isDone(x) ? '' : tint(x)}" data-qtk="${x.id}"><span class="qbox"></span><span class="qtx">${esc(x.title)}${x.time ? ` <span class="qtime">${isLate(x) ? fmtShort(x.date) + ' · ' : ''}${fmtTime(x.time)}</span>` : isLate(x) ? ` <span class="qtime">${fmtShort(x.date)}</span>` : ''}</span></button>`).join('') || '<div class="qempty">✓ Nada pendiente para hoy</div>';
+    rows = [...pend, ...done].map(x => `<div class="qrow ${isDone(x) ? 'done' : ''} ${isDone(x) ? '' : tint(x)}" data-qtk="${x.id}" role="button" tabindex="0"><span class="qbox"></span><span class="qtx">${esc(x.title)}${x.time ? ` <span class="qtime">${isLate(x) ? fmtShort(x.date) + ' · ' : ''}${fmtTime(x.time)}</span>` : isLate(x) ? ` <span class="qtime">${fmtShort(x.date)}</span>` : ''}</span><button class="qdel" data-qdel="${x.id}" aria-label="Borrar" title="Borrar">🗑</button></div>`).join('') || '<div class="qempty">✓ Nada pendiente para hoy</div>';
     addPh = 'Añadir para hoy…';
     foot = `<button class="btn ghost sm" id="qGo">Ver Mi Día ›</button>`;
   } else {
     const l = lists.find(x => x.id === UI.popTab), done = l.items.filter(i => i.done);
     head = `<div class="qhead" style="--lc:${l.color}"><span class="qtitle">${esc(l.name.toUpperCase())}</span><span class="qcount">${done.length}/${l.items.length}</span></div>`;
-    rows = [...l.items.filter(i => !i.done), ...done].map(i => `<button class="qrow ${i.done ? 'done' : ''}" data-qli="${i.id}"><span class="qbox"></span><span class="qtx">${esc(i.t)}</span></button>`).join('') || '<div class="qempty">Lista vacía: añade lo primero abajo.</div>';
+    rows = [...l.items.filter(i => !i.done), ...done].map(i => `<div class="qrow ${i.done ? 'done' : ''}" data-qli="${i.id}" role="button" tabindex="0"><span class="qbox"></span><span class="qtx">${esc(i.t)}</span><button class="qdel" data-qdel="${i.id}" aria-label="Borrar" title="Borrar">🗑</button></div>`).join('') || '<div class="qempty">Lista vacía: añade lo primero abajo.</div>';
     addPh = 'Añadir a ' + l.name + '…';
     foot = `${done.length ? '<button class="btn ghost sm" id="qUndo">↺ Desmarcar todos</button>' : ''}<span class="sp"></span><button class="btn ghost sm" id="qOpen">Abrir la lista ›</button>`;
   }
@@ -905,6 +905,17 @@ function dayLists(box) {
     <div class="row qfoot">${foot}${UI.popTab === 'hoy' && !lists.length ? '<span class="sp"></span><button class="btn ghost sm" id="qNewList">+ Nueva lista</button>' : ''}</div>`;
   const redraw = () => { dayLists(box); listBadge(); };
   box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; redraw(); });
+  box.querySelectorAll('[data-qdel]').forEach(b => b.onclick = async e => {
+    e.stopPropagation(); const id = b.dataset.qdel;
+    if (UI.popTab === 'hoy') {
+      const x = S.tasks.find(y => y.id === id);
+      if (await ask('¿Borrar la tarea “' + esc(x.title) + '”?')) { S.tasks = S.tasks.filter(y => y.id !== id); save('tasks'); redraw(); toast('Tarea borrada'); }
+    } else {
+      const l = S.lists.find(y => y.id === UI.popTab), k = l.items.findIndex(y => y.id === id), it = l.items[k];
+      l.items.splice(k, 1); save('lists'); redraw();
+      toast('“' + it.t + '” borrado', '', {label: 'Deshacer', fn: () => { l.items.splice(k, 0, it); save('lists'); redraw(); }});
+    }
+  });
   box.querySelectorAll('[data-qtk]').forEach(b => b.onclick = () => { const x = S.tasks.find(y => y.id === b.dataset.qtk); x.status = isDone(x) ? 'Pendiente' : 'Completada'; x.completedAt = isDone(x) ? Date.now() : null; save('tasks'); b.classList.toggle('done'); setTimeout(redraw, 180); });
   box.querySelectorAll('[data-qli]').forEach(b => b.onclick = () => { const l = S.lists.find(y => y.id === UI.popTab), i = l.items.find(y => y.id === b.dataset.qli); i.done = !i.done; save('lists'); b.classList.toggle('done'); setTimeout(redraw, 180); });
   const inp = $('#dlAdd', box);
@@ -980,6 +991,7 @@ function vDia2(v) {
   v.querySelectorAll('[data-totoday]').forEach(b => b.onclick = e => { e.stopPropagation(); S.tasks.find(x => x.id === b.dataset.totoday).date = t; save('tasks'); renderView(); toast('Movida a hoy'); });
   v.querySelectorAll('[data-tom]').forEach(b => b.onclick = e => { e.stopPropagation(); postpone(b.dataset.tom); });
   v.querySelectorAll('[data-done]').forEach(b => b.onclick = e => { e.stopPropagation(); setDone(b.dataset.done, true); });
+  v.querySelectorAll('[data-tdel]').forEach(b => b.onclick = async e => { e.stopPropagation(); const x = S.tasks.find(y => y.id === b.dataset.tdel); if (await ask('¿Borrar la tarea “' + esc(x.title) + '”?')) { S.tasks = S.tasks.filter(y => y.id !== x.id); save('tasks'); renderView(); toast('Tarea borrada'); } });
   wireSwipes(v);
   // añadir al día elegido
   const qIn = $('#qIn', v), hint = $('#qHint', v);
@@ -1001,7 +1013,7 @@ function tlRow(i, past) {
     return `<div class="tlrow ${past ? 'past' : ''}" data-tk="${x.id}"><span class="tltime">${tshort}</span><div class="tlcard swipe ${dn ? 'done' : ''} ${x.priority === 'Urgente' ? 'r' : x.priority === 'Alta' ? 'o' : ''}" data-sw="${x.id}" style="--c:${c}">
       <button class="check ${dn ? 'on' : ''}" data-chk="${x.id}" aria-label="Completar">${dn ? '✓' : ''}</button><span class="em">${ty.icon}</span>
       <div class="body"><div class="t">${esc(x.title)}</div>${a || x.reminder != null || (x.steps && x.steps.length) ? `<div class="m">${a ? `<span class="tag"><span class="dot" style="background:${a.color}"></span>${esc(a.name)}</span>` : ''}${x.steps && x.steps.length ? `<span>☑ ${x.steps.filter(s => s.done).length}/${x.steps.length}</span>` : ''}${x.reminder != null ? '<span class="bell">🔔</span>' : ''}</div>` : ''}</div>
-      ${dn ? '' : `<span class="hoveracts"><button class="btn sec sm" data-done="${x.id}" title="Completar">✓</button><button class="btn sec sm" data-tom="${x.id}" title="Pasar a mañana">→ Mañana</button></span>`}</div></div>`;
+      ${dn ? '' : `<span class="hoveracts"><button class="btn sec sm" data-done="${x.id}" title="Completar">✓</button><button class="btn sec sm" data-tom="${x.id}" title="Pasar a mañana">→ Mañana</button><button class="btn sec sm" data-tdel="${x.id}" title="Borrar">🗑</button></span>`}</div></div>`;
   }
   if (i.k === 'ev') { const et = evType(x.evType); return `<div class="tlrow ${past ? 'past' : ''}" data-ev="${x.id}"><span class="tltime">${tshort}</span><div class="tlcard ev" style="--c:${c}"><span class="em">${et.icon}</span><div class="body"><div class="t">${esc(x.title)}</div><div class="m">${x.allDay ? '' : `<span>hasta ${fmtTime(x.end)}</span>`}${x.place ? `<span>📍 ${esc(x.place)}</span>` : ''}${x.reminder != null ? '<span class="bell">🔔</span>' : ''}</div></div></div></div>`; }
   return `<div class="tlrow ${past ? 'past' : ''}" data-rt="${x.id}"><span class="tltime">${tshort}</span><div class="tlcard rt" style="--c:${c}"><span class="em">🔁</span><div class="body"><div class="t">${esc(x.name)}</div><div class="m"><span>hasta ${fmtTime(x.end)}</span>${x.place ? `<span>📍 ${esc(x.place)}</span>` : ''}</div></div></div></div>`;
