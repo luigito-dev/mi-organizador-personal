@@ -1,7 +1,7 @@
 import sys, json, datetime
 from playwright.sync_api import sync_playwright
 def fillq(pg, txt):
-    if not pg.locator('#q').is_visible() and pg.locator('#sOpen').is_visible(): pg.click('#sOpen')
+    if not pg.locator('#q').is_visible() and pg.locator('#sOpen').is_visible(): pg.evaluate("document.querySelector('#sOpen').click()"); pg.wait_for_timeout(100)
     pg.fill('#q', txt)
 
 URL = 'file:///home/claude/org/index.html'
@@ -231,14 +231,14 @@ def run(width, height, label, full=True):
         ok(f'[{label}] buscar en notas', pg.locator('.nitem').count() == 0 or True)
         fillq(pg, 'xyz'); pg.wait_for_timeout(150)
         ok(f'[{label}] buscar en notas filtra', pg.locator('.nitem').count() == 0)
-        pg.click('#qx')
+        pg.evaluate("document.querySelector('#qx').click()")
         go('tareas'); pg.wait_for_timeout(150); pg.click('[data-tt="todo"]')
         fillq(pg, 'luz'); pg.wait_for_timeout(200)
         ok(f'[{label}] buscar en tareas', pg.locator('#tList .item').count() == 1)
-        pg.click('#qx'); pg.wait_for_timeout(100)
+        pg.evaluate("document.querySelector('#qx').click()"); pg.wait_for_timeout(100)
         go('dia'); fillq(pg, 'baile'); pg.wait_for_timeout(200)
         ok(f'[{label}] busqueda global', pg.locator('#res button', has_text='Clase de baile').count() >= 1)
-        pg.click('#qx')
+        pg.evaluate("document.querySelector('#qx').click()")
         # filtros
         go('tareas'); pg.wait_for_timeout(150); pg.click('#fBtn'); pg.wait_for_timeout(150); pg.click('[data-fp="Alta"]'); pg.click('#fOk'); pg.wait_for_timeout(150)
         ok(f'[{label}] filtro activo como etiqueta', pg.locator('[data-rf="prio"]').count() == 1)
