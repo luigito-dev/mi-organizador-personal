@@ -473,3 +473,15 @@ textarea.inp{min-height:80px;resize:vertical}
 }
 .quick .hint:empty{min-height:0;margin:0}
 .hero-msg .btn.sm{padding:7px 12px;font-size:13px}
+/* Listas en Mi Día */
+.daylists{margin-top:16px}
+.lchip{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:14px;background:var(--soft);border:2px solid transparent;font-size:14px}
+.lchip b{font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lchip .cnt{background:var(--lc);color:#fff;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700}
+.lchip.on{border-color:var(--lc);background:var(--card);box-shadow:var(--shadow)}
+.dlpanel{margin-top:12px;border-left:4px solid var(--lc);padding-left:12px}
+.dlitem{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:11px 4px;border-bottom:1px solid var(--line);font-size:15px;transition:opacity .2s,transform .2s}
+.dlitem:last-of-type{border-bottom:none}
+.dlitem .check{width:22px;height:22px}
+.dlitem.gone{opacity:0;transform:translateX(30px)}
+.dlitem.gone .check{background:var(--green);border-color:var(--green)}

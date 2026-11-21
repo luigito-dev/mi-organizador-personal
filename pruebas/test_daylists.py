@@ -1,0 +1,31 @@
+from playwright.sync_api import sync_playwright
+R=[]
+def ok(n,c,x=''): R.append(c); print(('PASS ' if c else 'FAIL ')+n+('' if c else ' -- '+str(x)))
+with sync_playwright() as p:
+  b=p.chromium.launch()
+  for lab,kw in [('tel',dict(p.devices['Pixel 7'])),('pc',{'viewport':{'width':1366,'height':860}})]:
+    ctx=b.new_context(**kw); pg=ctx.new_page(); errs=[]; pg.on('pageerror',lambda e: errs.append(str(e)))
+    tap=(lambda s: pg.tap(s)) if lab=='tel' else (lambda s: pg.click(s))
+    pg.goto('file:///home/claude/org/index.html'); pg.wait_for_timeout(300)
+    pg.evaluate("""S.settings.tutorialSeen=true;sheets.slice().forEach(s=>s.close());
+      S.lists.push({id:'c',name:'Compras',icon:'🛒',color:'#2e9d5b',items:[{id:'1',t:'Leche',done:false},{id:'2',t:'Pan',done:false},{id:'3',t:'Huevos',done:true}]});save();go('dia')""")
+    pg.wait_for_timeout(300)
+    ok(f'[{lab}] lista visible en Mi Día', pg.locator('.lchip', has_text='Compras').count()==1 and '2' in pg.locator('.lchip .cnt').inner_text())
+    ok(f'[{lab}] una sola lista se abre sola', pg.locator('.dlitem').count()==2)
+    pg.locator('.daylists').scroll_into_view_if_needed(); pg.screenshot(path=f'shots/{lab}-daylists.png')
+    tap('.dlitem >> text=Leche'); pg.wait_for_timeout(500)
+    ok(f'[{lab}] marcar desde Mi Día', pg.evaluate("S.lists[0].items[0].done") and pg.locator('.dlitem').count()==1)
+    pg.fill('#dlAdd','café, azúcar'); pg.press('#dlAdd','Enter'); pg.wait_for_timeout(300)
+    ok(f'[{lab}] añadir desde Mi Día', pg.locator('.dlitem').count()==3 and pg.evaluate("document.activeElement.id")=='dlAdd')
+    pg.evaluate("S.lists.push({id:'v',name:'Viaje',icon:'✈️',color:'#1f5fbf',items:[{id:'9',t:'Pasaporte',done:false}]});save();go('notas');go('dia')"); pg.wait_for_timeout(300)
+    tap('[data-dl="v"]'); pg.wait_for_timeout(300)
+    ok(f'[{lab}] cambiar de lista', pg.locator('.dlitem >> text=Pasaporte').count()==1)
+    tap('#dlOpen'); pg.wait_for_timeout(300)
+    ok(f'[{lab}] abrir lista completa', pg.locator('h2:has-text("Viaje")').count()==1)
+    tap('#lPin'); pg.wait_for_timeout(200); pg.evaluate("go('dia')"); pg.wait_for_timeout(300)
+    ok(f'[{lab}] quitar de Mi Día', pg.locator('[data-dl="v"]').count()==0 and pg.locator('[data-dl="c"]').count()==1)
+    ok(f'[{lab}] sin scroll horizontal', pg.evaluate("document.documentElement.scrollWidth<=document.documentElement.clientWidth"))
+    ok(f'[{lab}] sin errores', not errs, errs)
+    ctx.close()
+  b.close()
+print('FALLAS', R.count(False))
