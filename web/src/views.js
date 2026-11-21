@@ -173,10 +173,8 @@ function vDia(v) {
     <div class="hero"><div class="hero-main"><div class="hero-top"><div><div class="date">${cap(DIAS[dt.getDay()])}, ${dt.getDate()} de ${MESES[dt.getMonth()]} de ${dt.getFullYear()}</div><div class="hi">${greeting()} 👋</div></div>
       <div class="ring" title="Avance de la semana">${ringSVG(wd, wt)}<div class="lbl">${wd}/${wt}<small>semana</small></div></div></div>
       ${UI.motivHidden ? '' : `<div class="hero-msg" id="motiv"><button class="x" id="mX" aria-label="Cerrar mensaje">✕</button><p>✨ ${esc(UI.motiv)}</p><div class="hscroll"><button class="btn sm hb1" id="m1">Organizar mi día</button><button class="btn sm hb2" id="m2">Planificar mi semana</button><button class="btn sm hb2" id="m3">Modo enfoque</button></div></div>`}</div></div>
-    <div class="card quick"><h3>¿Qué tienes pendiente?</h3><div class="in"><input id="qIn" placeholder="Ej. cita con el dentista a las 3 pm" maxlength="140"><button class="btn" id="qAdd">Añadir</button></div>
+    <div class="card quick">${nextIt ? `<button class="nextline" id="nextGo" data-nk="${nextIt.k}" data-nid="${nextIt.x.id}"><span class="nl-k">Lo próximo</span><span class="nl-ic">${nextIt.k === 'ev' ? evType(nextIt.x.evType).icon : nextIt.k === 'rt' ? '🔁' : typeById(nextIt.x.typeId).icon}</span><span class="nl-t">${esc(nextIt.x.title || nextIt.x.name)}</span><b>${fmtTime(nextIt.k === 'tk' ? nextIt.x.time : nextIt.x.start)}</b></button>` : ''}<h3>¿Qué tienes pendiente?</h3><div class="in"><input id="qIn" placeholder="Ej. cita con el dentista a las 3 pm" maxlength="140"><button class="btn" id="qAdd">Añadir</button></div>
       <div class="row wrap" style="margin-top:8px"><button class="chip" data-qw="hoy">Hoy</button><button class="chip" data-qw="man">Mañana</button><button class="chip" data-qw="otra">Otra fecha</button><input type="date" id="qDate" class="inp" style="width:auto;padding:5px 10px;display:none"></div><div class="hint" id="qHint"></div></div>
-    ${nextIt ? `<div class="next"><span style="font-size:22px">${nextIt.k === 'ev' ? evType(nextIt.x.evType).icon : nextIt.k === 'rt' ? '🔁' : typeById(nextIt.x.typeId).icon}</span><div class="sp"><div class="k">Lo próximo</div><div style="font-weight:600">${esc(nextIt.x.title || nextIt.x.name)}</div></div><b>${fmtTime(nextIt.k === 'tk' ? nextIt.x.time : nextIt.x.start)}</b></div>`
-      : `<div class="next"><span style="font-size:22px">🌿</span><div class="sp"><div class="k">Lo próximo</div><div>No tienes nada más con hora hoy.</div></div></div>`}
     <div class="grid g2" style="margin-top:14px">
       <div class="card"><h3>Tu resumen</h3><div class="chips">${[['hoy', 'Hoy'], ['man', 'Mañana'], ['sem', 'Semana'], ['prox', 'Próxima']].map(([k, n]) => `<button class="chip ${UI.sumTab === k ? 'on' : ''}" data-st="${k}">${n}</button>`).join('')}</div>
         <div class="stats"><div class="stat"><b>${pend}</b><span>Pendientes</span></div><div class="stat ok"><b>${comp}</b><span>Completadas</span></div><div class="stat ${late ? 'warn' : ''}"><b>${late}</b><span>Atrasadas</span></div><div class="stat"><b>${upc}</b><span>${isMobile() ? 'Compromisos' : 'Próximos compromisos'}</span></div></div>
@@ -207,6 +205,7 @@ function vDia(v) {
   }
   v.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { UI.sumTab = b.dataset.st; renderView(); });
   v.querySelectorAll('[data-side]').forEach(b => b.onclick = () => { UI.sideTab = b.dataset.side; const y = window.scrollY; renderView(); window.scrollTo(0, y); });
+  const ng = $('#nextGo', v); if (ng) ng.onclick = () => { const k = ng.dataset.nk, id = ng.dataset.nid; if (k === 'tk') openTaskDetail(id); else if (k === 'ev') openEventDetail(id); else openRoutineForm(S.routines.find(r => r.id === id)); };
   const sl = $('#seeLate', v); if (sl) sl.onclick = () => { UI.taskTab = 'late'; go('tareas'); };
   // Entrada rápida
   const qIn = $('#qIn', v), hint = $('#qHint', v), qd = $('#qDate', v);

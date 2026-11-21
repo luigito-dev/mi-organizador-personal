@@ -494,3 +494,8 @@ textarea.inp{min-height:80px;resize:vertical}
 .daylists{margin:0}
 @media (min-width:821px){.top .lsbtn{order:3}}
 @media (max-width:820px){.top .lsbtn{width:40px;height:40px;border-radius:12px;display:inline-flex}.top .lsbtn.hidden{display:none}.top.srch .lsbtn{display:none}}
+/* "Lo próximo" dentro de la tarjeta de añadir */
+.nextline{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:10px 12px;margin:-4px 0 14px;border-radius:12px;background:var(--teal-l);font-size:14px;min-width:0}
+.nextline .nl-k{font-size:10.5px;font-weight:800;color:var(--teal);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.nextline .nl-t{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.nextline b{white-space:nowrap;color:var(--teal)}
