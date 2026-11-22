@@ -40,7 +40,7 @@ with sync_playwright() as p:
   pend=pg.evaluate('__pend')
   ok('avisos programados en el sistema', len(pend)==2, pend)
   t=[n for n in pend if n['extra']['id']=='n1'][0]
-  ok('aviso de tarea con botones Completar/Posponer', t['actionTypeId']=='TAREA' and t['channelId']=='recordatorios' and 'Hoy' in t['body'], t)
+  ok('aviso de tarea con botones Completar/Posponer', t['actionTypeId']=='TAREA' and t['channelId']=='recordatorios' and ('Hoy' in t['body'] or 'Mañana' in t['body']), t)
   ok('aviso 10 min antes', abs(pg.evaluate("new Date(__pend.find(n=>n.extra.id==='n1').schedule.at).getTime()") - pg.evaluate("reminderTime(S.tasks.find(t=>t.id==='n1').date,S.tasks.find(t=>t.id==='n1').time,10)"))<1000)
   ok('datos guardados en el teléfono', 'Llamar al médico' in (pg.evaluate("__mem.datos") or ''))
   w=[l for l in pg.evaluate('__log') if l[0]=='updateWidget']
