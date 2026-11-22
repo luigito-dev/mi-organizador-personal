@@ -815,3 +815,23 @@ td.hname span,.hmonth .hname span{margin-right:5px}
 .habideas{display:flex;gap:8px;overflow-x:auto;padding:12px 2px 4px;align-items:center;scrollbar-width:none}
 .habideas span{color:var(--muted);font-size:13px;flex:none}
 .habideas button{flex:none;padding:7px 12px;border-radius:999px;background:var(--card);border:1px dashed var(--line);font-size:13px;font-weight:600}
+.habbot{position:relative;width:46px;height:58px;flex:none;display:flex;align-items:center;justify-content:center}
+.bottle{width:40px;height:58px}
+.bottle .water{transition:y .35s ease}
+.habbot em{position:absolute;right:-4px;bottom:0;width:20px;height:20px;border-radius:50%;background:#2bc48a;color:#fff;font-size:12px;font-style:normal;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--card)}
+.habrow.water:active .bottle{transform:scale(.94)}
+.ozn{color:#2f7de1;font-weight:700}
+.botrow{display:flex;gap:3px;margin-top:4px;flex-wrap:wrap}
+.botrow i{width:9px;height:13px;border-radius:2px 2px 3px 3px;border:1.4px solid #5aa8ff;background:transparent}
+.botrow i.on{background:#5aa8ff}
+.habrow.water.ok .botrow i.on{background:#5ad1a0;border-color:#5ad1a0}
+.habside{display:flex;flex-direction:column;align-items:center;gap:2px}
+.habminus{font-size:11px;font-weight:700;color:var(--muted);background:var(--soft);border-radius:999px;padding:3px 7px}
+.bkpill{display:inline-flex;align-self:flex-start;margin-top:4px;font-size:12px;font-weight:600;background:#fff2c2;color:#8a6200;padding:2px 8px;border-radius:6px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-theme=dark] .bkpill{background:#4a3d14;color:#ffd970}
+.rdnum{text-align:center;font-size:20px;font-weight:700;max-width:120px}
+.rdquick{display:flex;gap:8px;margin-top:10px}
+.rdquick button{flex:1;padding:9px 0;border-radius:12px;background:var(--soft);font-weight:700}
+.bkmk .rdnum{max-width:none;text-align:left}
+.habkind{display:flex}
+.habkind button{flex:1}
