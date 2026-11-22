@@ -1117,8 +1117,8 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .chposter small{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:6px}
 .chdots{display:flex;flex-wrap:wrap;justify-content:center;gap:7px}
 .chdot{width:52px;height:52px;border-radius:50%;border:2.2px solid var(--text);background:transparent;font-family:'Roboto Condensed','Arial Narrow',sans-serif;font-weight:800;font-size:13.5px;color:var(--text);display:flex;align-items:center;justify-content:center;transition:transform .15s,background .2s}
-.chdot.on{background:radial-gradient(circle at 35% 30%,#ffe27a,#f0a500);border-color:#d99400;color:#5a3a00}
-.chdot.cur{box-shadow:0 0 0 3px #ffcf3f;}
+.chdot.on{background:var(--chc,#d99400);border-color:var(--chc,#d99400);color:#fff}
+.chdot.cur{box-shadow:0 0 0 3px var(--chl,#ffcf3f)}
 .chdot:active{transform:scale(.88)}
 .chdeq{display:flex;align-items:center;font-family:'Bebas Neue','Oswald','Arial Narrow',sans-serif;font-size:30px;font-weight:800;margin-left:6px}
 .chtip{text-align:center;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:12px}
@@ -1152,6 +1152,32 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .chenv{display:flex;flex-direction:column;align-items:center;width:56px;padding:2px 0;color:var(--text);background:transparent}
 .chenv .envi{width:44px;height:31px}
 .chenv span{font-family:'Roboto Condensed','Arial Narrow',sans-serif;font-weight:800;font-size:13px;margin-top:1px}
-.chenv.on{color:#c27c00}
-.chenv.on .envi{--envf:#ffd54a}
+.chenv.on{color:var(--chc)}
 .chenv:active{transform:scale(.9)}
+
+.chenv .envi{width:46px;height:42px}
+.chenv .envi.shut{animation:envclose .35s ease}
+@keyframes envclose{0%{transform:scaleY(.6) translateY(6px)}60%{transform:scaleY(1.08)}100%{transform:none}}
+.chenv.on{padding-bottom:16px}
+.chedit{width:100%;text-align:left;background:transparent;cursor:pointer}
+.chpen{margin-left:auto;font-size:15px;color:var(--muted);background:var(--soft);border-radius:999px;width:30px;height:30px;display:flex;align-items:center;justify-content:center}
+.chbar i{background:var(--chc,#d99400)!important}
+.chrows .qbox{border-color:var(--chc,#d99400)}
+.chrows .qrow.cur{background:var(--chl,#fff6d6)}
+.chamt{color:var(--chc,#7a5200)}
+.chown{background:var(--soft);border-radius:18px;padding:12px;margin-top:14px}
+.chstep{display:flex;align-items:center;gap:8px;margin:12px 0 6px;font-weight:700}
+.chstep span{width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px}
+.chstep label{margin:0}
+.chbig{max-width:none;font-size:24px;background:var(--card)}
+.chchips{display:flex;flex-wrap:wrap;gap:6px}
+.chchips button{padding:9px 14px;border-radius:999px;background:var(--card);font-weight:600;font-size:14px;border:2px solid transparent}
+.chchips button.on{background:var(--blue);color:#fff}
+.chres{background:linear-gradient(135deg,#fff7e0,#ffeec2);border-radius:14px;padding:12px;margin:14px 0 6px;text-align:center}
+[data-theme=dark] .chres{background:linear-gradient(135deg,#3a3016,#2e2610)}
+.chres1{font-size:16px}
+.chper{font-size:20px;font-weight:800;color:#7a5200;background:#fff;border-radius:10px;padding:2px 8px;margin:0 2px}
+[data-theme=dark] .chper{background:#2a2a2a;color:#ffd970}
+.chres2{font-size:13px;color:var(--muted);margin-top:6px}
+.chres2 b{color:#1e7a36}
+.chvar{padding:8px 2px 0}
