@@ -883,11 +883,13 @@ function dayLists(box) {
   if (!box) return;
   const t = todayISO(), lists = S.lists.filter(l => !l.hideOnDay);
   if (!UI.popTab || (UI.popTab !== 'hoy' && UI.popTab !== 'cal' && !/^(reto|hab):/.test(String(UI.popTab)) && !lists.some(l => l.id === UI.popTab))) UI.popTab = 'hoy';
-  const tabs = `<div class="qtabs hscroll">${pins().hoy === false ? '' : `<button class="qtab ${UI.popTab === 'hoy' ? 'on' : ''}" data-qt="hoy" style="--lc:var(--blue)">☀️ Hoy</button>`}${lists.map(l => { const n = l.items.filter(i => !i.done).length; return `<button class="qtab ${UI.popTab === l.id ? 'on' : ''}" data-qt="${l.id}" style="--lc:${l.color}">${l.icon}<span class="tl"> ${esc(l.name)}</span>${n ? ` <span class="cnt">${n}</span>` : ''}</button>`; }).join('')}${retoHabits().map(h => `<button class="qtab ${UI.popTab === 'reto:' + h.id ? 'on' : ''}" data-qt="reto:${h.id}" style="--lc:${h.challenge.color || '#d99400'}">🏆<span class="tl"> Reto</span></button>`).join('')}${pinHabits().map(h => `<button class="qtab ${UI.popTab === 'hab:' + h.id ? 'on' : ''}" data-qt="hab:${h.id}" style="--lc:${h.color}">${h.icon}<span class="tl"> ${esc(h.name.split(' ').slice(0, 2).join(' '))}</span></button>`).join('')}${pins().cal ? `<button class="qtab ${UI.popTab === 'cal' ? 'on' : ''}" data-qt="cal" style="--lc:var(--teal,#0f9d8f)">📅<span class="tl"> Calendario</span></button>` : ''}</div>`;
+  const keys = popKeys(), ki = Math.max(0, keys.indexOf(UI.popTab)), kprev = keys[(ki - 1 + keys.length) % keys.length], knext = keys[(ki + 1) % keys.length];
+  const tabs = `<div class="qnav">${keys.length > 1 ? `<button class="qarr" data-qt="${kprev}" aria-label="Anterior">‹</button>` : ''}<div class="qdots">${keys.map(k => `<i class="${k === UI.popTab ? 'on' : ''}"></i>`).join('')}</div>${keys.length > 1 ? `<button class="qarr" data-qt="${knext}" aria-label="Siguiente">›</button>` : ''}</div>`;
+  popSwipe(box);
   if (UI.popTab === 'hoy' && pins().hoy === false) { const first = [...lists.map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(pins().cal ? ['cal'] : [])][0]; if (first) UI.popTab = first; }
   const wireTabs = () => { box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; dayLists(box); listBadge(); }); box.querySelectorAll('[data-qpins]').forEach(b => b.onclick = () => openPinManager(() => dayLists(box))); };
-  if (String(UI.popTab).startsWith('hab:')) { const h = S.habits.find(x => 'hab:' + x.id === UI.popTab); if (h) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="pinhost" id="pinHost"></div>`; pinHabit(h, box.querySelector('#pinHost'), () => dayLists(box)); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
-  if (UI.popTab === 'cal') { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div id="pinCal"></div>`; pinCalendar(box.querySelector('#pinCal')); wireTabs(); return; }
+  if (String(UI.popTab).startsWith('hab:')) { const h = S.habits.find(x => 'hab:' + x.id === UI.popTab); if (h) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:${h.color}"><span class="qtitle">${h.icon} ${esc(h.name.toUpperCase())}</span></div><div class="pinhost" id="pinHost"></div>`; pinHabit(h, box.querySelector('#pinHost'), () => dayLists(box)); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
+  if (UI.popTab === 'cal') { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:var(--teal,#0f9d8f)"><span class="qtitle">📅 CALENDARIO</span></div><div id="pinCal"></div>`; pinCalendar(box.querySelector('#pinCal')); wireTabs(); return; }
   if (String(UI.popTab).startsWith('reto:')) { const h = S.habits.find(x => 'reto:' + x.id === UI.popTab); if (h && h.challenge) { challengeBox(box, h, tabs, null); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
   let head, rows, addPh, foot;
   if (UI.popTab === 'hoy') {
@@ -2147,4 +2149,23 @@ function pinChips() {
 function wirePinBar(v) {
   v.querySelectorAll('[data-pin]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.pin; openListsPopup(); });
   v.querySelectorAll('[data-pinmgr]').forEach(b => b.onclick = () => openPinManager(() => renderView()));
+}
+
+// Orden de lo fijado en la ventana flotante (se pasa de uno a otro deslizando de lado)
+function popKeys() {
+  const P = pins();
+  return [...(P.hoy === false ? [] : ['hoy']), ...S.lists.filter(l => !l.hideOnDay).map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(P.cal ? ['cal'] : [])];
+}
+function popSwipe(box) {
+  if (box._sw) return; box._sw = 1;
+  let x0 = null, y0 = 0, t0 = 0, ok = true;
+  box.addEventListener('touchstart', e => { const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); ok = !e.target.closest('input,textarea,.wbot,.hscroll,.pcalg'); }, {passive: true});
+  box.addEventListener('touchend', e => {
+    if (x0 == null || !ok) return; const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
+    if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.7 || Date.now() - t0 > 700) return;
+    const keys = popKeys(); if (keys.length < 2) return;
+    const i = Math.max(0, keys.indexOf(UI.popTab)); UI.popTab = keys[(i + (dx < 0 ? 1 : -1) + keys.length) % keys.length];
+    box.classList.remove('slideL', 'slideR'); void box.offsetWidth; box.classList.add(dx < 0 ? 'slideL' : 'slideR');
+    dayLists(box); listBadge();
+  }, {passive: true});
 }

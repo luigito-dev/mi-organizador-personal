@@ -1245,3 +1245,13 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .chdots.cols .chenv span{font-size:clamp(9px,2.6vw,12px)}
 .chdots.cols .chdeq{grid-column:span 4;justify-content:center}
 .chedit .qtitle{font-size:clamp(24px,7.5vw,34px);max-width:none}
+.qnav{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;min-width:0}
+.qdots{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}
+.qdots i{width:7px;height:7px;border-radius:50%;background:var(--line);transition:all .2s}
+.qdots i.on{width:20px;border-radius:4px;background:var(--blue)}
+.qarr{width:32px;height:32px;border-radius:50%;background:var(--soft);font-size:20px;line-height:1;color:var(--muted);flex:none}
+.qcard .qtop{margin-bottom:6px}
+.slideL{animation:slL .25s ease}
+.slideR{animation:slR .25s ease}
+@keyframes slL{from{transform:translateX(30px);opacity:.3}to{transform:none;opacity:1}}
+@keyframes slR{from{transform:translateX(-30px);opacity:.3}to{transform:none;opacity:1}}

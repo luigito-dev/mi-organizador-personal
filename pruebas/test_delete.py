@@ -16,7 +16,7 @@ with sync_playwright() as p:
     ok(f'[{lab}] borrar tarea pide confirmación', pg.locator('.sheet', has_text='¿Borrar la tarea').count()==1 and pg.evaluate("S.tasks.length")==2)
     tap('[data-a="yes"]'); pg.wait_for_timeout(300)
     ok(f'[{lab}] tarea borrada y sin marcar otra', pg.evaluate("S.tasks.map(t=>t.id).join()")=='b' and pg.evaluate("S.tasks[0].status")=='Pendiente')
-    tap('[data-qt="c"]'); pg.wait_for_timeout(300)
+    pg.evaluate("UI.popTab='c';dayLists(document.querySelector('#lsPop')||document.querySelector('.qcard .sh-body > div'))"); pg.wait_for_timeout(300)
     tap('[data-qdel="1"]'); pg.wait_for_timeout(300)
     ok(f'[{lab}] borrar de la lista al momento', pg.evaluate("S.lists[0].items.map(i=>i.t).join()")=='Pan')
     pg.screenshot(path=f'shots/{lab}-borrar.png')

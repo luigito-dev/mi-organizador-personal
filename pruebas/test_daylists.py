@@ -22,7 +22,7 @@ with sync_playwright() as p:
     ok(f'[{lab}] marcar en HOY', pg.evaluate("S.tasks.find(t=>t.id==='c').status")=='Completada' and pg.locator('.qcount').inner_text()=='2/5')
     pg.fill('#dlAdd','cita con el dentista a las 3 pm'); pg.press('#dlAdd','Enter'); pg.wait_for_timeout(300)
     ok(f'[{lab}] añadir para hoy', pg.evaluate("S.tasks.some(t=>t.title.includes('dentista') && t.time==='15:00')") and pg.locator('.qcount').inner_text()=='2/6')
-    tap('[data-qt="c"]'); pg.wait_for_timeout(300)
+    pg.evaluate("UI.popTab='c';dayLists(document.querySelector('#lsPop')||document.querySelector('.qcard .sh-body > div'))"); pg.wait_for_timeout(300)
     ok(f'[{lab}] pestaña lista', pg.locator('.qtitle').inner_text()=='COMPRAS' and pg.locator('.qcount').inner_text()=='1/3')
     pg.screenshot(path=f'shots/{lab}-qlista.png')
     tap('.qrow >> text=Leche'); pg.wait_for_timeout(400)
