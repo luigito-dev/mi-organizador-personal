@@ -6,6 +6,8 @@ with sync_playwright() as p:
   for lab,kw in [('tel',dict(p.devices['Pixel 7'])),('pc',{'viewport':{'width':1366,'height':860}})]:
     ctx=b.new_context(**kw); pg=ctx.new_page(); errs=[]; pg.on('pageerror',lambda e: errs.append(str(e)))
     tap=(lambda s: pg.tap(s)) if lab=='tel' else (lambda s: pg.click(s))
+    def wheel(sel, v):
+      pg.locator(sel).click(); pg.wait_for_timeout(350); pg.evaluate(f"_numPick.set({v})"); pg.wait_for_timeout(250); pg.locator('#okN').last.click(); pg.wait_for_timeout(250)
     pg.goto('file:///home/claude/org/index.html'); pg.wait_for_timeout(300)
     pg.evaluate("S.settings.tutorialSeen=true;sheets.slice().forEach(s=>s.close());"); 
     if lab=='tel':
@@ -33,7 +35,7 @@ with sync_playwright() as p:
     ok(f'[{lab}] horario sugerido', pg.locator('.wrrow').count()==6)
     pg.locator('.wrrow').first.locator('.wrdel').click(); pg.wait_for_timeout(150)
     tap('#wrAdd'); pg.wait_for_timeout(150)
-    first=pg.locator('[data-wrt]').first; first.fill('07:30'); pg.locator('[data-wrl]').first.fill('Agua al despertar')
+    pg.locator('[data-wrt]').first.click(); pg.wait_for_timeout(350); ok(f'[{lab}] hora con reloj', pg.locator('.wheel').count()>=1); pg.locator('.ov:last-child [data-close]').last.click(); pg.wait_for_timeout(250); pg.evaluate("const i=document.querySelector('[data-wrt]');i.dataset.t='07:30'"); pg.locator('[data-wrl]').first.fill('Agua al despertar')
     pg.screenshot(path=f'shots/{lab}-recordatorios.png')
     tap('#wrS'); pg.wait_for_timeout(400)
     rem=pg.evaluate("S.habits[0].reminders")

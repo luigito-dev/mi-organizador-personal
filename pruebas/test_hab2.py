@@ -6,6 +6,8 @@ with sync_playwright() as p:
   for lab,kw in [('tel',dict(p.devices['Pixel 7'])),('pc',{'viewport':{'width':1366,'height':860}})]:
     ctx=b.new_context(**kw); pg=ctx.new_page(); errs=[]; pg.on('pageerror',lambda e: errs.append(str(e)))
     tap=(lambda s: pg.tap(s)) if lab=='tel' else (lambda s: pg.click(s))
+    def wheel(sel, v):
+      pg.locator(sel).click(); pg.wait_for_timeout(350); pg.evaluate(f"_numPick.set({v})"); pg.wait_for_timeout(250); pg.locator('#okN').last.click(); pg.wait_for_timeout(250)
     pg.goto('file:///home/claude/org/index.html'); pg.wait_for_timeout(300)
     pg.evaluate("""S.settings.tutorialSeen=true;sheets.slice().forEach(s=>s.close());S.habits=[{"color":"#4a90ff","created":"2026-11-01","days":[],"goal":1,"icon":"💧","id":"w1","kind":"","log":{},"name":"Tomar agua","unit":""},{"color":"#ffb627","created":"2026-11-01","days":[],"goal":1,"icon":"🚶","id":"c1","log":{[todayISO()]:1},"name":"Caminar","unit":""},{"color":"#4cc46b","created":"2026-11-01","days":[],"goal":1,"icon":"🧘","id":"m1","log":{},"name":"Meditar","unit":""},{"color":"#4a90ff","created":"2026-11-01","days":[],"goal":1,"icon":"📖","id":"r1","kind":"lectura","log":{[todayISO()]:3},"name":"Leer","unit":""}];go('habitos')""")
     pg.wait_for_timeout(300)
@@ -22,14 +24,14 @@ with sync_playwright() as p:
     y8=box['y']+(262-214)*box['height']/280-5
     pg.mouse.move(x,y5); pg.mouse.down(); pg.mouse.move(x,y8,steps=8); pg.mouse.up(); pg.wait_for_timeout(300)
     ok(f'[{lab}] llenar botella deslizando', pg.evaluate("habCount(S.habits[0],todayISO())")==8 and pg.locator('.wbottles span.on').count()==1)
-    pg.wait_for_timeout(1500); ok(f'[{lab}] empieza botella nueva', pg.locator('#wN').inner_text()=='0')
+    pg.wait_for_timeout(1500); ok(f'[{lab}] botella llena se queda llena', pg.locator('#wN').inner_text()=='8')
     tap('#wDrink'); pg.wait_for_timeout(150); ok(f'[{lab}] + BEBER sigue', pg.evaluate("habCount(S.habits[0],todayISO())")==9)
-    tap('#wGoal'); pg.wait_for_timeout(300); pg.fill('#gV','50'); tap('#gS'); pg.wait_for_timeout(300)
+    tap('#wGoal'); pg.wait_for_timeout(300); wheel('#gV',50); tap('#gS'); pg.wait_for_timeout(300)
     ok(f'[{lab}] meta editable 50 oz', pg.evaluate("habGoal(S.habits[0])")==50 and '50 oz' in pg.locator('#wGoal').inner_text() and pg.locator('.wbottles span').count()==7)
     pg.evaluate("sheets.slice().forEach(s=>s.close())"); pg.wait_for_timeout(300)
     pg.locator('[data-hab="r1"]').click(); pg.wait_for_timeout(400)
     ok(f'[{lab}] lectura abre un libro', pg.locator('.book .bpage').count()==2)
-    pg.fill('#bkT','Mente de Campeón'); pg.fill('#bkB','40'); pg.fill('#bkTot','200'); pg.locator('#bkTot').dispatch_event('change'); pg.wait_for_timeout(200)
+    pg.fill('#bkT','Mente de Campeón'); wheel('#bkB',40); wheel('#bkTot',200); pg.locator('#bkTot').dispatch_event('change'); pg.wait_for_timeout(200)
     tap('[data-bq="10"]'); pg.wait_for_timeout(200)
     ok(f'[{lab}] páginas y marcador avanza', pg.locator('#bkC').inner_text()=='13' and pg.evaluate("S.habits[3].bookmark")==50 and pg.locator('.ribbon').inner_text()=='50')
     ok(f'[{lab}] progreso del libro', '25%' in pg.locator('.bkpct').inner_text())

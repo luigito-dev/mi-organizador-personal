@@ -579,7 +579,7 @@ function fillFocus(b) {
 }
 function openCdOther(b) {
   const c = fcfg();
-  const s = openSheet({title: 'Cuenta regresiva', cls: 'small', body: `<div class="fld"><label>Minutos</label><input class="inp" type="number" id="cdN" min="1" max="600" value="${c.cdMin}" inputmode="numeric"></div>`,
+  const s = openSheet({title: 'Cuenta regresiva', cls: 'small', body: `<div class="fld"><label>Minutos</label><input class="inp" id="cdN" readonly inputmode="none" data-wheel data-min="1" data-max="300" data-unit="min" data-title="Minutos" value="${c.cdMin}"></div>`,
     foot: `<button class="btn sec" data-close>Cancelar</button><button class="btn" id="cdOk">Listo</button>`,
     onMount: el => { const i = el.querySelector('#cdN'); setTimeout(() => i.select(), 50); el.querySelector('#cdOk').onclick = () => { const v = Math.round(+i.value); if (!v || v < 1 || v > 600) { toast('Escribe entre 1 y 600 minutos'); return; } c.cdMin = v; save('meta'); s.close(); fillFocus(b); }; }});
 }
@@ -1424,10 +1424,10 @@ function openHabitForm(h) {
     <div class="fld"><label>Color</label><div class="habcols">${HL_PASTEL.map(c => `<button type="button" data-hc="${c}" class="${h.color === c ? 'on' : ''}" style="background:${c}" aria-label="Color"></button>`).join('')}</div></div>
     <div class="fld"><label>Tipo</label><div class="seg habkind">${[['', '✓ Marcar'], ['agua', '💧 Agua'], ['lectura', '📖 Lectura'], ['tiempo', '⏱ Tiempo'], ['actividad', '🚶 Caminar/Correr']].map(([k, n]) => `<button type="button" data-hk="${k}" class="${habKind(h) === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
     <div class="fld hk-lectura"><small class="hint">📖 Lectura: sin límite por día. Cada día anotas cuántas páginas leíste y guardas tu 🔖 marcador.</small></div>
-    <div class="fld hk-agua"><label>Meta de agua por día (en onzas)</label><div class="habgoal"><button type="button" class="btn sec sm" id="hbM">−</button><input class="inp rdnum" id="hbOz" type="number" inputmode="numeric" min="1" max="400" value="${habKind(h) === 'agua' ? habGoal(h) : 64}"><button type="button" class="btn sec sm" id="hbP">+</button><span class="hint">oz</span></div><div class="rdquick">${[32, 48, 64, 80, 100].map(n => `<button type="button" data-goz="${n}">${n}</button>`).join('')}</div><small class="hint">Escribe la meta que quieras. Cada botella es de 8 oz.</small></div>
-    <div class="fld hk-tiempo"><label>Meta de minutos por día</label><div class="habgoal"><button type="button" class="btn sec sm" id="htM">−</button><input class="inp rdnum" id="htV" type="number" inputmode="numeric" min="1" max="600" value="${habKind(h) === 'tiempo' ? habGoal(h) : 10}"><button type="button" class="btn sec sm" id="htP">+</button><span class="hint">min</span></div><small class="hint">Para meditar, caminar, orar, hacer ejercicio… Tiene cronómetro.</small></div>
-    <div class="fld hk-actividad"><label>Metas por día</label><div class="habgoal"><button type="button" class="btn sec sm" id="haM">−</button><input class="inp rdnum" id="haV" type="number" inputmode="numeric" min="1" max="600" value="${isTimeKind(h) ? habGoal(h) : 30}"><button type="button" class="btn sec sm" id="haP">+</button><span class="hint">min</span></div>
-      <div class="habgoal" style="margin-top:8px"><input class="inp rdnum" id="haD" type="number" inputmode="decimal" step="0.1" min="0" value="${+h.goalDist || ''}" placeholder="0"><div class="seg"><button type="button" data-hu="mi" class="${(h.unitD || 'mi') === 'mi' ? 'on' : ''}">millas</button><button type="button" data-hu="km" class="${h.unitD === 'km' ? 'on' : ''}">km</button></div></div>
+    <div class="fld hk-agua"><label>Meta de agua por día (en onzas)</label><div class="habgoal"><button type="button" class="btn sec sm" id="hbM">−</button><input class="inp rdnum" id="hbOz" readonly inputmode="none" data-wheel data-min="1" data-max="300" data-title="Meta de agua" data-unit="oz" value="${habKind(h) === 'agua' ? habGoal(h) : 64}"><button type="button" class="btn sec sm" id="hbP">+</button><span class="hint">oz</span></div><div class="rdquick">${[32, 48, 64, 80, 100].map(n => `<button type="button" data-goz="${n}">${n}</button>`).join('')}</div><small class="hint">Escribe la meta que quieras. Cada botella es de 8 oz.</small></div>
+    <div class="fld hk-tiempo"><label>Meta de minutos por día</label><div class="habgoal"><button type="button" class="btn sec sm" id="htM">−</button><input class="inp rdnum" id="htV" readonly inputmode="none" data-wheel data-min="1" data-max="300" data-title="Minutos por día" data-unit="min" value="${habKind(h) === 'tiempo' ? habGoal(h) : 10}"><button type="button" class="btn sec sm" id="htP">+</button><span class="hint">min</span></div><small class="hint">Para meditar, caminar, orar, hacer ejercicio… Tiene cronómetro.</small></div>
+    <div class="fld hk-actividad"><label>Metas por día</label><div class="habgoal"><button type="button" class="btn sec sm" id="haM">−</button><input class="inp rdnum" id="haV" readonly inputmode="none" data-wheel data-min="1" data-max="300" data-title="Minutos por día" data-unit="min" value="${isTimeKind(h) ? habGoal(h) : 30}"><button type="button" class="btn sec sm" id="haP">+</button><span class="hint">min</span></div>
+      <div class="habgoal" style="margin-top:8px"><input class="inp rdnum" id="haD" readonly inputmode="none" data-wheel data-min="0" data-max="60" data-dec="1" data-title="Meta de distancia" data-blank="1" value="${+h.goalDist || ''}" placeholder="0"><div class="seg"><button type="button" data-hu="mi" class="${(h.unitD || 'mi') === 'mi' ? 'on' : ''}">millas</button><button type="button" data-hu="km" class="${h.unitD === 'km' ? 'on' : ''}">km</button></div></div>
       <small class="hint">Pon el tiempo, la distancia o las dos. Se cumple al llegar a cualquiera.</small></div>
     <div class="fld hk-"><label>Meta por día</label><div class="habgoal"><button type="button" class="btn sec sm" id="hgM">−</button><b id="hgV">${habGoal(h)}</b><button type="button" class="btn sec sm" id="hgP">+</button><input class="inp" id="hUnit" value="${esc(h.unit || '')}" placeholder="vasos, páginas, minutos…"></div><small class="hint">Con meta 1 se marca de un toque. Con más, cada toque suma uno.</small></div>
     <div class="fld"><label>Días</label><div class="habdays">${[0,1,2,3,4,5,6].map(i => `<button type="button" data-hdw="${i}" class="${!h.days.length || h.days.includes(i) ? 'on' : ''}">${DCORTO[i].slice(0, 1).toUpperCase()}</button>`).join('')}</div><small class="hint">Los días apagados son de descanso y no cuentan en contra.</small></div>`,
@@ -1491,10 +1491,11 @@ function openWaterReminders(h) {
         rem.sort((a, b) => a.time.localeCompare(b.time));
         el.querySelector('#wrBody').innerHTML = `
           <label class="wrsw"><span><b>Recordarme tomar agua</b><small>Te aviso a cada hora que pongas aquí.</small></span><input type="checkbox" id="wrOn" ${on ? 'checked' : ''}><i></i></label>
-          <div class="wrlist ${on ? '' : 'off'}">${rem.length ? rem.map(r => `<div class="wrrow" data-wr="${r.id}"><input type="time" class="inp wrt" value="${r.time}" data-wrt="${r.id}"><input class="inp wrl" value="${esc(r.label || '')}" placeholder="Mensaje" data-wrl="${r.id}" maxlength="40"><label class="mini-sw"><input type="checkbox" data-wro="${r.id}" ${r.on !== false ? 'checked' : ''}><i></i></label><button class="wrdel" data-wrd="${r.id}" aria-label="Eliminar">${'<i class="xdel"></i>'}</button></div>`).join('') : '<div class="hint" style="padding:8px 2px">No tienes recordatorios. Añade uno o usa el horario sugerido.</div>'}</div>
+          <div class="wrlist ${on ? '' : 'off'}">${rem.length ? rem.map(r => `<div class="wrrow" data-wr="${r.id}"><input class="inp wrt" readonly inputmode="none" value="${fmtTime(r.time)}" data-wrt="${r.id}" data-t="${r.time}"><input class="inp wrl" value="${esc(r.label || '')}" placeholder="Mensaje" data-wrl="${r.id}" maxlength="40"><label class="mini-sw"><input type="checkbox" data-wro="${r.id}" ${r.on !== false ? 'checked' : ''}><i></i></label><button class="wrdel" data-wrd="${r.id}" aria-label="Eliminar">${'<i class="xdel"></i>'}</button></div>`).join('') : '<div class="hint" style="padding:8px 2px">No tienes recordatorios. Añade uno o usa el horario sugerido.</div>'}</div>
           <div class="wradd"><button class="btn sec" id="wrAdd">+ Añadir hora</button><button class="btn ghost" id="wrSug">Usar horario sugerido</button></div>
           ${window.NATIVE ? '<small class="hint">Te llegan aunque la app esté cerrada. Si ya cumpliste la meta del día, no te avisa.</small>' : '<small class="hint">En esta versión web el aviso sale mientras la app está abierta. En la app de Android te llega aunque esté cerrada.</small>'}`;
-        const sync = () => { el.querySelectorAll('[data-wrt]').forEach(i => { const r = rem.find(x => x.id === i.dataset.wrt); if (r && i.value) r.time = i.value; }); el.querySelectorAll('[data-wrl]').forEach(i => { const r = rem.find(x => x.id === i.dataset.wrl); if (r) r.label = i.value.trim(); }); el.querySelectorAll('[data-wro]').forEach(i => { const r = rem.find(x => x.id === i.dataset.wro); if (r) r.on = i.checked; }); on = el.querySelector('#wrOn').checked; };
+        const sync = () => { el.querySelectorAll('[data-wrt]').forEach(i => { const r = rem.find(x => x.id === i.dataset.wrt); if (r && i.dataset.t) r.time = i.dataset.t; }); el.querySelectorAll('[data-wrl]').forEach(i => { const r = rem.find(x => x.id === i.dataset.wrl); if (r) r.label = i.value.trim(); }); el.querySelectorAll('[data-wro]').forEach(i => { const r = rem.find(x => x.id === i.dataset.wro); if (r) r.on = i.checked; }); on = el.querySelector('#wrOn').checked; };
+        el.querySelectorAll('[data-wrt]').forEach(i => i.onclick = async () => { const t = await pickTime(i.dataset.t, {title: 'Hora del recordatorio'}); if (t) { i.dataset.t = t; i.value = fmtTime(t); } });
         el.querySelector('#wrOn').onchange = () => { sync(); draw(); };
         el.querySelectorAll('[data-wrd]').forEach(b => b.onclick = () => { sync(); rem = rem.filter(x => x.id !== b.dataset.wrd); draw(); });
         el.querySelector('#wrAdd').onclick = () => { sync(); const last = rem.length ? rem[rem.length - 1].time : '07:00'; const [hh, mm] = last.split(':').map(Number); rem.push({id: uid(), time: `${String(Math.min(23, hh + 2)).padStart(2, '0')}:${String(mm).padStart(2, '0')}`, label: 'Hora de tomar agua', on: true}); on = true; draw(); };
@@ -1546,45 +1547,47 @@ function bigBottle(oz) {
     <path d="M48 120v110" stroke="#fff" stroke-opacity=".55" stroke-width="6" stroke-linecap="round"/></svg>`;
 }
 function openWater(h, d) {
-  let just = false;
+  let just = false, empty = false;
   const draw = el => {
     const c = habCount(h, d), g = habGoal(h), gb = habBottles(h), nb = Math.floor(c / OZ);
-    const cur = just ? OZ : c % OZ, base = c - cur;
+    const cur = empty ? 0 : c > 0 && c % OZ === 0 ? OZ : c % OZ, base = c - cur; // la botella llena se queda llena hasta que bebas más
     const nr = (h.reminders || []).filter(r => r.on !== false).length;
     const hy = oz => 262 - 214 * (oz / OZ);
     el.querySelector('#wBody').innerHTML = `
-      <div class="wtop"><span>${d === todayISO() ? 'Hoy' : cap(fmtLong(d))}</span><b>${c} oz</b></div><div class="wgoalrow"><button class="wgoal" id="wGoal">🎯 Meta del día: <b>${g} oz</b> <span>Cambiar ✎</span></button></div>
+      <div class="wtop"><span>${d === todayISO() ? 'Hoy' : cap(fmtLong(d))}</span><b>${c} oz</b></div><div class="wgoalrow"><button class="wgoal" id="wGoal">Meta del día: <b>${g} oz</b> <span>Cambiar ✎</span></button></div>
       <div class="wnum"><b id="wN">${cur}</b><span>oz</span></div><div class="wbot" id="wBot">${bigBottle(cur)}
-        <div class="whandle" id="wH" style="top:${hy(cur)}px" role="slider" aria-label="Onzas en la botella" aria-valuemin="0" aria-valuemax="${OZ}" aria-valuenow="${cur}" tabindex="0"><svg viewBox="0 0 24 24"><path d="M12 5l6 6H6zM12 19l-6-6h12z" fill="#fff"/></svg></div></div>
+        <div class="whandle" id="wH" style="top:${Math.max(72, hy(cur))}px" role="slider" aria-label="Onzas en la botella" aria-valuemin="0" aria-valuemax="${OZ}" aria-valuenow="${cur}" tabindex="0"><svg viewBox="0 0 24 24"><path d="M12 5l6 6H6zM12 19l-6-6h12z" fill="#fff"/></svg></div></div>
       <div class="wtip">Desliza el botón verde para subir o bajar el agua</div>
       <div class="wbottles">${[...Array(Math.max(gb, nb))].map((_, i) => `<span class="${i < nb ? 'on' : ''} ${just && i === nb - 1 ? 'pop' : ''}">${bottleSVG({id: 'w' + i, goal: 99}, i < nb ? OZ : 0)}</span>`).join('')}</div>
       <div class="wmsg">${c >= g ? '🎉 ¡Meta del día cumplida!' : `${nb} de ${gb} botellas · faltan ${g - c} oz`}</div>
-      <div class="wacts"><button class="wsmall" id="wMinus" ${c ? '' : 'disabled'} aria-label="Quitar 1 onza">−1</button><button class="wdrink" id="wDrink">+ BEBER <small>1 oz</small></button><button class="wsmall" id="wRem" aria-label="Recordatorios">⏰${nr ? `<i>${nr}</i>` : ''}</button></div>`;
+      <div class="wacts"><button class="wsmall wminus" id="wMinus" ${c ? '' : 'disabled'} aria-label="Quitar 1 onza">−1<small>oz</small></button><button class="wdrink" id="wDrink">+ BEBER <small>1 oz</small></button><button class="wsmall" id="wRem" aria-label="Recordatorios">⏰${nr ? `<i>${nr}</i>` : ''}</button></div>`;
+    let emptyNext = false;
     const commit = total => {
       const before = habCount(h, d); h.log = h.log || {}; if (total > 0) h.log[d] = total; else delete h.log[d]; save('habits');
       const filled = total > before && Math.floor(total / OZ) > Math.floor(before / OZ);
-      if (filled) { just = true; toast(`💧 ¡Botella ${Math.floor(total / OZ)} llena!`); if (total >= g && before < g) setTimeout(() => toast('🎉 ¡Meta de agua cumplida!'), 400); if (navigator.vibrate) try { navigator.vibrate(25); } catch (e) {} draw(el); setTimeout(() => { just = false; if (el.isConnected) draw(el); }, 1300); }
-      else { just = false; draw(el); }
+      just = filled; empty = emptyNext; emptyNext = false;
+      if (filled) { toast(`💧 ¡Botella ${Math.floor(total / OZ)} llena!`); if (total >= g && before < g) setTimeout(() => toast('🎉 ¡Meta de agua cumplida!'), 400); if (navigator.vibrate) try { navigator.vibrate(25); } catch (e) {} }
+      draw(el); just = false;
     };
     // deslizar
     const bot = el.querySelector('#wBot'), H = el.querySelector('#wH'), N = el.querySelector('#wN'), W = bot.querySelector('.bbwater');
     let drag = false, val = cur;
     const at = e => { const r = bot.getBoundingClientRect(), y = (e.clientY - r.top) * (280 / r.height); return Math.max(0, Math.min(OZ, Math.round((262 - y) / 214 * OZ))); };
-    const show = v => { val = v; N.textContent = v; H.style.top = hy(v) + 'px'; W.style.transform = `translateY(${hy(v)}px)`; H.setAttribute('aria-valuenow', v); };
+    const show = v => { val = v; N.textContent = v; H.style.top = Math.max(72, hy(v)) + 'px'; W.style.transform = `translateY(${hy(v)}px)`; H.setAttribute('aria-valuenow', v); };
     bot.addEventListener('pointerdown', e => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } drag = true; bot.setPointerCapture(e.pointerId); bot.classList.add('drag'); show(at(e)); e.preventDefault(); });
     bot.addEventListener('pointermove', e => { if (drag) { const v = at(e); if (v !== val && navigator.vibrate) try { navigator.vibrate(5); } catch (x) {} show(v); } });
-    const up = () => { if (!drag) return; drag = false; bot.classList.remove('drag'); if (val !== cur) commit(base + val); };
+    const up = () => { if (!drag) return; drag = false; bot.classList.remove('drag'); if (val !== cur) { emptyNext = val === 0; commit(base + val); } };
     bot.addEventListener('pointerup', up); bot.addEventListener('pointercancel', up);
     H.onkeydown = e => { if (e.key === 'ArrowUp') commit(base + Math.min(OZ, cur + 1)); if (e.key === 'ArrowDown') commit(base + Math.max(0, cur - 1)); };
     el.querySelector('#wDrink').onclick = () => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } commit(habCount(h, d) + 1); };
-    el.querySelector('#wMinus').onclick = () => { just = false; commit(Math.max(0, habCount(h, d) - 1)); };
+    el.querySelector('#wMinus').onclick = () => { const c2 = habCount(h, d); if (c2) commit(c2 - 1); };
     el.querySelector('#wRem').onclick = () => openWaterReminders(h);
     el.querySelector('#wGoal').onclick = () => openWaterGoal(h, () => draw(el));
   };
   openSheet({title: `💧 ${esc(h.name)}`, cls: 'watersheet', body: '<div id="wBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
 }
 function openWaterGoal(h, done) {
-  const s = openSheet({title: '🎯 Meta de agua', body: `<div class="fld"><label>¿Cuántas onzas quieres tomar al día?</label><div class="habgoal"><button type="button" class="btn sec" id="gM">−</button><input class="inp rdnum" id="gV" type="number" inputmode="numeric" min="1" max="400" value="${habGoal(h)}"><button type="button" class="btn sec" id="gP">+</button><span class="hint">oz</span></div>
+  const s = openSheet({title: '🎯 Meta de agua', body: `<div class="fld"><label>¿Cuántas onzas quieres tomar al día?</label><div class="habgoal"><button type="button" class="btn sec" id="gM">−</button><input class="inp rdnum" id="gV" readonly inputmode="none" data-wheel data-min="1" data-max="300" data-title="Meta de agua" data-unit="oz" value="${habGoal(h)}"><button type="button" class="btn sec" id="gP">+</button><span class="hint">oz</span></div>
     <div class="rdquick">${[32, 48, 64, 80, 100].map(n => `<button type="button" data-goz="${n}">${n}</button>`).join('')}</div><small class="hint" id="gB"></small></div>`,
     foot: '<button class="btn" id="gS">Guardar meta</button>',
     onMount: el => {
@@ -1606,8 +1609,8 @@ function openBook(h, d) {
           <div id="bkRib">${bm ? `<div class="ribbon" title="Marcador"><span>${bm}</span></div>` : ''}</div>
           <input class="bktitle" id="bkT" value="${esc(h.book || '')}" placeholder="Título del libro" maxlength="60">
           <div class="bkline"><span>Me quedé en la página</span></div>
-          <div class="bkmark"><button class="bkb" id="bmM" aria-label="Página anterior">‹</button><input class="bknum" id="bkB" type="number" inputmode="numeric" min="0" value="${bm || ''}" placeholder="—"><button class="bkb" id="bmP" aria-label="Página siguiente">›</button></div>
-          <div class="bkline"><span>de</span><input class="bktot" id="bkTot" type="number" inputmode="numeric" min="0" value="${tot || ''}" placeholder="¿?"><span>páginas</span></div>
+          <div class="bkmark"><button class="bkb" id="bmM" aria-label="Página anterior">‹</button><input class="bknum" id="bkB" readonly inputmode="none" data-wheel data-min="0" data-max="3000" data-title="Me quedé en la página" data-blank="1" value="${bm || ''}" placeholder="—"><button class="bkb" id="bmP" aria-label="Página siguiente">›</button></div>
+          <div class="bkline"><span>de</span><input class="bktot" id="bkTot" readonly inputmode="none" data-wheel data-min="0" data-max="3000" data-title="Páginas del libro" data-blank="1" value="${tot || ''}" placeholder="¿?"><span>páginas</span></div>
           <div id="bkPr">${tot ? `<div class="bkprog"><i style="width:${pct}%"></i></div><div class="bkpct">${pct >= 100 ? '🎉 ¡Terminado!' : pct + '% del libro'}</div>` : ''}</div>
         </div>
         <div class="bpage right">
@@ -1619,7 +1622,7 @@ function openBook(h, d) {
         </div>
       </div>
       <div class="bknotes"><div class="bknh"><b>📝 Notas del libro</b><span>${h.notes.length}</span></div>
-        <div class="bknadd"><input class="inp bknp" id="bnP" type="number" inputmode="numeric" placeholder="Pág." value="${bm || ''}"><input class="inp" id="bnT" placeholder="Escribe una idea, frase o pensamiento…" maxlength="300"><button class="btn" id="bnA" aria-label="Añadir nota">+</button></div>
+        <div class="bknadd"><input class="inp bknp" id="bnP" readonly inputmode="none" data-wheel data-min="0" data-max="3000" data-title="Página de la nota" data-blank="1" placeholder="Pág." value="${bm || ''}"><input class="inp" id="bnT" placeholder="Escribe una idea, frase o pensamiento…" maxlength="300"><button class="btn" id="bnA" aria-label="Añadir nota">+</button></div>
         ${h.notes.slice().reverse().map(n => `<div class="bknote"><span class="bkpg">${n.page ? 'pág. ' + n.page : '—'}</span><p>${esc(n.text)}</p><button class="wrdel" data-bnd="${n.id}" aria-label="Eliminar nota"><i class="xdel"></i></button></div>`).join('') || '<div class="hint" style="padding:6px 2px">Aún no hay notas. Guarda aquí lo que te gustó del libro.</div>'}
       </div>
       <div class="bkfoot"><button class="btn ghost" id="bkNew">📚 Empezar otro libro</button>${(h.shelf || []).length ? `<button class="btn ghost" id="bkShelf">Mis libros (${h.shelf.length})</button>` : ''}</div>`;
@@ -1664,8 +1667,7 @@ function openTimer(h, d) {
       <div id="tmRing"></div>
       <div class="bkq tmq"><button data-tq="-5">−5</button><button data-tq="5">+5</button><button data-tq="10">+10</button><button data-tq="15">+15</button></div>
       ${act ? `<div class="accard">
-        <div class="acrow"><span>📏 Distancia hoy</span><div class="acdist"><button data-dq="-0.1">−</button><input id="acD" type="number" inputmode="decimal" step="0.1" min="0" value="${ds ? fmtD(ds) : ''}" placeholder="0"><span>${u}</span><button data-dq="0.1">+</button></div></div>
-        <div class="bkq tmq acq"><button data-dq="0.25">+¼</button><button data-dq="0.5">+½</button><button data-dq="1">+1</button><button data-dq="2">+2</button></div>
+        <div class="acrow"><span>📏 Distancia hoy</span><div class="acdist"><button data-dq="-0.1">−</button><input id="acD" readonly inputmode="none" data-wheel data-min="0" data-max="60" data-dec="1" data-unit="${u}" data-title="Distancia de hoy" data-blank="1" value="${ds ? fmtD(ds) : ''}" placeholder="0"><span>${u}</span><button data-dq="0.1">+</button></div></div>
         <div class="acstats" id="acS"></div>
         <button class="acgoal" id="acG">🎯 Meta: <b>${habGoal(h)} min</b>${+h.goalDist ? ` · <b>${fmtD(h.goalDist)} ${u}</b>` : ''} <span>Cambiar ✎</span></button>
       </div>` : `<button class="acgoal" id="acG">🎯 Meta: <b>${habGoal(h)} min</b> <span>Cambiar ✎</span></button>`}
@@ -1694,8 +1696,8 @@ function openTimer(h, d) {
     box.innerHTML = `<div><b>🔥 ${cal ? '~' + cal : '0'}</b><span>calorías aprox.</span></div><div><b>${pace ? `${Math.floor(pace)}:${String(Math.round((pace % 1) * 60)).padStart(2, '0')}` : '—'}</b><span>min por ${u}</span></div><div><b>${m && ds ? fmtD(ds / (m / 60)) : '—'}</b><span>${u}/hora</span></div>
       <button class="acw" id="acW">${S.settings.pesoLb ? `Calculado con tu peso: ${S.settings.pesoLb} lb ✎` : 'Calculado con 160 lb. Pon tu peso para más exactitud ✎'}</button>`;
     box.querySelector('#acW').onclick = () => {
-      const w = openSheet({title: '⚖️ Tu peso', body: `<div class="fld"><label>Peso en libras</label><input class="inp rdnum" id="pwV" type="number" inputmode="numeric" min="50" max="700" value="${S.settings.pesoLb || ''}" placeholder="160" style="max-width:none"><small class="hint">Solo se usa para calcular las calorías aproximadas. Se queda en tu app.</small></div>`, foot: '<button class="btn" id="pwS">Guardar</button>',
-        onMount: e2 => { setTimeout(() => e2.querySelector('#pwV').focus(), 200); e2.querySelector('#pwS').onclick = () => { const n = parseFloat(e2.querySelector('#pwV').value); S.settings.pesoLb = n > 50 && n < 700 ? Math.round(n) : null; save('meta'); w.close(); stats(el); toast(S.settings.pesoLb ? `⚖️ ${S.settings.pesoLb} lb guardado` : 'Se usará 160 lb'); }; }});
+      const w = openSheet({title: '⚖️ Tu peso', body: `<div class="fld"><label>Peso en libras</label><input class="inp rdnum" id="pwV" readonly inputmode="none" data-wheel data-min="60" data-max="500" data-title="Tu peso" data-unit="lb" data-def="160" value="${S.settings.pesoLb || ''}" placeholder="160" style="max-width:none"><small class="hint">Solo se usa para calcular las calorías aproximadas. Se queda en tu app.</small></div>`, foot: '<button class="btn" id="pwS">Guardar</button>',
+        onMount: e2 => { e2.querySelector('#pwS').onclick = () => { const n = parseFloat(e2.querySelector('#pwV').value); S.settings.pesoLb = n > 50 && n < 700 ? Math.round(n) : null; save('meta'); w.close(); stats(el); toast(S.settings.pesoLb ? `⚖️ ${S.settings.pesoLb} lb guardado` : 'Se usará 160 lb'); }; }});
     };
   };
   openSheet({title: `${h.icon} ${esc(h.name)}`, cls: 'timersheet', body: '<div id="tmBody"></div>', onMount: el => { draw(el); tick = setInterval(() => { if (!el.isConnected) { clearInterval(tick); return; } if (UI.habTimer && UI.habTimer.id === h.id) ring(el); }, 1000); }, onClose: () => { clearInterval(tick); if (UI.view === 'habitos') renderView(); }});
@@ -1703,10 +1705,10 @@ function openTimer(h, d) {
 function openActGoal(h, done) {
   const act = habKind(h) === 'actividad', u0 = h.unitD || 'mi';
   const s = openSheet({title: '🎯 Mi meta diaria', body: `
-    <div class="fld"><label>Tiempo (minutos)</label><div class="habgoal"><button type="button" class="btn sec" id="gaM">−</button><input class="inp rdnum" id="gaV" type="number" inputmode="numeric" min="1" max="600" value="${habGoal(h)}"><button type="button" class="btn sec" id="gaP">+</button><span class="hint">min</span></div>
+    <div class="fld"><label>Tiempo (minutos)</label><div class="habgoal"><button type="button" class="btn sec" id="gaM">−</button><input class="inp rdnum" id="gaV" readonly inputmode="none" data-wheel data-min="1" data-max="300" data-title="Minutos por día" data-unit="min" value="${habGoal(h)}"><button type="button" class="btn sec" id="gaP">+</button><span class="hint">min</span></div>
       <div class="rdquick">${[10, 20, 30, 45, 60].map(n => `<button type="button" data-gm="${n}">${n}</button>`).join('')}</div></div>
-    ${act ? `<div class="fld"><label>Distancia</label><div class="habgoal"><input class="inp rdnum" id="gaD" type="number" inputmode="decimal" step="0.1" min="0" value="${+h.goalDist || ''}" placeholder="0"><div class="seg"><button type="button" data-gu="mi" class="${u0 === 'mi' ? 'on' : ''}">millas</button><button type="button" data-gu="km" class="${u0 === 'km' ? 'on' : ''}">km</button></div></div>
-      <div class="rdquick">${[1, 2, 3, 5].map(n => `<button type="button" data-gd="${n}">${n}</button>`).join('')}</div><small class="hint">Déjalo en blanco si solo quieres meta de tiempo. La meta se cumple al llegar al tiempo o a la distancia.</small></div>` : ''}`,
+    ${act ? `<div class="fld"><label>Distancia</label><div class="habgoal"><input class="inp rdnum" id="gaD" readonly inputmode="none" data-wheel data-min="0" data-max="60" data-dec="1" data-title="Meta de distancia" data-blank="1" value="${+h.goalDist || ''}" placeholder="0"><div class="seg"><button type="button" data-gu="mi" class="${u0 === 'mi' ? 'on' : ''}">millas</button><button type="button" data-gu="km" class="${u0 === 'km' ? 'on' : ''}">km</button></div></div>
+<small class="hint">Déjalo en blanco si solo quieres meta de tiempo. La meta se cumple al llegar al tiempo o a la distancia.</small></div>` : ''}`,
     foot: '<button class="btn" id="gaS">Guardar meta</button>',
     onMount: el => {
       const q = x => el.querySelector(x), v = () => Math.max(1, Math.min(600, parseInt(q('#gaV').value, 10) || 30)); let u = u0;

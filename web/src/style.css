@@ -979,3 +979,7 @@ td.hname span,.hmonth .hname span{margin-right:5px}
 .timersheet > .sh-body > #tmBody > .acgoal{width:auto;max-width:300px;margin:0 auto 14px}
 .calpill{display:inline-flex;align-self:flex-start;margin-top:4px;font-size:12px;font-weight:700;background:#ffe8dc;color:#c2410c;padding:2px 8px;border-radius:6px}
 [data-theme=dark] .calpill{background:#4a2616;color:#ffb38a}
+.wminus{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;color:var(--text)}.wminus small{font-size:10px;color:var(--muted);font-weight:600}
+input[data-wheel]{cursor:pointer;caret-color:transparent}
+.wunit{display:flex;align-items:center;font-size:18px;font-weight:600;color:var(--muted);padding-left:4px;z-index:1}
+.wrt{cursor:pointer}

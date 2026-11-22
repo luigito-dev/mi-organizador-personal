@@ -79,6 +79,35 @@ function pickTime(current, {title = 'Elegir hora', durations, base} = {}) {
       }});
   });
 }
+// Rueda para números (como el reloj). opts: min, max, step, dec (1 = un decimal), unit, title
+function pickNumber(current, {min = 0, max = 100, step = 1, dec = 0, unit = '', title = 'Elegir número'} = {}) {
+  return new Promise(res => {
+    let done = false; const cur = Math.min(max, Math.max(min, +current || 0));
+    const s = openSheet({title, cls: 'small', body: `<div class="wheel" id="wh"></div>`,
+      foot: `<button class="btn sec" data-close>Cancelar</button><button class="btn" id="okN">Listo</button>`,
+      onClose: () => { if (!done) res(undefined); },
+      onMount: el => {
+        const wh = el.querySelector('#wh'), ints = [];
+        for (let v = Math.floor(min); v <= max; v += dec ? 1 : step) ints.push(v);
+        const I = makeColumn(ints, {selected: Math.max(0, ints.indexOf(dec ? Math.floor(cur) : Math.round(cur / step) * step))});
+        let D = null; wh.append(I.col);
+        if (dec) { const ds = [0,1,2,3,4,5,6,7,8,9]; D = makeColumn(ds, {selected: Math.round((cur % 1) * 10) % 10, labels: ds.map(x => '.' + x)}); wh.append(D.col); }
+        if (unit) { const U = document.createElement('div'); U.className = 'wunit'; U.textContent = unit; wh.append(U); }
+        const read = () => dec ? Math.round((I.value + D.value / 10) * 10) / 10 : I.value;
+        window._numPick = {set: v => { I.set(Math.max(0, ints.indexOf(dec ? Math.floor(v) : v))); if (D) D.set(Math.round((v % 1) * 10)); }};
+        el.querySelector('#okN').onclick = () => { done = true; res(read()); s.close(); };
+      }});
+  });
+}
+// Cualquier <input data-wheel> se llena con la rueda en vez del teclado
+document.addEventListener('click', async e => {
+  const inp = e.target.closest && e.target.closest('input[data-wheel]'); if (!inp) return;
+  e.preventDefault(); inp.blur();
+  const o = inp.dataset; const v = await pickNumber(parseFloat(inp.value) || +o.def || 0, {min: +(o.min || 0), max: +(o.max || 100), step: +(o.step || 1), dec: +(o.dec || 0), unit: o.unit || '', title: o.title || 'Elegir número'});
+  if (v === undefined) return;
+  inp.value = v === 0 && o.blank ? '' : v;
+  inp.dispatchEvent(new Event('input', {bubbles: true})); inp.dispatchEvent(new Event('change', {bubbles: true}));
+}, true);
 function pickReminder(current) {
   return new Promise(res => {
     let done = false; const idx = Math.max(0, REMINDERS.findIndex(r => r[0] === current));
