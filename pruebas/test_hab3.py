@@ -32,14 +32,14 @@ with sync_playwright() as p:
     # ahorro
     pg.locator('[data-hab="a1"]').click(); pg.wait_for_timeout(400)
     tap('#svG'); pg.wait_for_timeout(300); pg.fill('#sgF','Viaje'); wheel('#sgV',500); tap('#sgS'); pg.wait_for_timeout(300)
-    wheelBtn('#svIn', 25.5)
-    ok(f'[{lab}] guardar dinero con centavos', abs(pg.evaluate("saveTotal(S.habits[1])")-25.5)<.001 and '$25.5' in pg.locator('.svtop').inner_text(), pg.locator('.svtop').inner_text())
+    wheelBtn('#svIn', 25)
+    ok(f'[{lab}] guardar dinero con centavos', abs(pg.evaluate("saveTotal(S.habits[1])")-25)<.001 and '$25' in pg.locator('.svtop').inner_text(), pg.locator('.svtop').inner_text())
     wheelBtn('#svOut', 5)
-    ok(f'[{lab}] sacar dinero', abs(pg.evaluate("saveTotal(S.habits[1])")-20.5)<.001 and pg.locator('.svmv').count()==2)
+    ok(f'[{lab}] sacar dinero', abs(pg.evaluate("saveTotal(S.habits[1])")-20)<.001 and pg.locator('.svmv').count()==2)
     ok(f'[{lab}] ahorro cumple el día', pg.evaluate("habDone(S.habits[1],todayISO())"))
     pg.screenshot(path=f'shots/{lab}-ahorro.png')
     pg.evaluate("sheets.slice().forEach(s=>s.close())"); pg.wait_for_timeout(300)
-    ok(f'[{lab}] fila ahorro', '$20.5' in pg.locator('[data-hab="a1"]').inner_text() and '$500' in pg.locator('[data-hab="a1"]').inner_text())
+    ok(f'[{lab}] fila ahorro', '$20' in pg.locator('[data-hab="a1"]').inner_text() and '$500' in pg.locator('[data-hab="a1"]').inner_text())
     # despertar
     pg.evaluate("S.habits[2].wakeAt='23:59';save('habits')")
     pg.locator('[data-hab="d1"]').click(); pg.wait_for_timeout(400)

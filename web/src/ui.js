@@ -83,11 +83,11 @@ function pickTime(current, {title = 'Elegir hora', durations, base} = {}) {
 function pickNumber(current, {min = 0, max = 100, step = 1, dec = 0, unit = '', title = 'Elegir número'} = {}) {
   return new Promise(res => {
     let done = false; const cur = Math.min(max, Math.max(min, +current || 0));
-    const s = openSheet({title, cls: 'small', body: `<div class="wheel" id="wh"></div>`,
+    const s = openSheet({title, cls: 'small', body: `<div class="wtyperow"><span>${unit === '$' ? '$' : ''}</span><input class="inp wtype" id="wTy" type="text" inputmode="${dec ? 'decimal' : 'numeric'}" placeholder="Escribe la cantidad" autocomplete="off"><span>${unit && unit !== '$' ? esc(unit) : ''}</span></div><div class="wor">o gira la rueda</div><div class="wheel" id="wh"></div>`,
       foot: `<button class="btn sec" data-close>Cancelar</button><button class="btn" id="okN">Listo</button>`,
       onClose: () => { if (!done) res(undefined); },
       onMount: el => {
-        const wh = el.querySelector('#wh'), ints = [];
+        const wh = el.querySelector('#wh'), ints = [], ty = el.querySelector('#wTy'); let typed = null, syncing = false;
         for (let v = Math.floor(min); v <= max; v += dec ? 1 : step) ints.push(v);
         const I = makeColumn(ints, {selected: Math.max(0, ints.indexOf(dec ? Math.floor(cur) : Math.round(cur / step) * step))});
         let D = null; wh.append(I.col);
@@ -96,7 +96,11 @@ function pickNumber(current, {min = 0, max = 100, step = 1, dec = 0, unit = '', 
         if (unit) { const U = document.createElement('div'); U.className = 'wunit'; U.textContent = unit; wh.append(U); }
         const read = () => dec ? Math.round((I.value + D.value / (dec === 2 ? 100 : 10)) * 100) / 100 : I.value;
         window._numPick = {set: v => { I.set(Math.max(0, ints.indexOf(dec ? Math.floor(v) : v))); if (D) D.set(Math.round((v % 1) * (dec === 2 ? 100 : 10))); }};
-        el.querySelector('#okN').onclick = () => { done = true; res(read()); s.close(); };
+        const parse = () => { const raw = ty.value.replace(/[$,\s]/g, '').replace(',', '.'); if (!raw) return null; let v = parseFloat(raw); if (!isFinite(v)) return null; v = dec ? Math.round(v * (dec === 2 ? 100 : 10)) / (dec === 2 ? 100 : 10) : Math.round(v); return Math.min(max, Math.max(min, v)); };
+        ty.addEventListener('input', () => { typed = parse(); ty.classList.toggle('bad', ty.value.trim() !== '' && typed === null); if (typed === null) return; syncing = true; const k = ints.indexOf(dec ? Math.floor(typed) : typed); if (k >= 0) { I.set(k, true); if (D) D.set(Math.round((typed % 1) * (dec === 2 ? 100 : 10)), true); } setTimeout(() => syncing = false, 400); });
+        ty.addEventListener('keydown', e => { if (e.key === 'Enter') el.querySelector('#okN').click(); });
+        I.onChange = () => { if (!syncing && typed !== null) { typed = null; ty.value = ''; } };
+        el.querySelector('#okN').onclick = () => { done = true; const v = typed !== null ? typed : read(); res(v); s.close(); };
       }});
   });
 }

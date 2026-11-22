@@ -1128,3 +1128,30 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .pv{display:flex;gap:4px;height:34px;align-items:center;justify-content:center}
 .pv.lista{flex-direction:column;gap:5px}.pv.lista i{display:block;width:60px;height:6px;border-radius:3px;background:#d99400;opacity:.6}
 .pv.circulos{flex-wrap:wrap;width:72px}.pv.circulos b{width:14px;height:14px;border-radius:50%;border:2px solid var(--text)}
+.wtyperow{display:flex;align-items:center;gap:8px;justify-content:center;margin:4px 0 2px}
+.wtyperow span{font-size:22px;font-weight:700;color:var(--muted)}
+.wtype{max-width:200px;text-align:center;font-size:22px;font-weight:700}
+.wtype.bad{border-color:var(--red)}
+.wor{text-align:center;font-size:12px;color:var(--muted);margin:4px 0 -2px}
+/* retos listos */
+.chready{background:var(--soft);border-radius:18px;padding:12px}
+.chrd{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px;border-radius:14px;background:var(--card);margin-top:6px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.chrd:active{transform:scale(.98)}
+.chrdi{width:46px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;gap:2px;flex-wrap:wrap;border-radius:10px;background:#fff4d6;color:#7a5200}
+.chrdi.sobres .envi{width:30px;height:22px}
+.chrdi.circulos b{width:11px;height:11px;border-radius:50%;border:2px solid #7a5200}
+.chrdi.lista{flex-direction:column;gap:4px}.chrdi.lista i{width:28px;height:5px;border-radius:3px;background:#d99400}
+.chrdt{flex:1;min-width:0;display:flex;flex-direction:column}
+.chrdt b{font-size:14.5px}
+.chrdt small{color:var(--muted);font-size:12px}
+.chrdm{font-weight:800;color:#1e7a36;white-space:nowrap}
+.chvpick{grid-template-columns:repeat(3,1fr)}
+.pv.sobres{gap:4px}.pv.sobres .envi{width:26px;height:19px}
+/* sobres */
+.chdots.env{gap:6px 4px}
+.chenv{display:flex;flex-direction:column;align-items:center;width:56px;padding:2px 0;color:var(--text);background:transparent}
+.chenv .envi{width:44px;height:31px}
+.chenv span{font-family:'Roboto Condensed','Arial Narrow',sans-serif;font-weight:800;font-size:13px;margin-top:1px}
+.chenv.on{color:#c27c00}
+.chenv.on .envi{--envf:#ffd54a}
+.chenv:active{transform:scale(.9)}

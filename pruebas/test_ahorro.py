@@ -24,7 +24,7 @@ with sync_playwright() as p:
     ok(f'[{lab}] mensual 12 meses', pg.input_value('#chN')=='12' and '$180' in pg.locator('#chSum').inner_text(), pg.locator('#chSum').inner_text())
     tap('[data-cf="semana"]'); tap('[data-cs="variado"]'); wheel('#chA',1000); pg.wait_for_timeout(150)
     ok(f'[{lab}] variado semanal 52', pg.input_value('#chN')=='52' and '$1,000' in pg.locator('#chSum').inner_text())
-    ok(f'[{lab}] opción de cómo marcar', pg.locator('[data-cvw]').count()==2)
+    ok(f'[{lab}] opción de cómo marcar', pg.locator('[data-cvw]').count()==3)
     tap('#chS'); pg.wait_for_timeout(500)
     ok(f'[{lab}] ventana flotante del reto', pg.locator('.ov.float .chrows .qrow').count()==52 and 'RETO $1,000' in pg.locator('.ov.float .qtitle').inner_text())
     ok(f'[{lab}] suma exacta', abs(pg.evaluate("S.habits[0].challenge.vals.reduce((a,b)=>a+b,0)")-1000)<.001)
