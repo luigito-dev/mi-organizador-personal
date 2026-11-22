@@ -55,7 +55,7 @@
         const at = reminderTime(e.date, e.allDay ? null : e.start, e.reminder);
         if (at > now + 3000 && at < horizon) out.push({at, kind: 'e', id: e.id, title: evType(e.evType).icon + ' ' + e.title, body: relDay(e.date) + (e.allDay ? ' · todo el día' : ' a las ' + fmtTime(e.start)) + (e.place ? ' · ' + e.place : '')});
       });
-      if (typeof waterReminderList === 'function') waterReminderList(3).filter(x => x.at > now + 3000).forEach(x => out.push({at: x.at, kind: 'h', id: x.id, title: x.title, body: x.body}));
+      if (typeof waterReminderList === 'function') waterReminderList(3).filter(x => x.at > now + 3000).forEach(x => out.push({at: x.at, kind: x.kind, id: x.id, title: x.title, body: x.body}));
       this.snoozes.filter(z => z.at > now + 1000).forEach(z => out.push(z));
       return out.sort((a, b) => a.at - b.at).slice(0, 60);
     },
@@ -166,6 +166,7 @@
           else if (ev.actionId === 'posponer') this.snooze(n);
           else if (ex.kind === 't' && S.tasks.some(t => t.id === ex.id)) openTaskDetail(ex.id);
           else if (ex.kind === 'e' && S.events.some(e => e.id === ex.id)) openEventDetail(ex.id);
+          else if (ex.kind === 'hd') { const h = (S.habits || []).find(x => x.id === ex.id); if (h) { go('habitos'); habTap(h, todayISO()); } }
           else if (ex.kind === 'h') { const h = (S.habits || []).find(x => x.id === ex.id); if (h) { go('habitos'); openWater(h, todayISO()); } }
         }));
       } catch (e) { console.warn(e); }

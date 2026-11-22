@@ -91,10 +91,11 @@ function pickNumber(current, {min = 0, max = 100, step = 1, dec = 0, unit = '', 
         for (let v = Math.floor(min); v <= max; v += dec ? 1 : step) ints.push(v);
         const I = makeColumn(ints, {selected: Math.max(0, ints.indexOf(dec ? Math.floor(cur) : Math.round(cur / step) * step))});
         let D = null; wh.append(I.col);
-        if (dec) { const ds = [0,1,2,3,4,5,6,7,8,9]; D = makeColumn(ds, {selected: Math.round((cur % 1) * 10) % 10, labels: ds.map(x => '.' + x)}); wh.append(D.col); }
+        if (dec) { const ds = Array.from({length: dec === 2 ? 100 : 10}, (_, i) => i), f = dec === 2 ? 100 : 10; D = makeColumn(ds, {selected: Math.round((cur % 1) * f) % f, labels: ds.map(x => '.' + (dec === 2 ? pad(x) : x))}); wh.append(D.col); }
+        if (unit === '$') { const U = document.createElement('div'); U.className = 'wunit'; U.textContent = '$'; wh.prepend(U); unit = ''; }
         if (unit) { const U = document.createElement('div'); U.className = 'wunit'; U.textContent = unit; wh.append(U); }
-        const read = () => dec ? Math.round((I.value + D.value / 10) * 10) / 10 : I.value;
-        window._numPick = {set: v => { I.set(Math.max(0, ints.indexOf(dec ? Math.floor(v) : v))); if (D) D.set(Math.round((v % 1) * 10)); }};
+        const read = () => dec ? Math.round((I.value + D.value / (dec === 2 ? 100 : 10)) * 100) / 100 : I.value;
+        window._numPick = {set: v => { I.set(Math.max(0, ints.indexOf(dec ? Math.floor(v) : v))); if (D) D.set(Math.round((v % 1) * (dec === 2 ? 100 : 10))); }};
         el.querySelector('#okN').onclick = () => { done = true; res(read()); s.close(); };
       }});
   });

@@ -1289,16 +1289,16 @@ function fcColor(i) { if (i.x.areaId && S.areas.some(a => a.id === i.x.areaId)) 
 
 /* ========== HÁBITOS ========== */
 const HAB_ICONS = ['😊','💧','🍳','🍌','☀️','😴','📖','📘','💪','🧘','🌈','🧹','💬','🤸','🧖','👁️','🌳','🚶','🏃','💵','⚖️','🌱','🍎','🥗','🙏','💊','🦷','🛏️','📵','🍦','🍷','🍭','🎮','📺','🎸','📷','✍️','🚴','🏊','🐶'];
-const HAB_SUG = [['💧', 'Tomar agua', 8, 'agua'], ['🚶', 'Caminar', 30, 'actividad'], ['📖', 'Leer', 1, 'lectura'], ['🧘', 'Meditar', 10, 'tiempo'], ['☀️', 'Levantarme temprano', 1, ''], ['🍌', 'Comer frutas', 1, ''], ['💵', 'Ahorrar dinero', 1, ''], ['🙏', 'Orar', 10, 'tiempo']];
+const HAB_SUG = [['💧', 'Tomar agua', 8, 'agua'], ['🚶', 'Caminar', 30, 'actividad'], ['📖', 'Leer', 1, 'lectura'], ['🧘', 'Meditar', 10, 'tiempo'], ['☀️', 'Levantarme temprano', 1, 'despertar'], ['🥗', 'Comer saludable', 5, 'comida'], ['💵', 'Ahorrar dinero', 1, 'ahorro'], ['🙏', 'Orar', 10, 'oracion']];
 const OZ = 8; // onzas por botella
 const habKind = h => h.kind || (h.unit === 'agua' ? 'agua' : h.unit === 'lectura' ? 'lectura' : h.unit === 'tiempo' ? 'tiempo' : '');
-const isTimeKind = h => ['tiempo', 'actividad'].includes(habKind(h));
+const isTimeKind = h => ['tiempo', 'actividad', 'oracion'].includes(habKind(h));
 const habGoal = h => habKind(h) === 'lectura' ? 1 : habKind(h) === 'agua' ? (+h.goalOz > 0 ? +h.goalOz : Math.max(1, +h.goal || 1) * OZ) : isTimeKind(h) ? Math.max(1, +h.goal || 10) : Math.max(1, +h.goal || 1);
 const habBottles = h => Math.ceil(habGoal(h) / OZ);
 const habCount = (h, d) => (h.log && h.log[d]) || 0;
-const habDone = (h, d) => habCount(h, d) >= habGoal(h) || (habKind(h) === 'actividad' && +h.goalDist > 0 && actDist(h, d) >= +h.goalDist);
+const habDone = (h, d) => (habKind(h) === 'ahorro' ? habCount(h, d) > 0 : habKind(h) === 'despertar' ? wakeOnTime(h, d) : habCount(h, d) >= habGoal(h)) || (habKind(h) === 'actividad' && +h.goalDist > 0 && actDist(h, d) >= +h.goalDist);
 const habDue = (h, d) => (!h.days || !h.days.length || h.days.includes(parseISO(d).getDay())) && (!h.created || d >= h.created);
-const habTotal = h => [...new Set([...Object.keys(h.log || {}), ...Object.keys(h.dist || {})])].filter(d => habDone(h, d)).length;
+const habTotal = h => [...new Set([...Object.keys(h.log || {}), ...Object.keys(h.dist || {}), ...Object.keys(h.woke || {})])].filter(d => habDone(h, d)).length;
 function habStreak(h, upto) { let n = 0, d = upto; if (!habDone(h, d)) d = addDays(d, -1); for (let k = 0; k < 800; k++) { if (!habDue(h, d)) { if (h.created && d < h.created) break; d = addDays(d, -1); continue; } if (!habDone(h, d)) break; n++; d = addDays(d, -1); } return n; }
 function habUndo(h, d) { const c = habCount(h, d); if (!c) return; h.log = h.log || {}; if (c <= 1) delete h.log[d]; else h.log[d] = c - 1; save('habits'); }
 function bottleSVG(h, oz) {
@@ -1311,6 +1311,9 @@ function bottleSVG(h, oz) {
 const habPages = h => Object.values(h.log || {}).reduce((a, b) => a + (+b || 0), 0);
 function habTap(h, d) {
   if (habKind(h) === 'lectura') return openBook(h, d);
+  if (habKind(h) === 'ahorro') return openSave(h, d);
+  if (habKind(h) === 'despertar') return openWake(h, d);
+  if (habKind(h) === 'comida') return openFood(h, d);
   if (isTimeKind(h)) return openTimer(h, d);
   if (habKind(h) === 'agua' && !habTap.direct) return openWater(h, d);
   if (habKind(h) === 'agua') { const g = habGoal(h), c = habCount(h, d); h.log = h.log || {}; h.log[d] = c + 1; save('habits');
@@ -1330,7 +1333,7 @@ function vHabitos(v) {
   $('#hNew', v).onclick = () => openHabitForm();
   const body = $('#habBody', v);
   if (!S.habits.length) {
-    body.innerHTML = `<div class="card habempty"><div class="big">🌱</div><h3>Crea tus hábitos</h3><p>Marca cada día lo que haces y mira tu progreso. Toca uno para empezar:</p><div class="habsug">${HAB_SUG.map((x, i) => `<button data-sug="${i}"><span>${x[0]}</span>${x[1]}${x[3] === 'agua' ? ' <small>botella de 8 oz</small>' : x[3] === 'lectura' ? ' <small>con 🔖</small>' : x[3] === 'tiempo' || x[3] === 'actividad' ? ` <small>${x[2]} min</small>` : ''}</button>`).join('')}</div><button class="btn" id="hNew2">+ Crear mi propio hábito</button></div>`;
+    body.innerHTML = `<div class="card habempty"><div class="big">🌱</div><h3>Crea tus hábitos</h3><p>Marca cada día lo que haces y mira tu progreso. Toca uno para empezar:</p><div class="habsug">${HAB_SUG.map((x, i) => `<button data-sug="${i}"><span>${x[0]}</span>${x[1]}${x[3] === 'agua' ? ' <small>botella de 8 oz</small>' : x[3] === 'lectura' ? ' <small>con 🔖</small>' : x[3] === 'tiempo' || x[3] === 'actividad' || x[3] === 'oracion' ? ` <small>${x[2]} min</small>` : x[3] === 'despertar' ? ' <small>6:00 am</small>' : x[3] === 'comida' ? ' <small>5 porciones</small>' : x[3] === 'ahorro' ? ' <small>con meta</small>' : ''}</button>`).join('')}</div><button class="btn" id="hNew2">+ Crear mi propio hábito</button></div>`;
     wireHabSug(body);
     $('#hNew2', body).onclick = () => openHabitForm();
     return;
@@ -1350,6 +1353,12 @@ function vHabitos(v) {
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : `<b class="ozn">${cur} de ${OZ} oz</b> · ${nb} de ${gb} botellas`}${(h.reminders || []).some(r => r.on !== false) && h.remOn !== false ? ' · ⏰' : ''}${st > 1 ? ` · 🔥 ${st}` : ''}</small><span class="botrow">${[...Array(Math.max(gb, nb))].map((_, i) => `<i class="${i < nb ? 'on' : ''}"></i>`).join('')}</span></span>
         <span class="habtot"><b>${c}</b><small>oz hoy</small></span>
         <span class="habside"><button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button>${c ? `<button class="habminus" data-hmin="${h.id}" aria-label="Quitar 1 onza">−1</button>` : ''}</span></div>`; }
+      if (['ahorro', 'despertar', 'comida', 'oracion'].includes(kd)) { const info = habRowInfo(h, d);
+        return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
+        <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${info.p * 100}%">${h.icon}${ok ? '<em>✓</em>' : ''}</span>
+        <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : info.sub}${st > 1 ? ` · 🔥 ${st}` : ''}</small>${info.pill ? `<span class="calpill ${info.pc || ''}">${info.pill}</span>` : ''}</span>
+        <span class="habtot"><b>${info.big}</b><small>${info.bigl}</small></span>
+        <button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`; }
       if (kd === 'actividad') { const run = UI.habTimer && UI.habTimer.id === h.id, ds = actDist(h, d), u = h.unitD || 'mi', cal = actCalories(h, d);
         return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${Math.min(1, Math.max(c / g, +h.goalDist ? ds / h.goalDist : 0)) * 100}%">${actMode(h, d) === 'correr' ? '🏃' : h.icon}${ok ? '<em>✓</em>' : ''}</span>
@@ -1422,7 +1431,7 @@ function openHabitForm(h) {
     <div class="fld"><label>Nombre</label><input class="inp" id="hName" value="${esc(h.name)}" placeholder="Ej.: Tomar agua" maxlength="40"></div>
     <div class="fld"><label>Ícono</label><div class="habicons">${HAB_ICONS.map(i => `<button type="button" data-hi="${i}" class="${h.icon === i ? 'on' : ''}">${i}</button>`).join('')}</div></div>
     <div class="fld"><label>Color</label><div class="habcols">${HL_PASTEL.map(c => `<button type="button" data-hc="${c}" class="${h.color === c ? 'on' : ''}" style="background:${c}" aria-label="Color"></button>`).join('')}</div></div>
-    <div class="fld"><label>Tipo</label><div class="seg habkind">${[['', '✓ Marcar'], ['agua', '💧 Agua'], ['lectura', '📖 Lectura'], ['tiempo', '⏱ Tiempo'], ['actividad', '🚶 Caminar/Correr']].map(([k, n]) => `<button type="button" data-hk="${k}" class="${habKind(h) === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
+    <div class="fld"><label>Tipo</label><div class="habkinds">${HAB_KINDS.map(([k, n]) => `<button type="button" data-hk="${k}" class="${habKind(h) === k ? 'on' : ''}">${n}</button>`).join('')}</div><small class="hint" id="hkHint"></small></div>
     <div class="fld hk-lectura"><small class="hint">📖 Lectura: sin límite por día. Cada día anotas cuántas páginas leíste y guardas tu 🔖 marcador.</small></div>
     <div class="fld hk-agua"><label>Meta de agua por día (en onzas)</label><div class="habgoal"><button type="button" class="btn sec sm" id="hbM">−</button><input class="inp rdnum" id="hbOz" readonly inputmode="none" data-wheel data-min="1" data-max="300" data-title="Meta de agua" data-unit="oz" value="${habKind(h) === 'agua' ? habGoal(h) : 64}"><button type="button" class="btn sec sm" id="hbP">+</button><span class="hint">oz</span></div><div class="rdquick">${[32, 48, 64, 80, 100].map(n => `<button type="button" data-goz="${n}">${n}</button>`).join('')}</div><small class="hint">Escribe la meta que quieras. Cada botella es de 8 oz.</small></div>
     <div class="fld hk-tiempo"><label>Meta de minutos por día</label><div class="habgoal"><button type="button" class="btn sec sm" id="htM">−</button><input class="inp rdnum" id="htV" readonly inputmode="none" data-wheel data-min="1" data-max="300" data-title="Minutos por día" data-unit="min" value="${habKind(h) === 'tiempo' ? habGoal(h) : 10}"><button type="button" class="btn sec sm" id="htP">+</button><span class="hint">min</span></div><small class="hint">Para meditar, caminar, orar, hacer ejercicio… Tiene cronómetro.</small></div>
@@ -1436,13 +1445,13 @@ function openHabitForm(h) {
       const q = x => el.querySelector(x);
       el.querySelectorAll('[data-hi]').forEach(b => b.onclick = () => { h.icon = b.dataset.hi; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x === b)); });
       el.querySelectorAll('[data-hc]').forEach(b => b.onclick = () => { h.color = b.dataset.hc; el.querySelectorAll('[data-hc]').forEach(x => x.classList.toggle('on', x === b)); });
-      q('#hName').addEventListener('input', () => { const nm = q('#hName').value; if (isNew && !kind) { if (/agua/i.test(nm)) { el.querySelector('[data-hk="agua"]').click(); } else if (/^(leer|lectura)/i.test(nm)) { el.querySelector('[data-hk="lectura"]').click(); } else if (ACT_RE.test(nm)) { el.querySelector('[data-hk="actividad"]').click(); } else if (TIME_RE.test(nm)) { el.querySelector('[data-hk="tiempo"]').click(); } } });
+      q('#hName').addEventListener('input', () => { const nm = q('#hName').value; if (isNew && !kind) { if (/agua/i.test(nm)) { el.querySelector('[data-hk="agua"]').click(); } else if (/^(leer|lectura)/i.test(nm)) { el.querySelector('[data-hk="lectura"]').click(); } else if (/ahorr/i.test(nm)) { el.querySelector('[data-hk="ahorro"]').click(); } else if (/levant|despert|madrug/i.test(nm)) { el.querySelector('[data-hk="despertar"]').click(); } else if (/comer|comida|saludable|dieta/i.test(nm)) { el.querySelector('[data-hk="comida"]').click(); } else if (/^or(ar|aci)/i.test(nm)) { el.querySelector('[data-hk="oracion"]').click(); } else if (ACT_RE.test(nm)) { el.querySelector('[data-hk="actividad"]').click(); } else if (TIME_RE.test(nm)) { el.querySelector('[data-hk="tiempo"]').click(); } } });
       q('#hgM').onclick = () => { h.goal = Math.max(1, habGoal(h) - 1); q('#hgV').textContent = h.goal; };
       q('#hgP').onclick = () => { h.goal = Math.min(99, habGoal(h) + 1); q('#hgV').textContent = h.goal; };
       el.querySelectorAll('[data-hdw]').forEach(b => b.onclick = () => b.classList.toggle('on'));
       let kind = habKind(h);
-      const showK = () => { ['', 'agua', 'lectura', 'tiempo', 'actividad'].forEach(k => el.querySelectorAll('.hk-' + k).forEach(x => x.style.display = k === kind ? '' : 'none')); el.querySelectorAll('[data-hk]').forEach(b => b.classList.toggle('on', b.dataset.hk === kind)); };
-      el.querySelectorAll('[data-hk]').forEach(b => b.onclick = () => { kind = b.dataset.hk; if (kind === 'agua' && h.icon === '😊') { h.icon = '💧'; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x.dataset.hi === '💧')); } if (kind === 'actividad' && h.icon === '😊') { h.icon = '🚶'; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x.dataset.hi === '🚶')); } if (kind === 'tiempo' && h.icon === '😊') { h.icon = '🧘'; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x.dataset.hi === '🧘')); } if (kind === 'lectura' && h.icon === '😊') { h.icon = '📖'; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x.dataset.hi === '📖')); } showK(); });
+      const showK = () => { el.querySelectorAll('[class*="hk-"]').forEach(x => { const ks = [...x.classList].filter(c => c.startsWith('hk-')).map(c => c.slice(3)); x.style.display = ks.includes(kind) || (kind === 'oracion' && ks.includes('tiempo')) ? '' : 'none'; }); el.querySelectorAll('[data-hk]').forEach(b => b.classList.toggle('on', b.dataset.hk === kind)); q('#hkHint').textContent = (HAB_KINDS.find(x => x[0] === kind) || [])[2] || ''; };
+      el.querySelectorAll('[data-hk]').forEach(b => b.onclick = () => { kind = b.dataset.hk; const di = {ahorro: '💵', despertar: '☀️', comida: '🥗', oracion: '🙏'}[kind]; if (di && h.icon === '😊') { h.icon = di; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x.dataset.hi === di)); } if (kind === 'agua' && h.icon === '😊') { h.icon = '💧'; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x.dataset.hi === '💧')); } if (kind === 'actividad' && h.icon === '😊') { h.icon = '🚶'; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x.dataset.hi === '🚶')); } if (kind === 'tiempo' && h.icon === '😊') { h.icon = '🧘'; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x.dataset.hi === '🧘')); } if (kind === 'lectura' && h.icon === '😊') { h.icon = '📖'; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x.dataset.hi === '📖')); } showK(); });
       const oz = () => Math.max(1, Math.min(400, parseInt(q('#hbOz').value, 10) || 64)), mn = () => Math.max(1, Math.min(600, parseInt(q('#htV').value, 10) || 10));
       q('#hbM').onclick = () => q('#hbOz').value = Math.max(1, oz() - 8); q('#hbP').onclick = () => q('#hbOz').value = oz() + 8;
       el.querySelectorAll('[data-goz]').forEach(b => b.onclick = () => q('#hbOz').value = b.dataset.goz);
@@ -1456,7 +1465,10 @@ function openHabitForm(h) {
         h.name = q('#hName').value.trim(); if (!h.name) { toast('Escribe el nombre del hábito'); q('#hName').focus(); return; }
         h.unit = q('#hUnit').value.trim(); h.kind = kind; h.migW = 1;
         if (kind === 'agua') { h.goalOz = oz(); h.goal = Math.ceil(h.goalOz / OZ); h.unit = ''; }
-        if (kind === 'tiempo') { h.goal = mn(); h.unit = ''; }
+        if (kind === 'tiempo' || kind === 'oracion') { h.goal = mn(); h.unit = ''; }
+        if (kind === 'comida') { h.goal = h.goal > 1 && h.goal <= 12 ? h.goal : 5; h.unit = ''; }
+        if (kind === 'despertar') { h.wakeAt = h.wakeAt || '06:00'; h.goal = 1; h.unit = ''; }
+        if (kind === 'ahorro') { h.goal = 1; h.unit = ''; }
         if (kind === 'actividad') { h.goal = am(); h.goalDist = Math.max(0, parseFloat(q('#haD').value) || 0) || null; h.unitD = unitD; h.unit = ''; }
         if (kind === 'lectura') { h.unit = ''; }
         const on = [...el.querySelectorAll('[data-hdw].on')].map(b => +b.dataset.hdw); if (!on.length) { toast('Elige al menos un día'); return; }
@@ -1469,10 +1481,18 @@ function openHabitForm(h) {
     }});
 }
 
-function wireHabSug(root) { root.querySelectorAll('[data-sug]').forEach(b => b.onclick = () => { const x = HAB_SUG[+b.dataset.sug]; S.habits.push({id: uid(), icon: x[0], name: x[1], goal: x[2], unit: '', kind: ['agua', 'lectura', 'tiempo', 'actividad'].includes(x[3]) ? x[3] : '', migA: 1, unitD: 'mi', goalOz: x[3] === 'agua' ? 64 : undefined, migW: 1, color: HL_PASTEL[S.habits.length % HL_PASTEL.length], days: [], log: {}, created: todayISO()}); save('habits'); toast(`${x[0]} ${x[1]} añadido`); renderView(); }); }
+function wireHabSug(root) { root.querySelectorAll('[data-sug]').forEach(b => b.onclick = () => { const x = HAB_SUG[+b.dataset.sug]; S.habits.push({id: uid(), icon: x[0], name: x[1], goal: x[2], unit: '', kind: HAB_KINDS.some(k => k[0] === x[3]) ? x[3] : '', migO: 1, wakeAt: x[3] === 'despertar' ? '06:00' : undefined, migA: 1, unitD: 'mi', goalOz: x[3] === 'agua' ? 64 : undefined, migW: 1, color: HL_PASTEL[S.habits.length % HL_PASTEL.length], days: [], log: {}, created: todayISO()}); save('habits'); toast(`${x[0]} ${x[1]} añadido`); renderView(); }); }
 
 // Convierte los hábitos de agua y lectura creados antes (vasos / páginas con meta)
 function migrateHabits() { let ch = false; (S.habits || []).forEach(h => {
+  if (!h.migO) {
+    const nm = h.name || '';
+    if ((!h.kind || h.kind === 'tiempo') && /^or(ar|aci)/i.test(nm)) { if (!h.kind) { const l = {}; Object.keys(h.log || {}).forEach(d => { if (h.log[d] >= (+h.goal || 1)) l[d] = 10; }); h.log = l; h.goal = 10; } h.kind = 'oracion'; h.migO = h.migW = 1; ch = true; return; }
+    if (!h.kind && /ahorr/i.test(nm)) { h.legacy = h.log; h.log = {}; h.kind = 'ahorro'; h.goal = 1; h.migO = h.migW = 1; ch = true; return; }
+    if (!h.kind && /levant|despert|madrug/i.test(nm)) { h.kind = 'despertar'; h.wakeAt = '06:00'; h.woke = {}; Object.keys(h.log || {}).forEach(d => { if (h.log[d]) h.woke[d] = 'ok'; }); h.goal = 1; h.migO = h.migW = 1; ch = true; return; }
+    if (!h.kind && /comer|comida|saludable/i.test(nm)) { const l = {}; Object.keys(h.log || {}).forEach(d => { if (h.log[d] >= (+h.goal || 1)) l[d] = 5; }); h.log = l; h.kind = 'comida'; h.goal = 5; h.migO = h.migW = 1; ch = true; return; }
+    h.migO = 1;
+  }
   if (!h.migA && ACT_RE.test(h.name || '') && (!h.kind || h.kind === 'tiempo')) { if (!h.kind) { const l = {}; Object.keys(h.log || {}).forEach(d => l[d] = h.log[d] >= (+h.goal || 1) ? 30 : 0); h.log = l; h.goal = 30; } h.kind = 'actividad'; h.migA = 1; h.migW = 1; h.unitD = h.unitD || 'mi'; h.unit = ''; ch = true; return; }
   if (!h.kind && !h.migW && (/agua/i.test(h.name || '') || h.icon === '💧')) { h.kind = 'agua'; h.migW = 1; h.goal = h.unit === 'vasos' ? Math.max(1, +h.goal || 8) : 8; if (h.unit === 'vasos') { const l = {}; Object.keys(h.log || {}).forEach(d => l[d] = h.log[d] * OZ); h.log = l; } h.unit = ''; ch = true; return; }
   if (!h.kind && !h.migW && TIME_RE.test(h.name || '')) { h.kind = 'tiempo'; h.migW = 1; const def = /camin|ejerc|correr/i.test(h.name) ? 30 : 10; const l = {}; Object.keys(h.log || {}).forEach(d => l[d] = h.log[d] >= (+h.goal || 1) ? def : 0); h.log = l; h.goal = def; h.unit = ''; ch = true; return; }
@@ -1518,17 +1538,18 @@ function openWaterReminders(h) {
 function waterReminderList(days = 3) {
   const out = [], now = Date.now();
   (S.habits || []).forEach(h => {
-    if (habKind(h) !== 'agua' || h.remOn === false) return;
+    if (!['agua', 'despertar'].includes(habKind(h)) || h.remOn === false) return;
     for (let k = 0; k < days; k++) {
       const d = addDays(todayISO(), k); if (!habDue(h, d)) continue;
       (h.reminders || []).forEach(r => {
         if (r.on === false || !r.time) return;
         const [hh, mm] = r.time.split(':').map(Number), dt = parseISO(d); dt.setHours(hh, mm, 0, 0);
+        if (habKind(h) === 'despertar') { out.push({at: dt.getTime(), d, h, r, kind: 'hd', id: h.id, title: r.label || '☀️ ¡Buenos días!', body: r.bed ? `Para dormir 8 horas y levantarte a las ${fmtTime(h.wakeAt || '06:00')}` : 'Toca para anotar que te levantaste a tiempo'}); return; }
         out.push({at: dt.getTime(), d, h, r, kind: 'h', id: h.id, title: '💧 ' + (r.label || 'Hora de tomar agua'), body: k === 0 ? `Llevas ${habCount(h, d)} de ${habGoal(h)} oz hoy. ¡Toca para anotar!` : `Meta: ${habGoal(h)} oz (${habGoal(h) / OZ} botellas)`});
       });
     }
   });
-  return out.filter(x => !(x.d === todayISO() && habDone(x.h, x.d)) && x.at > now - 6 * 3600000);
+  return out.filter(x => !(x.d === todayISO() && habDone(x.h, x.d) && !(x.r && x.r.bed)) && x.at > now - 6 * 3600000);
 }
 
 const TIME_RE = /^(meditar|caminar|orar|hacer ejercicio|ejercicio|correr|estirar|yoga|respirar)/i;
@@ -1670,8 +1691,9 @@ function openTimer(h, d) {
       ${act ? `<div class="accard">
         <div class="acrow"><span>📏 Distancia hoy</span><div class="acdist"><button data-dq="-0.1">−</button><input id="acD" readonly inputmode="none" data-wheel data-min="0" data-max="60" data-dec="1" data-unit="${u}" data-title="Distancia de hoy" data-blank="1" value="${ds ? fmtD(ds) : ''}" placeholder="0"><span>${u}</span><button data-dq="0.1">+</button></div></div>
         <div class="acstats" id="acS"></div>
-        <button class="acgoal" id="acG">🎯 Meta: <b>${habGoal(h)} min</b>${+h.goalDist ? ` · <b>${fmtD(h.goalDist)} ${u}</b>` : ''} <span>Cambiar ✎</span></button>
-      </div>` : `<button class="acgoal" id="acG">🎯 Meta: <b>${habGoal(h)} min</b> <span>Cambiar ✎</span></button>`}
+        <button class="acgoal" id="acG">Meta: <b>${habGoal(h)} min</b>${+h.goalDist ? ` · <b>${fmtD(h.goalDist)} ${u}</b>` : ''} <span>Cambiar ✎</span></button>
+      </div>` : `<button class="acgoal" id="acG">Meta: <b>${habGoal(h)} min</b> <span>Cambiar ✎</span></button>`}
+      ${habKind(h) === 'oracion' ? prayerHTML(h) : ''}
       <div class="wacts"><button class="wdrink tmgo" id="tmGo" style="--g1:${h.color}">▶ EMPEZAR</button></div>`;
     ring(el); if (act) stats(el);
     const q = x => el.querySelector(x), g = habGoal(h);
@@ -1684,6 +1706,7 @@ function openTimer(h, d) {
       else { UI.habTimer = {id: h.id, start: Date.now(), d}; ring(el); }
     };
     q('#acG').onclick = () => openActGoal(h, () => draw(el));
+    if (habKind(h) === 'oracion') wirePrayer(el, h, () => draw(el));
     if (act) {
       const setD = v => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } const was = habDone(h, d); h.dist = h.dist || {}; v = Math.max(0, Math.round(v * 100) / 100); if (v) h.dist[d] = v; else delete h.dist[d]; save('habits'); if (!was && habDone(h, d)) toast(`${h.icon} ¡Meta de distancia cumplida!`); };
       el.querySelectorAll('[data-dq]').forEach(b => b.onclick = () => { setD(actDist(h, d) + +b.dataset.dq); draw(el); });
@@ -1736,3 +1759,153 @@ function actCalories(h, d) {
   const kg = (S.settings.pesoLb || 160) * 0.4536;
   return Math.round(met * kg * min / 60);
 }
+
+const HAB_KINDS = [['', '✓ Marcar', 'Un toque y listo.'], ['agua', '💧 Agua', 'Botella de 8 oz que se llena deslizando, con recordatorios.'], ['lectura', '📖 Lectura', 'Un libro con páginas, marcador 🔖 y notas.'], ['actividad', '🚶 Caminar/Correr', 'Tiempo, distancia y calorías aproximadas.'], ['tiempo', '⏱ Tiempo', 'Aro con cronómetro (meditar, estirar…).'], ['oracion', '🙏 Oración', 'Cronómetro y tu lista de peticiones y respuestas.'], ['ahorro', '💵 Ahorro', 'Alcancía que se llena hasta tu meta de dinero.'], ['despertar', '☀️ Despertar', 'Hora meta, “¡Me levanté!” y aviso para acostarte.'], ['comida', '🥗 Comer sano', 'Plato con frutas y vegetales, y cómo comiste.']];
+const money = n => { n = +n || 0; const s = Math.abs(n).toFixed(2).replace(/\.00$/, ''); return (n < 0 ? '−$' : '$') + s.replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+const saveTotal = h => (h.moves || []).reduce((a, m) => a + (+m.amt || 0), 0);
+const toMinT = t => { const [a, b] = String(t || '0:0').split(':').map(Number); return a * 60 + b; };
+const wakeOnTime = (h, d) => { const w = (h.woke || {})[d]; if (!w) return false; if (w === 'ok') return true; return toMinT(w) <= toMinT(h.wakeAt || '06:00') + 5; };
+const FOOD_GOAL = h => Math.max(1, +h.goal || 5);
+function habRowInfo(h, d) {
+  const k = habKind(h), c = habCount(h, d);
+  if (k === 'ahorro') { const t = saveTotal(h), g = +h.saveGoal || 0; return {p: g ? Math.min(1, t / g) : (c > 0 ? 1 : 0), sub: c ? `Hoy +${money(c)}` : (h.saveFor ? `Para: ${esc(h.saveFor)}` : 'Toca para guardar dinero'), pill: g ? `🐷 ${money(t)} de ${money(g)}` : '', pc: 'money', big: money(t), bigl: 'ahorrado'}; }
+  if (k === 'despertar') { const w = (h.woke || {})[d], on = wakeOnTime(h, d); return {p: on ? 1 : 0, sub: w && w !== 'ok' ? `Hoy ${fmtTime(w)} ${on ? '✓ a tiempo' : '· tarde'}` : w === 'ok' ? 'Hoy ✓' : `Meta: ${fmtTime(h.wakeAt || '06:00')}`, big: habTotal(h), bigl: 'días a tiempo'}; }
+  if (k === 'comida') { const g = FOOD_GOAL(h), f = (h.food || {})[d] || {}, ml = Object.values(f.meals || {}), sano = ml.filter(x => x === 'sano').length; return {p: Math.min(1, c / g), sub: `${c} de ${g} frutas y vegetales`, pill: ml.length ? `🥗 ${sano} de ${ml.length} comidas sanas` : '', pc: 'green', big: habTotal(h), bigl: 'días en total'}; }
+  if (k === 'oracion') { const g = habGoal(h), pend = (h.prayers || []).filter(p => !p.ans).length, run = UI.habTimer && UI.habTimer.id === h.id; return {p: Math.min(1, c / g), sub: run ? '⏱ Orando…' : `${c} de ${g} min`, pill: pend ? `🙏 ${pend} ${pend === 1 ? 'petición' : 'peticiones'}` : '', pc: 'violet', big: c, bigl: 'min hoy'}; }
+  return {p: 0, sub: '', big: '', bigl: ''};
+}
+/* ===== Oración: peticiones y respuestas ===== */
+function prayerHTML(h) {
+  const P = h.prayers || [], pend = P.filter(p => !p.ans), ans = P.filter(p => p.ans);
+  return `<div class="prcard"><div class="bknh"><b>🙏 Mis peticiones</b><span>${pend.length}</span></div>
+    <div class="bknadd"><input class="inp" id="prT" placeholder="¿Por qué o por quién quieres orar?" maxlength="200"><button class="btn" id="prA" aria-label="Añadir">+</button></div>
+    ${pend.map(p => `<div class="prrow"><button class="prchk" data-pra="${p.id}" aria-label="Marcar como respondida"></button><span>${esc(p.t)}<small>Desde ${fmtShort(p.date)}</small></span><button class="wrdel" data-prd="${p.id}" aria-label="Eliminar"><i class="xdel"></i></button></div>`).join('') || '<div class="hint" style="padding:4px 2px">Escribe tus peticiones y márcalas cuando sean respondidas.</div>'}
+    ${ans.length ? `<div class="prans"><b>🙌 Respondidas (${ans.length})</b>${ans.slice().reverse().map(p => `<div class="prrow done"><button class="prchk on" data-pra="${p.id}" aria-label="Quitar respondida">✓</button><span>${esc(p.t)}<small>Respondida ${fmtShort(p.ans)}</small></span><button class="wrdel" data-prd="${p.id}" aria-label="Eliminar"><i class="xdel"></i></button></div>`).join('')}</div>` : ''}</div>`;
+}
+function wirePrayer(el, h, redraw) {
+  const q = x => el.querySelector(x);
+  q('#prA').onclick = () => { const t = q('#prT').value.trim(); if (!t) { q('#prT').focus(); return; } h.prayers = h.prayers || []; h.prayers.push({id: uid(), t, date: todayISO(), ans: null}); save('habits'); redraw(); };
+  q('#prT').onkeydown = e => { if (e.key === 'Enter') q('#prA').click(); };
+  el.querySelectorAll('[data-pra]').forEach(b => b.onclick = () => { const p = h.prayers.find(x => x.id === b.dataset.pra); p.ans = p.ans ? null : todayISO(); save('habits'); if (p.ans) toast('🙌 ¡Gloria a Dios! Petición respondida'); redraw(); });
+  el.querySelectorAll('[data-prd]').forEach(b => b.onclick = async () => { if (await ask('¿Eliminar esta petición?', {yes: 'Eliminar'})) { h.prayers = h.prayers.filter(x => x.id !== b.dataset.prd); save('habits'); redraw(); } });
+}
+/* ===== Ahorro: alcancía que se llena ===== */
+function jarSVG(p, drop) {
+  const y = 232 - 170 * Math.max(0, Math.min(1, p));
+  return `<svg class="jar" viewBox="0 0 200 250" aria-hidden="true"><defs><clipPath id="jarC"><path d="M50 52h100v10c18 8 26 24 26 44v104a26 26 0 0 1-26 26H50a26 26 0 0 1-26-26V106c0-20 8-36 26-44z"/></clipPath>
+    <linearGradient id="coinG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd54a"/><stop offset="1" stop-color="#f0a500"/></linearGradient></defs>
+    <rect x="44" y="30" width="112" height="24" rx="8" fill="#c58a2a"/><rect x="82" y="38" width="36" height="5" rx="2.5" fill="#6b4512"/>
+    <g clip-path="url(#jarC)"><rect width="200" height="250" fill="#eef6ee"/>
+      <g style="transform:translateY(${y}px);transition:transform .7s cubic-bezier(.3,1.3,.5,1)"><rect y="0" width="200" height="260" fill="url(#coinG)"/>
+      ${[...Array(28)].map((_, i) => `<ellipse cx="${(i * 37) % 180 + 14}" cy="${8 + Math.floor(i / 5) * 18}" rx="13" ry="6" fill="#ffe27a" stroke="#d99400" stroke-width="1.5"/>`).join('')}</g></g>
+    <path d="M50 52h100v10c18 8 26 24 26 44v104a26 26 0 0 1-26 26H50a26 26 0 0 1-26-26V106c0-20 8-36 26-44z" fill="none" stroke="#9cc59c" stroke-width="3"/>
+    <path d="M42 110v90" stroke="#fff" stroke-opacity=".6" stroke-width="7" stroke-linecap="round"/>
+    ${drop ? '<g class="coindrop"><ellipse cx="100" cy="20" rx="14" ry="14" fill="url(#coinG)" stroke="#d99400" stroke-width="2"/><text x="100" y="26" text-anchor="middle" font-size="16" font-weight="800" fill="#8a5a00">$</text></g>' : ''}</svg>`;
+}
+function openSave(h, d) {
+  let drop = false;
+  const draw = el => {
+    const t = saveTotal(h), g = +h.saveGoal || 0, today = habCount(h, d), mv = (h.moves || []).slice().sort((a, b) => b.date.localeCompare(a.date) || b.at - a.at);
+    el.querySelector('#svBody').innerHTML = `
+      <div class="svtop"><b>${money(t)}</b><span>${g ? `de ${money(g)}${h.saveFor ? ' para ' + esc(h.saveFor) : ''}` : 'ahorrado en total'}</span></div>
+      <div class="svjar">${jarSVG(g ? t / g : Math.min(1, t / 500), drop)}${g ? `<div class="svpct">${Math.min(100, Math.round(t / g * 100))}%</div>` : ''}</div>
+      <div class="wmsg">${g && t >= g ? '🎉 ¡Llegaste a tu meta!' : g ? `Faltan ${money(g - t)}` : ''}${today ? ` · Hoy ${today > 0 ? '+' : ''}${money(today)}` : ''}</div>
+      <div class="wacts"><button class="wsmall" id="svOut" aria-label="Sacar dinero">−$</button><button class="wdrink svin" id="svIn">+ GUARDAR</button><button class="wsmall" id="svG" aria-label="Meta">✎</button></div>
+      <div class="svlist"><div class="bknh"><b>Movimientos</b><span>${mv.length}</span></div>${mv.slice(0, 30).map(m => `<div class="svmv ${m.amt < 0 ? 'out' : ''}"><span>${m.amt < 0 ? '↘︎' : '🪙'}</span><span class="d">${fmtShort(m.date)}${m.note ? ' · ' + esc(m.note) : ''}</span><b>${m.amt > 0 ? '+' : ''}${money(m.amt)}</b><button class="wrdel" data-svd="${m.id}" aria-label="Eliminar"><i class="xdel"></i></button></div>`).join('') || '<div class="hint" style="padding:4px 2px">Cada vez que guardes dinero, anótalo aquí.</div>'}</div>`;
+    drop = false;
+    const q = x => el.querySelector(x);
+    const add = async sign => {
+      if (d > todayISO()) { toast('Ese día todavía no llega'); return; }
+      const v = await pickNumber(sign > 0 ? 5 : 1, {min: 0, max: 5000, dec: 2, unit: '$', title: sign > 0 ? '¿Cuánto guardaste?' : '¿Cuánto sacaste?'});
+      if (!v) return;
+      h.moves = h.moves || []; h.moves.push({id: uid(), date: d, amt: sign * v, at: Date.now()}); recalcSave(h); save('habits');
+      if (sign > 0) { drop = true; toast(`🐷 +${money(v)} guardado`); if (+h.saveGoal && saveTotal(h) >= h.saveGoal && saveTotal(h) - v < h.saveGoal) setTimeout(() => toast('🎉 ¡Meta de ahorro cumplida!'), 500); }
+      draw(el);
+    };
+    q('#svIn').onclick = () => add(1); q('#svOut').onclick = () => add(-1);
+    q('#svG').onclick = () => openSaveGoal(h, () => draw(el));
+    el.querySelectorAll('[data-svd]').forEach(b => b.onclick = async () => { if (await ask('¿Eliminar este movimiento?', {yes: 'Eliminar'})) { h.moves = h.moves.filter(m => m.id !== b.dataset.svd); recalcSave(h); save('habits'); draw(el); } });
+  };
+  openSheet({title: `${h.icon} ${esc(h.name)}`, cls: 'savesheet', body: '<div id="svBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
+}
+function recalcSave(h) { const l = {}; (h.moves || []).forEach(m => l[m.date] = Math.round(((l[m.date] || 0) + m.amt) * 100) / 100); h.log = {}; Object.keys(l).forEach(k => { if (l[k]) h.log[k] = l[k]; }); }
+function openSaveGoal(h, done) {
+  const s = openSheet({title: '🐷 Meta de ahorro', body: `<div class="fld"><label>¿Para qué ahorras?</label><input class="inp" id="sgF" value="${esc(h.saveFor || '')}" placeholder="Ej.: Viaje, emergencias, carro…" maxlength="40"></div>
+    <div class="fld"><label>¿Cuánto quieres juntar?</label><input class="inp rdnum" id="sgV" readonly inputmode="none" data-wheel data-min="0" data-max="20000" data-step="25" data-unit="$" data-title="Meta de ahorro" value="${+h.saveGoal || ''}" placeholder="Sin meta" style="max-width:none"></div>`,
+    foot: '<button class="btn" id="sgS">Guardar</button>',
+    onMount: el => { el.querySelector('#sgS').onclick = () => { h.saveFor = el.querySelector('#sgF').value.trim(); h.saveGoal = parseFloat(el.querySelector('#sgV').value) || null; save('habits'); s.close(); toast('🐷 Meta guardada'); done && done(); }; }});
+}
+/* ===== Despertar: hora meta, cielo y aviso para acostarse ===== */
+function skySVG(h, w) {
+  const tgt = toMinT(h.wakeAt || '06:00'), m = w && w !== 'ok' ? toMinT(w) : null, diff = m == null ? 0 : m - tgt;
+  const sunY = m == null ? 150 : Math.max(40, Math.min(150, 120 + diff * 1.2));
+  const sky = m == null ? ['#1e2a55', '#4b5aa0'] : diff <= 5 ? ['#ffb36b', '#ffe3a8'] : ['#8fc8ff', '#d9eeff'];
+  return `<svg class="sky" viewBox="0 0 320 170" aria-hidden="true"><defs><linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient></defs>
+    <rect width="320" height="170" rx="20" fill="url(#skyG)"/>
+    ${m == null ? [[40, 30], [90, 55], [150, 25], [220, 45], [280, 28], [260, 80], [60, 90]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.8" fill="#fff" opacity=".8"/>`).join('') + '<circle cx="250" cy="50" r="18" fill="#fdf3c4"/><circle cx="258" cy="44" r="16" fill="#2c3a72"/>' : ''}
+    <circle class="sun" cx="160" cy="${sunY}" r="30" fill="#ffcf3f" style="filter:drop-shadow(0 0 14px #ffcf3f)"/>
+    <path d="M0 140 Q60 110 120 135 T240 128 T320 132 V170 H0z" fill="#5a9b5a"/><path d="M0 150 Q80 128 160 148 T320 144 V170 H0z" fill="#3f7d45"/></svg>`;
+}
+function openWake(h, d) {
+  const draw = el => {
+    h.woke = h.woke || {}; const w = h.woke[d], tgt = h.wakeAt || '06:00', today = d === todayISO();
+    const diff = w && w !== 'ok' ? toMinT(w) - toMinT(tgt) : null, bed = fromMin((toMinT(tgt) - 8 * 60 + 1440) % 1440);
+    const week = weekDays(d).map(x => ({x, w: h.woke[x]}));
+    const R = h.reminders || [];
+    el.querySelector('#wkBody').innerHTML = `
+      ${skySVG(h, w)}
+      <div class="wkmsg">${!w ? (today ? '¿Ya te levantaste?' : 'Ese día no está anotado') : w === 'ok' ? '✓ Marcado' : diff <= 0 ? `☀️ ${fmtTime(w)} · ${diff < 0 ? durTxt(-diff) + ' antes. ¡Excelente!' : '¡Justo a tiempo!'}` : diff <= 5 ? `☀️ ${fmtTime(w)} · ¡A tiempo!` : `⏰ ${fmtTime(w)} · ${durTxt(diff)} tarde. ¡Mañana lo logras!`}</div>
+      <div class="wacts">${!w && today ? '<button class="wdrink wkbtn" id="wkNow">☀️ ¡ME LEVANTÉ!</button>' : ''}<button class="btn sec" id="wkSet">${w ? 'Cambiar hora' : 'Poner la hora'}</button>${w ? '<button class="wrdel" id="wkDel" aria-label="Borrar"><i class="xdel"></i></button>' : ''}</div>
+      <div class="wkgoal"><button class="acgoal" id="wkG">Meta: <b>${fmtTime(tgt)}</b> <span>Cambiar ✎</span></button><div class="hint">🌙 Para dormir 8 horas, acuéstate a las <b>${fmtTime(bed)}</b></div></div>
+      <div class="wkweek">${week.map(({x, w: ww}) => { const on = wakeOnTime(h, x), mm = ww && ww !== 'ok' ? toMinT(ww) : null, hh = mm == null ? 0 : Math.max(12, Math.min(70, 40 - (mm - toMinT(tgt)) * 0.8)); return `<div class="wkd ${x === d ? 'sel' : ''}"><i class="${ww ? (on ? 'on' : 'late') : ''}" style="height:${ww ? hh : 6}px"></i><b>${ww && ww !== 'ok' ? fmtTime(ww).replace(/ ?[ap]\. ?m\./, '') : '–'}</b><span>${DCORTO[parseISO(x).getDay()].slice(0, 1).toUpperCase()}</span></div>`; }).join('')}</div>
+      <div class="prcard"><div class="bknh"><b>⏰ Avisos</b></div>
+        <label class="wrsw"><span><b>Aviso a la hora de levantarme</b><small>${fmtTime(tgt)}</small></span><input type="checkbox" id="wkR1" ${R.some(r => !r.bed && r.on !== false) ? 'checked' : ''}><i></i></label>
+        <label class="wrsw"><span><b>Aviso para acostarme</b><small>${fmtTime(bed)} (8 horas antes)</small></span><input type="checkbox" id="wkR2" ${R.some(r => r.bed && r.on !== false) ? 'checked' : ''}><i></i></label>
+        <small class="hint">${window.NATIVE ? 'Te llegan aunque la app esté cerrada.' : 'En la web el aviso sale si la app está abierta. En Android te llega aunque esté cerrada.'}</small></div>`;
+    const q = x => el.querySelector(x);
+    const setW = t => { h.woke[d] = t; h.log = h.log || {}; if (wakeOnTime(h, d)) h.log[d] = 1; else delete h.log[d]; save('habits'); if (wakeOnTime(h, d)) toast('☀️ ¡Buenos días! Te levantaste a tiempo'); draw(el); };
+    const nw = q('#wkNow'); if (nw) nw.onclick = () => { const n = new Date(); setW(pad(n.getHours()) + ':' + pad(n.getMinutes())); };
+    q('#wkSet').onclick = async () => { const t = await pickTime(w && w !== 'ok' ? w : tgt, {title: '¿A qué hora te levantaste?'}); if (t) setW(t); };
+    const dl = q('#wkDel'); if (dl) dl.onclick = () => { delete h.woke[d]; if (h.log) delete h.log[d]; save('habits'); draw(el); };
+    q('#wkG').onclick = async () => { const t = await pickTime(tgt, {title: 'Hora meta para levantarme'}); if (!t) return; h.wakeAt = t; syncWakeRem(h); Object.keys(h.woke).forEach(x => { h.log = h.log || {}; if (wakeOnTime(h, x)) h.log[x] = 1; else delete h.log[x]; }); save('habits'); draw(el); };
+    const rem = async () => { h.wakeRem = q('#wkR1').checked; h.bedRem = q('#wkR2').checked; syncWakeRem(h); save('habits'); if (h.wakeRem || h.bedRem) { if (window.NATIVE) { await NATIVE.ensurePermission(); NATIVE.reschedule(); } else if ('Notification' in window && Notification.permission === 'default') { try { await Notification.requestPermission(); } catch (e) {} } toast('⏰ Avisos listos'); } };
+    q('#wkR1').onchange = rem; q('#wkR2').onchange = rem;
+  };
+  openSheet({title: `${h.icon} ${esc(h.name)}`, cls: 'wakesheet', body: '<div id="wkBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
+}
+function syncWakeRem(h) { const tgt = h.wakeAt || '06:00', bed = fromMin((toMinT(tgt) - 480 + 1440) % 1440); h.remOn = true; h.reminders = [{id: 'wk', time: tgt, label: '☀️ ¡Buenos días! Hora de levantarte', on: !!h.wakeRem}, {id: 'bd', time: bed, label: '🌙 Hora de acostarte', on: !!h.bedRem, bed: true}]; }
+/* ===== Comer sano: plato con frutas y vegetales ===== */
+const FOOD_TIPS = ['Llena la mitad de tu plato con vegetales.', 'Una fruta es la mejor merienda.', 'Toma agua antes de cada comida.', 'Prefiere lo asado o al horno en vez de frito.', 'Come despacio: tu cuerpo tarda 20 min en sentirse lleno.', 'Cambia el refresco por agua con limón.', 'Añade un vegetal al desayuno.', 'Lee las etiquetas: menos azúcar y sodio.', 'Arroz integral o habichuelas: más fibra.', 'Prepara tu almuerzo la noche antes.', 'Pon frutas a la vista en la cocina.', 'Come colores distintos: cada uno aporta algo.'];
+const MEALS = [['desayuno', '🍳 Desayuno'], ['almuerzo', '🍽️ Almuerzo'], ['cena', '🌙 Cena'], ['merienda', '🍎 Merienda']];
+const MEAL_ST = [['sano', '🥗', 'Sano'], ['regular', '😐', 'Regular'], ['rapida', '🍔', 'Comida rápida']];
+function plateSVG(n, g, items) {
+  const R = 92, cx = 110, cy = 110, seg = (i) => { const a0 = -Math.PI / 2 + i * 2 * Math.PI / g, a1 = a0 + 2 * Math.PI / g; return `M${cx} ${cy} L${cx + R * Math.cos(a0)} ${cy + R * Math.sin(a0)} A${R} ${R} 0 ${g === 1 ? 1 : 0} 1 ${cx + R * Math.cos(a1)} ${cy + R * Math.sin(a1)}Z`; };
+  return `<svg class="plate" viewBox="0 0 220 220" aria-hidden="true"><circle cx="110" cy="110" r="108" fill="#f4f4f2" stroke="#e0e0da" stroke-width="2"/><circle cx="110" cy="110" r="96" fill="#fff" stroke="#ececE6"/>
+    ${[...Array(g)].map((_, i) => { const a = -Math.PI / 2 + (i + .5) * 2 * Math.PI / g, on = i < n, it = items[i]; return `<path d="${seg(i)}" fill="${on ? (it === 'v' ? '#b9e8a6' : '#ffd3b0') : '#fafaf7'}" stroke="#fff" stroke-width="3" class="${on && i === n - 1 ? 'segpop' : ''}"/>${on ? `<text x="${110 + 58 * Math.cos(a)}" y="${118 + 58 * Math.sin(a)}" text-anchor="middle" font-size="24">${it === 'v' ? '🥦' : '🍎'}</text>` : ''}`; }).join('')}
+    <circle cx="110" cy="110" r="30" fill="#fff" stroke="#eee"/><text x="110" y="118" text-anchor="middle" font-size="22" font-weight="800" fill="#2e7d32">${n}/${g}</text></svg>`;
+}
+function openFood(h, d) {
+  const draw = el => {
+    h.food = h.food || {}; const f = h.food[d] = h.food[d] || {f: 0, v: 0, meals: {}}, g = FOOD_GOAL(h), n = (f.f || 0) + (f.v || 0);
+    const items = [...Array(f.f || 0).fill('f'), ...Array(f.v || 0).fill('v')];
+    const ml = Object.values(f.meals || {}), sano = ml.filter(x => x === 'sano').length, tip = FOOD_TIPS[(parseISO(d).getDate() + parseISO(d).getMonth()) % FOOD_TIPS.length];
+    el.querySelector('#fdBody').innerHTML = `
+      <div class="fdplate">${plateSVG(Math.min(n, g), g, items)}</div>
+      <div class="wmsg">${n >= g ? '🎉 ¡Meta de frutas y vegetales cumplida!' : `Te ${g - n === 1 ? 'falta 1 porción' : `faltan ${g - n} porciones`} de frutas o vegetales`}</div>
+      <div class="fdbtns"><button class="fdb fruit" data-fa="f">🍎 Fruta <b>+1</b></button><button class="fdb veg" data-fa="v">🥦 Vegetal <b>+1</b></button><button class="wsmall" id="fdM" ${n ? '' : 'disabled'} aria-label="Quitar una">−1</button></div>
+      <div class="prcard"><div class="bknh"><b>¿Cómo comiste hoy?</b>${ml.length ? `<span>${sano} de ${ml.length} sanas</span>` : ''}</div>
+        ${MEALS.map(([k, n2]) => `<div class="fdmeal"><span>${n2}</span><div class="fdst">${MEAL_ST.map(([sk, e, lbl]) => `<button data-ml="${k}" data-ms="${sk}" class="${f.meals[k] === sk ? 'on ' + sk : ''}" aria-label="${lbl}" title="${lbl}">${e}</button>`).join('')}</div></div>`).join('')}
+        <small class="hint">🥗 Sano · 😐 Regular · 🍔 Comida rápida. Toca otra vez para quitar.</small></div>
+      <div class="fdtip">💡 ${tip}</div>
+      <button class="acgoal" id="fdG">Meta: <b>${g} porciones al día</b> <span>Cambiar ✎</span></button>`;
+    const q = x => el.querySelector(x);
+    const setLog = () => { h.log = h.log || {}; const t = (f.f || 0) + (f.v || 0); if (t) h.log[d] = t; else delete h.log[d]; save('habits'); };
+    el.querySelectorAll('[data-fa]').forEach(b => b.onclick = () => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } const was = habDone(h, d); f[b.dataset.fa] = (f[b.dataset.fa] || 0) + 1; f.order = (f.order || '') + b.dataset.fa; setLog(); if (!was && habDone(h, d)) toast('🥗 ¡Meta cumplida! Sigue así'); draw(el); });
+    q('#fdM').onclick = () => { const last = (f.order || '').slice(-1) || (f.v ? 'v' : 'f'); if (f[last]) f[last]--; else if (f.f) f.f--; else if (f.v) f.v--; f.order = (f.order || '').slice(0, -1); setLog(); draw(el); };
+    el.querySelectorAll('[data-ml]').forEach(b => b.onclick = () => { const k = b.dataset.ml; f.meals[k] = f.meals[k] === b.dataset.ms ? undefined : b.dataset.ms; if (!f.meals[k]) delete f.meals[k]; save('habits'); draw(el); });
+    q('#fdG').onclick = async () => { const v = await pickNumber(g, {min: 1, max: 12, unit: 'porciones', title: 'Frutas y vegetales al día'}); if (v) { h.goal = v; setLog(); draw(el); } };
+  };
+  openSheet({title: `${h.icon} ${esc(h.name)}`, cls: 'foodsheet', body: '<div id="fdBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
+}
+
+const durTxt = m => m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}`;

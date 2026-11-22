@@ -983,3 +983,66 @@ td.hname span,.hmonth .hname span{margin-right:5px}
 input[data-wheel]{cursor:pointer;caret-color:transparent}
 .wunit{display:flex;align-items:center;font-size:18px;font-weight:600;color:var(--muted);padding-left:4px;z-index:1}
 .wrt{cursor:pointer}
+/* tipos de hábito */
+.habkinds{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.habkinds button{padding:9px 4px;border-radius:12px;background:var(--soft);font-size:12.5px;font-weight:600;line-height:1.2}
+.habkinds button.on{background:var(--blue);color:#fff}
+#hkHint{display:block;margin-top:6px}
+.calpill.money{background:#e3f6e6;color:#1e7a36}.calpill.green{background:#e6f6df;color:#2e7d32}.calpill.violet{background:#efe7ff;color:#6a3fc2}
+[data-theme=dark] .calpill.money,[data-theme=dark] .calpill.green{background:#1d3a24;color:#9fe0ae}[data-theme=dark] .calpill.violet{background:#2d2448;color:#cdb8ff}
+/* oración */
+.prcard{background:var(--soft);border-radius:18px;padding:12px;margin:12px 0}
+.prrow{display:flex;align-items:center;gap:10px;padding:8px 2px;border-top:1px solid var(--line)}
+.prrow span{flex:1;min-width:0;display:flex;flex-direction:column;font-size:15px}
+.prrow small{color:var(--muted);font-size:11.5px}
+.prrow.done span{color:var(--muted)}
+.prchk{width:26px;height:26px;border-radius:50%;border:2px solid #a78bfa;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px}
+.prchk.on{background:#8b5cf6;border-color:#8b5cf6}
+.prans{margin-top:10px}
+.prans>b{display:block;margin-bottom:4px;color:#6a3fc2}
+/* ahorro */
+.svtop{text-align:center}
+.svtop b{display:block;font-size:44px;font-weight:800;color:#1e7a36;line-height:1.1}
+.svtop span{color:var(--muted);font-size:14px}
+.svjar{position:relative;width:200px;margin:4px auto 0}
+.jar{width:200px;height:250px;display:block;filter:drop-shadow(0 8px 16px rgba(30,122,54,.18))}
+.svpct{position:absolute;left:0;right:0;top:128px;text-align:center;font-size:30px;font-weight:800;color:#7a4b00;text-shadow:0 1px 0 #fff8}
+.coindrop{animation:coindrop .8s ease-in forwards}
+@keyframes coindrop{0%{transform:translateY(-30px);opacity:0}30%{opacity:1}100%{transform:translateY(120px);opacity:0}}
+.svin{background:linear-gradient(90deg,#34c759,#1e9e48)!important;box-shadow:0 8px 20px rgba(30,158,72,.35)!important}
+.svlist{margin-top:14px}
+.svmv{display:flex;align-items:center;gap:8px;padding:8px 2px;border-top:1px solid var(--line)}
+.svmv .d{flex:1;color:var(--muted);font-size:13.5px}
+.svmv b{color:#1e7a36}.svmv.out b{color:var(--red)}
+/* despertar */
+.sky{width:100%;max-width:420px;display:block;margin:0 auto}
+.sky .sun{transition:cy 1s ease}
+.wkmsg{text-align:center;font-size:17px;font-weight:700;margin:12px 0}
+.wkbtn{background:linear-gradient(90deg,#ffb627,#ff7a3d)!important;box-shadow:0 8px 20px rgba(255,122,61,.35)!important}
+.wkgoal{text-align:center;margin:14px 0 6px}
+.wkgoal .acgoal{width:auto;display:inline-flex}
+.wkgoal .hint{margin-top:8px}
+.wkweek{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;align-items:end;background:var(--soft);border-radius:16px;padding:12px 6px 8px;margin-top:10px;height:130px}
+.wkd{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;height:100%}
+.wkd i{width:18px;border-radius:6px;background:var(--line)}
+.wkd i.on{background:linear-gradient(180deg,#ffcf3f,#ff9f1c)}.wkd i.late{background:#9fb4d8}
+.wkd b{font-size:10.5px;font-weight:600}
+.wkd span{font-size:11px;color:var(--muted)}
+.wkd.sel span{color:var(--blue);font-weight:800}
+/* comida */
+.fdplate{width:220px;margin:0 auto}
+.plate{width:220px;height:220px;display:block;filter:drop-shadow(0 6px 14px rgba(0,0,0,.12))}
+.segpop{animation:segpop .5s ease}
+@keyframes segpop{0%{opacity:.2}100%{opacity:1}}
+.fdbtns{display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0 4px}
+.fdb{padding:13px 16px;border-radius:999px;font-weight:700;font-size:15px}
+.fdb b{margin-left:2px}
+.fdb.fruit{background:#ffe1cc;color:#b4501a}.fdb.veg{background:#dcf3d2;color:#2e7d32}
+.fdb:active{transform:scale(.95)}
+.fdmeal{display:flex;align-items:center;justify-content:space-between;padding:7px 2px;border-top:1px solid var(--line);font-weight:600}
+.fdst{display:flex;gap:6px}
+.fdst button{width:40px;height:40px;border-radius:12px;background:var(--card);font-size:20px;opacity:.55;border:2px solid transparent}
+.fdst button.on{opacity:1}
+.fdst button.on.sano{border-color:#34c759;background:#e6f8ea}.fdst button.on.regular{border-color:#ffb627;background:#fff4dc}.fdst button.on.rapida{border-color:#ff5a5f;background:#ffe9ea}
+.fdtip{background:#fff8e1;border-radius:14px;padding:10px 12px;font-size:14px;color:#6b5200;margin:4px 0 12px}
+[data-theme=dark] .fdtip{background:#3a3218;color:#ffe08a}

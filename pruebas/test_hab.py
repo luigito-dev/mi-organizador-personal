@@ -16,7 +16,7 @@ with sync_playwright() as p:
       ok('Hábitos en el menú', pg.locator('#nav [data-go="habitos"]').count()==1); tap('#nav [data-go="habitos"]')
     pg.wait_for_timeout(300)
     ok(f'[{lab}] sugerencias al empezar', pg.locator('[data-sug]').count()==8)
-    tap('[data-sug="0"]'); pg.wait_for_timeout(200); tap('[data-sug="5"]'); pg.wait_for_timeout(200)
+    tap('[data-sug="0"]'); pg.wait_for_timeout(200); pg.evaluate("S.habits.push({id:'fx1',icon:'🍌',name:'Comer frutas',goal:1,unit:'',kind:'',color:'#ffb627',days:[],log:{},created:todayISO(),migW:1,migO:1,migA:1});save('habits');renderView()"); pg.wait_for_timeout(200)
     ok(f'[{lab}] dos hábitos', pg.evaluate("S.habits.length")==2)
     tap('#hNew'); pg.wait_for_timeout(300); pg.fill('#hName','Hacer planchas'); tap('[data-hi="📘"]'); tap('#hgP'); tap('#hgP'); pg.fill('#hUnit','capítulos'); tap('[data-hdw="0"]'); tap('#hSave'); pg.wait_for_timeout(300)
     h=pg.evaluate("S.habits[2]")
