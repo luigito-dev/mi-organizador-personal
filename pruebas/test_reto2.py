@@ -39,7 +39,7 @@ with sync_playwright() as p:
     pg.locator('[data-chcol="#8b5cf6"]').click(); pg.locator('#chColSave').click(); pg.wait_for_timeout(500)
     ok(f'[{lab}] color del reto', pg.evaluate("S.habits[0].challenge.color")=='#8b5cf6' and pg.evaluate("Object.keys(S.habits[0].challenge.marked).length")==1)
     pg.screenshot(path=f'shots/{lab}-sobres-color.png')
-    pg.locator('[data-chv="circulos"]').click(); pg.wait_for_timeout(300)
+    pg.evaluate("S.habits[0].challenge.view='circulos';sheets.slice(-1)[0].close();openChallengeTable(S.habits[0],todayISO())"); pg.wait_for_timeout(300)
     ok(f'[{lab}] cambiar a círculos', pg.locator('.chdot').count()==100)
     pg.locator('#chEd').click(); pg.wait_for_timeout(400)
     pg.locator('[data-crd="4"]').click(); pg.wait_for_timeout(300); pg.locator('.ov:last-child .btn:not(.sec):not(.ghost)').last.click(); pg.wait_for_timeout(500)

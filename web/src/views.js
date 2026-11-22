@@ -1769,7 +1769,7 @@ const wakeOnTime = (h, d) => { const w = (h.woke || {})[d]; if (!w) return false
 const FOOD_GOAL = h => Math.max(1, +h.goal || 5);
 function habRowInfo(h, d) {
   const k = habKind(h), c = habCount(h, d);
-  if (k === 'ahorro') { const t = saveTotal(h), g = +h.saveGoal || 0; return {p: g ? Math.min(1, t / g) : (c > 0 ? 1 : 0), sub: c ? `Hoy +${money(c)}` : (h.saveFor ? `Para: ${esc(h.saveFor)}` : 'Toca para guardar dinero'), pill: g ? `🐷 ${money(t)} de ${money(g)}` : '', pc: 'money', big: money(t), bigl: 'ahorrado'}; }
+  if (k === 'ahorro') { const t = saveTotal(h), g = +h.saveGoal || 0; return {p: g ? Math.min(1, t / g) : (c > 0 ? 1 : 0), sub: c ? `Hoy +${money(c)}` : (h.saveFor ? `Para: ${esc(h.saveFor)}` : 'Toca para anotar lo ahorrado'), pill: g ? `🐷 ${money(t)} de ${money(g)}` : '', pc: 'money', big: money(t), bigl: 'ahorrado'}; }
   if (k === 'despertar') { const w = (h.woke || {})[d], on = wakeOnTime(h, d); return {p: on ? 1 : 0, sub: w && w !== 'ok' ? `Hoy ${fmtTime(w)} ${on ? '✓ a tiempo' : '· tarde'}` : w === 'ok' ? 'Hoy ✓' : `Meta: ${fmtTime(h.wakeAt || '06:00')}`, big: habTotal(h), bigl: 'días a tiempo'}; }
   if (k === 'comida') { const g = FOOD_GOAL(h), f = (h.food || {})[d] || {}, ml = Object.values(f.meals || {}), sano = ml.filter(x => x === 'sano').length; return {p: Math.min(1, c / g), sub: `${c} de ${g} frutas y vegetales`, pill: ml.length ? `🥗 ${sano} de ${ml.length} comidas sanas` : '', pc: 'green', big: habTotal(h), bigl: 'días en total'}; }
   if (k === 'oracion') { const g = habGoal(h), pend = (h.prayers || []).filter(p => !p.ans).length, run = UI.habTimer && UI.habTimer.id === h.id; return {p: Math.min(1, c / g), sub: run ? '⏱ Orando…' : `${c} de ${g} min`, pill: pend ? `🙏 ${pend} ${pend === 1 ? 'petición' : 'peticiones'}` : '', pc: 'violet', big: c, bigl: 'min hoy'}; }
@@ -1820,17 +1820,17 @@ function openSave(h, d) {
       <div class="wgoalrow"><button class="wgoal" id="svG">Meta: <b>${g ? money(g) : 'sin meta'}</b>${h.saveBy ? ` · ${durTxtD(dayDiff(h.saveStart || todayISO(), h.saveBy))}` : ''} <span>Cambiar ✎</span></button></div>
       <div class="svjar">${jarSVG(g ? t / g : Math.min(1, t / 500), drop)}${g ? `<div class="svpct">${Math.min(100, Math.round(t / g * 100))}%</div>` : ''}</div>
       <div class="wmsg">${g && t >= g ? '🎉 ¡Llegaste a tu meta!' : g ? `Faltan ${money(g - t)}` : ''}${today ? `${g ? ' · ' : ''}Hoy ${today > 0 ? '+' : ''}${money(today)}` : ''}</div>
-      <div class="wacts"><button class="wsmall" id="svOut" aria-label="Sacar dinero">−$</button><button class="wdrink svin" id="svIn">+ GUARDAR</button><button class="wsmall" id="svCh" aria-label="Reto de ahorro">🏆</button></div>
-      <div class="svlist"><div class="bknh"><b>Movimientos</b><span>${mv.length}</span></div>${mv.slice(0, 40).map(m => `<div class="svmv ${m.amt < 0 ? 'out' : ''}"><span>${m.amt < 0 ? '↘︎' : m.cell != null ? '🏆' : '🪙'}</span><span class="d">${fmtShort(m.date)}${m.note ? ' · ' + esc(m.note) : ''}</span><b>${m.amt > 0 ? '+' : ''}${money(m.amt)}</b><button class="wrdel" data-svd="${m.id}" aria-label="Eliminar"><i class="xdel"></i></button></div>`).join('') || '<div class="hint" style="padding:4px 2px">Cada vez que guardes dinero, anótalo aquí.</div>'}</div>`;
+      <div class="wacts"><button class="wsmall" id="svOut" aria-label="Sacar dinero">−$</button><button class="wdrink svin" id="svIn">+ AHORRADO</button><button class="wsmall" id="svCh" aria-label="Reto de ahorro">🏆</button></div>
+      <div class="svlist"><div class="bknh"><b>Movimientos</b><span>${mv.length}</span></div>${mv.slice(0, 40).map(m => `<div class="svmv ${m.amt < 0 ? 'out' : ''}"><span>${m.amt < 0 ? '↘︎' : m.cell != null ? '🏆' : '🪙'}</span><span class="d">${fmtShort(m.date)}${m.note ? ' · ' + esc(m.note) : ''}</span><b>${m.amt > 0 ? '+' : ''}${money(m.amt)}</b><button class="wrdel" data-svd="${m.id}" aria-label="Eliminar"><i class="xdel"></i></button></div>`).join('') || '<div class="hint" style="padding:4px 2px">Cada vez que ahorres dinero, anótalo aquí.</div>'}</div>`;
     drop = false;
     const q = x => el.querySelector(x);
     const add = async sign => {
       if (d > todayISO()) { toast('Ese día todavía no llega'); return; }
       const P = savePlan(h), sug = P && sign > 0 ? Math.max(1, Math.round(P.perDay * 100) / 100) : sign > 0 ? 5 : 1;
-      const v = await pickNumber(Math.round(sug), {min: 0, max: 10000, unit: '$', title: sign > 0 ? '¿Cuánto guardaste?' : '¿Cuánto sacaste?'});
+      const v = await pickNumber(Math.round(sug), {min: 0, max: 10000, unit: '$', title: sign > 0 ? '¿Cuánto ahorraste?' : '¿Cuánto sacaste?'});
       if (!v) return;
       h.moves = h.moves || []; h.moves.push({id: uid(), date: d, amt: sign * v, at: Date.now()}); recalcSave(h); save('habits');
-      if (sign > 0) { drop = true; toast(`🐷 +${money(v)} guardado`); goalCheer(h, v); }
+      if (sign > 0) { drop = true; toast(`🐷 +${money(v)} ahorrado`); goalCheer(h, v); }
       draw(el);
     };
     q('#svIn').onclick = () => add(1); q('#svOut').onclick = () => add(-1);
@@ -1849,7 +1849,7 @@ function openSaveGoal(h, done) {
   let unit = span % 365 === 0 ? 'anos' : span % 30 === 0 ? 'meses' : span % 7 === 0 ? 'semanas' : 'dias';
   const qty0 = span / UN.find(u => u[0] === unit)[2];
   const s = openSheet({title: '🐷 Meta de ahorro', body: `<div class="fld"><label>¿Para qué ahorras?</label><input class="inp" id="sgF" value="${esc(h.saveFor || '')}" placeholder="Ej.: Viaje, emergencias, carro…" maxlength="40"></div>
-    <div class="fld"><label>¿Cuánto quieres juntar?</label><input class="inp rdnum" id="sgV" readonly inputmode="none" data-wheel data-min="0" data-max="20000" data-step="25" data-unit="$" data-title="Meta de ahorro" value="${+h.saveGoal || ''}" placeholder="Sin meta" style="max-width:none"></div>
+    <div class="fld"><label>¿Cuánto quieres ahorrar?</label><input class="inp rdnum" id="sgV" readonly inputmode="none" data-wheel data-min="0" data-max="20000" data-step="25" data-unit="$" data-title="Meta de ahorro" value="${+h.saveGoal || ''}" placeholder="Sin meta" style="max-width:none"></div>
     <div class="fld"><label>¿En cuánto tiempo?</label><label class="wrsw" style="padding:0 2px 8px"><span><b>Ponerle fecha a la meta</b></span><input type="checkbox" id="sgOn" ${h.saveBy || !h.saveGoal ? 'checked' : ''}><i></i></label>
       <div id="sgT"><div class="habgoal"><input class="inp rdnum" id="sgQ" readonly inputmode="none" data-wheel data-min="1" data-max="365" data-title="¿Cuánto tiempo?" value="${qty0}" style="max-width:110px"><div class="seg sgu">${UN.map(([k, n]) => `<button type="button" data-su="${k}" class="${unit === k ? 'on' : ''}">${n}</button>`).join('')}</div></div><small class="hint" id="sgH"></small></div></div>`,
     foot: '<button class="btn" id="sgS">Guardar</button>',
@@ -1882,18 +1882,21 @@ const CH_PRESETS = [['$1,000 en 1 año (por semana)', 1000, 52, 'variado', 'sema
 const CH_FREQ = {dia: ['Diario', 'día', 'días', 365], semana: ['Semanal', 'semana', 'semanas', 52], mes: ['Mensual', 'mes', 'meses', 12]};
 function openChallengeForm(h, done) {
   const c = h.challenge || {};
-  let freq = c.freq || 'semana', style = c.style === 'variado' ? 'variado' : 'igual', color = c.color || '#d99400', span = c.span || 12;
+  let freq = c.freq || 'semana', style = c.style === 'variado' ? 'variado' : 'igual', color = c.color || '#d99400', span = c.span || 12, view = c.ready ? 'circulos' : c.view || 'circulos';
   const s = openSheet({title: '🏆 Reto de ahorro', body: `
     <div class="chready"><div class="bknh"><b>Retos listos</b><span>${CH_READY.length}</span></div>${CH_READY.map((r, i) => { const t = r.vals().reduce((a, b) => a + b, 0); return `<button type="button" class="chrd" data-crd="${i}"><span class="chrdi ${r.view}">${r.view === 'sobres' ? ENV_SVG : r.view === 'circulos' ? '<b></b><b></b><b></b>' : '<i></i><i></i>'}</span><span class="chrdt"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span><span class="chrdm">${money(t)}</span></button>`; }).join('')}</div>
+    ${c.ready ? `<div class="chnote">🔒 Tu reto actual, <b>${esc(c.name)}</b>, es un reto listo: sus cantidades no se cambian. Puedes cambiarle el color o escoger otro reto.</div>` : ''}
     <div class="fld" style="margin-top:14px"><label>Color del reto</label><div class="habcols">${CH_COLORS.map(x => `<button type="button" data-chcol="${x}" class="${(c.color || '#d99400') === x ? 'on' : ''}" style="background:${x}" aria-label="Color"></button>`).join('')}</div>${c.vals ? '<button type="button" class="btn sec sm" id="chColSave" style="margin-top:8px">Cambiar solo el color</button>' : ''}</div>
     <div class="chown"><div class="bknh"><b>O crea el tuyo en 3 pasos</b></div>
-      <div class="chstep"><span>1</span><label>¿Cuánto quieres juntar?</label></div>
-      <input class="inp rdnum chbig" id="chA" readonly inputmode="none" data-wheel data-min="10" data-max="50000" data-step="10" data-unit="$" data-title="¿Cuánto quieres juntar?" value="${c.amount || 1000}">
+      <div class="chstep"><span>1</span><label>¿Cuánto quieres ahorrar?</label></div>
+      <input class="inp rdnum chbig" id="chA" readonly inputmode="none" data-wheel data-min="10" data-max="50000" data-step="10" data-unit="$" data-title="¿Cuánto quieres ahorrar?" value="${c.amount || 1000}">
       <div class="chstep"><span>2</span><label>¿En cuánto tiempo?</label></div>
       <div class="chchips">${CH_SPANS.map(([m, n]) => `<button type="button" data-csp="${m}" class="${span === m ? 'on' : ''}">${n}</button>`).join('')}</div>
-      <div class="chstep"><span>3</span><label>¿Cada cuánto guardas?</label></div>
+      <div class="chstep"><span>3</span><label>¿Cada cuánto ahorras?</label></div>
       <div class="chchips">${Object.entries(CH_FREQ).map(([k, v]) => `<button type="button" data-cf="${k}" class="${freq === k ? 'on' : ''}">Cada ${v[1]}</button>`).join('')}</div>
       <div class="chres" id="chRes"></div>
+      <div class="chstep"><span>4</span><label>¿Cómo lo quieres marcar?</label></div>
+      <div class="chvpick">${[['sobres', '✉️ Sobres', ENV_SVG + ENV_SVG], ['circulos', '◯ Círculos', '<b></b><b></b><b></b><b></b><b></b><b></b>'], ['lista', '☰ Lista', '<i></i><i></i><i></i>']].map(([k, n, p]) => `<button type="button" data-cvw="${k}" class="${view === k ? 'on' : ''}"><span class="pv ${k}">${p}</span>${n}</button>`).join('')}</div>
       <label class="wrsw chvar"><span><b>🎲 Cantidades variadas</b><small>Apagado: siempre la misma cantidad.</small></span><input type="checkbox" id="chV" ${style === 'variado' ? 'checked' : ''}><i></i></label>
     </div>
     <small class="hint">El reto va aparte de tu ahorro regular. ${c.vals ? 'Al cambiarlo, empieza de nuevo sin casillas marcadas.' : ''}</small>`,
@@ -1903,25 +1906,26 @@ function openChallengeForm(h, done) {
       const N = () => spanCount(span, freq), vals = () => style === 'igual' ? chValues(A(), N(), 'igual') : chValues(A(), N(), 'variado');
       const upd = () => {
         const F = CH_FREQ[freq], n = N(), t = A(), v = vals(), per = t / n;
-        q('#chRes').innerHTML = `<div class="chres1">Guardas <button type="button" class="chper" id="chPer">${style === 'igual' ? money(Math.round(per * 100) / 100) : `entre ${money(Math.min(...v))} y ${money(Math.max(...v))}`} ✎</button> cada ${F[1]}</div><div class="chres2">${n} ${n === 1 ? 'vez' : 'veces'} · ${money(t)} en total · <b>${money(t / span * 12)} al año</b></div>`;
+        q('#chRes').innerHTML = `<div class="chres1">Ahorras <button type="button" class="chper" id="chPer">${style === 'igual' ? money(Math.round(per * 100) / 100) : `entre ${money(Math.min(...v))} y ${money(Math.max(...v))}`} ✎</button> cada ${F[1]}</div><div class="chres2">${n} ${n === 1 ? 'vez' : 'veces'} · ${money(t)} en total · <b>${money(t / span * 12)} al año</b></div>`;
         q('#chPer').onclick = async () => { const x = await pickNumber(Math.round(per), {min: 1, max: 5000, unit: '$', title: `¿Cuánto cada ${F[1]}?`}); if (x) { q('#chA').value = Math.round(x * n * 100) / 100; style = 'igual'; q('#chV').checked = false; upd(); } };
       };
       el.querySelectorAll('[data-csp]').forEach(b => b.onclick = () => { span = +b.dataset.csp; el.querySelectorAll('[data-csp]').forEach(x => x.classList.toggle('on', x === b)); upd(); });
       el.querySelectorAll('[data-cf]').forEach(b => b.onclick = () => { freq = b.dataset.cf; el.querySelectorAll('[data-cf]').forEach(x => x.classList.toggle('on', x === b)); upd(); });
+      el.querySelectorAll('[data-cvw]').forEach(b => b.onclick = () => { view = b.dataset.cvw; el.querySelectorAll('[data-cvw]').forEach(x => x.classList.toggle('on', x === b)); });
       q('#chV').onchange = () => { style = q('#chV').checked ? 'variado' : 'igual'; upd(); };
       el.querySelectorAll('[data-chcol]').forEach(b => b.onclick = () => { color = b.dataset.chcol; el.querySelectorAll('[data-chcol]').forEach(x => x.classList.toggle('on', x === b)); });
       const cs = q('#chColSave'); if (cs) cs.onclick = () => { h.challenge.color = color; save('habits'); s.close(); toast('🎨 Color cambiado'); done && done(); openChallengeTable(h, todayISO(), done); };
       el.querySelectorAll('[data-crd]').forEach(b => b.onclick = async () => {
         const r = CH_READY[+b.dataset.crd], vals = r.vals(), t = Math.round(vals.reduce((a, x) => a + x, 0) * 100) / 100;
         if (h.challenge && Object.keys(h.challenge.marked || {}).length && !(await ask(`¿Cambiar tu reto actual por “${esc(r.name)}”? Empieza de nuevo sin casillas marcadas.`, {yes: 'Cambiar'}))) return;
-        h.challenge = {name: r.name, title: r.title || money(t), sub: r.sub, amount: t, style: r.style || 'lista', vals, marked: {}, start: todayISO(), freq: r.freq, view: r.view, color, indep: 1, indep2: 1};
+        h.challenge = {ready: 1, name: r.name, title: r.title || money(t), sub: r.sub, amount: t, style: r.style || 'lista', vals, marked: {}, start: todayISO(), freq: r.freq, view: r.view, color, indep: 1, indep2: 1};
         save('habits'); s.close(); toast(`🏆 ${r.name}`); done && done(); openChallengeTable(h, todayISO(), done);
       });
       q('#chA').addEventListener('change', upd); upd();
       q('#chS').onclick = () => {
         const n = N(), t = A(); if (!t) { toast('Pon una cantidad'); return; }
         const F = CH_FREQ[freq], sp = (CH_SPANS.find(x => x[0] === span) || [0, span + ' meses'])[1];
-        h.challenge = {span, name: `${money(t)} en ${sp}`, title: money(t), sub: `${sp} · cada ${F[1]}`, amount: t, style, vals: vals(), marked: {}, start: todayISO(), freq, view: c.view || (freq === 'dia' && n <= 120 ? 'sobres' : 'circulos'), color, indep: 1, indep2: 1};
+        h.challenge = {span, name: `${money(t)} en ${sp}`, title: money(t), sub: `${sp} · cada ${F[1]}`, amount: t, style, vals: vals(), marked: {}, start: todayISO(), freq, view, color, indep: 1, indep2: 1};
         save('habits'); s.close(); toast('🏆 Reto creado'); done && done(); openChallengeTable(h, todayISO(), done);
       };
       const del = q('#chDel'); if (del) del.onclick = async () => { if (await ask('¿Quitar el reto y sus casillas marcadas? Tu ahorro regular no cambia.', {yes: 'Quitar'})) { h.challenge = null; save('habits'); s.close(); done && done(); } };
@@ -1938,8 +1942,7 @@ function challengeBox(box, h, tabs, onChange) {
     <button class="qhead chedit" data-ched style="--lc:${col}" aria-label="Editar el reto"><span class="qtitle">RETO ${esc(money(ch.amount))}</span><span class="qcount">${n}/${N}</span><span class="chpen">✎</span></button>
     <div class="chsub"><b>${money(sv)}</b> ahorrado de ${money(ch.amount)} · ${ch.sub ? esc(ch.sub) : `${ch.style === 'igual' ? 'fijo' : 'variado'} ${ch.freq === 'semana' ? 'por semana' : ch.freq === 'mes' ? 'por mes' : 'por día'}`}</div>
     <div class="habbar chbar"><i style="width:${sv / ch.amount * 100}%"></i></div>
-    <div class="seg chview">${[['lista', '☰ Lista'], ['circulos', '◯ Círculos'], ['sobres', '✉️ Sobres']].map(([k, n2]) => `<button data-chv="${k}" class="${(ch.view || 'lista') === k ? 'on' : ''}">${n2}</button>`).join('')}</div>
-    ${ch.view === 'circulos' || ch.view === 'sobres' ? `<div class="qrows chrows chcirc"><div class="chposter"><b>${esc(ch.title || money(ch.amount))}</b><i>Reto de ahorro</i><small>${esc(ch.sub || ch.name.replace(money(ch.amount) + ' en ', ''))}</small></div><div class="chdots ${ch.view === 'sobres' ? 'env' : ''}">${ch.vals.map((v, i) => ch.view === 'sobres' ? `<button class="chenv ${ch.marked[i] ? 'on' : ''}" data-chc="${i}" title="Sobre ${i + 1}">${envSVG(!ch.marked[i], money(v).replace('.00', ''))}${ch.marked[i] ? '' : `<span>${money(v).replace('.00', '')}</span>`}</button>` : `<button class="chdot ${ch.marked[i] ? 'on' : ''} ${i === cur && !ch.marked[i] ? 'cur' : ''}" data-chc="${i}" title="${per} ${i + 1} · ${fmtShort(chDate(ch, i))}">${money(v).replace('.00', '')}</button>`).join('')}<span class="chdeq">= ${esc(money(ch.amount))}</span></div><div class="chtip">Toca ${ch.view === 'sobres' ? 'un sobre' : 'un círculo'} cada ${ch.freq === 'semana' ? 'semana' : ch.freq === 'mes' ? 'mes' : 'día'}, guarda esa cantidad y se colorea.</div></div>` : `<div class="qrows chrows">${ch.vals.map((v, i) => { const on = !!ch.marked[i], dt = chDate(ch, i); return `<div class="qrow ${on ? 'done' : ''} ${i === cur && !on ? 'cur' : ''} ${!on && i < cur ? 'late' : ''}" data-chc="${i}" role="button" tabindex="0"><span class="qbox"></span><span class="qtx"><span class="hl" style="--hlbg:${i === cur ? 'rgba(255,207,63,.55)' : 'transparent'}">${per} ${i + 1}</span> <span class="qtime">${i === cur ? (ch.freq === 'semana' ? 'esta semana' : ch.freq === 'mes' ? 'este mes' : 'hoy') + ' · ' : ''}${fmtShort(dt)}</span></span><b class="chamt">${money(v)}</b></div>`; }).join('')}</div>`}
+    ${ch.view === 'circulos' || ch.view === 'sobres' ? `<div class="qrows chrows chcirc"><div class="chposter"><b>${esc(ch.title || money(ch.amount))}</b><i>Reto de ahorro</i><small>${esc(ch.sub || ch.name.replace(money(ch.amount) + ' en ', ''))}</small></div><div class="chdots ${ch.view === 'sobres' ? 'env' : ''}">${ch.vals.map((v, i) => ch.view === 'sobres' ? `<button class="chenv ${ch.marked[i] ? 'on' : ''}" data-chc="${i}" title="Sobre ${i + 1}">${envSVG(!ch.marked[i], money(v).replace('.00', ''))}${ch.marked[i] ? '' : `<span>${money(v).replace('.00', '')}</span>`}</button>` : `<button class="chdot ${ch.marked[i] ? 'on' : ''} ${i === cur && !ch.marked[i] ? 'cur' : ''}" data-chc="${i}" title="${per} ${i + 1} · ${fmtShort(chDate(ch, i))}">${money(v).replace('.00', '')}</button>`).join('')}<span class="chdeq">= ${esc(money(ch.amount))}</span></div><div class="chtip">Toca ${ch.view === 'sobres' ? 'un sobre' : 'un círculo'} cada ${ch.freq === 'semana' ? 'semana' : ch.freq === 'mes' ? 'mes' : 'día'}, ahorra esa cantidad y se colorea.</div></div>` : `<div class="qrows chrows">${ch.vals.map((v, i) => { const on = !!ch.marked[i], dt = chDate(ch, i); return `<div class="qrow ${on ? 'done' : ''} ${i === cur && !on ? 'cur' : ''} ${!on && i < cur ? 'late' : ''}" data-chc="${i}" role="button" tabindex="0"><span class="qbox"></span><span class="qtx"><span class="hl" style="--hlbg:${i === cur ? 'rgba(255,207,63,.55)' : 'transparent'}">${per} ${i + 1}</span> <span class="qtime">${i === cur ? (ch.freq === 'semana' ? 'esta semana' : ch.freq === 'mes' ? 'este mes' : 'hoy') + ' · ' : ''}${fmtShort(dt)}</span></span><b class="chamt">${money(v)}</b></div>`; }).join('')}</div>`}
     <div class="row qfoot"><button class="btn ghost sm" id="chEd">Cambiar reto</button><span class="sp"></span>${n === N ? '<b style="color:#1e7a36">🎉 ¡Reto completado!</b>' : `<span class="qtime">Faltan ${money(ch.amount - sv)}</span>`}</div>`;
   box.querySelectorAll('[data-ched]').forEach(b => b.onclick = e => { e.stopPropagation(); box.querySelector('#chEd').click(); });
   box.querySelectorAll('[data-chv]').forEach(b => b.onclick = () => { ch.view = b.dataset.chv; save('habits'); box._scrolled = 0; challengeBox(box, h, tabs, onChange); });

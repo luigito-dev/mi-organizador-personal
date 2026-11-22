@@ -1181,3 +1181,5 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .chres2{font-size:13px;color:var(--muted);margin-top:6px}
 .chres2 b{color:#1e7a36}
 .chvar{padding:8px 2px 0}
+.chnote{background:#eef4ff;color:#1d4fa8;border-radius:12px;padding:10px 12px;font-size:13.5px;margin-top:10px}
+[data-theme=dark] .chnote{background:#1e3358;color:#cfe0ff}
