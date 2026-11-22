@@ -7,6 +7,7 @@ const IC = {
   tareas: '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
   enfoque: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/>',
   notas: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
+  habitos: '<path d="M12 3c2 3 5 4.5 5 9a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5.3 1.5 1 2.5 2 3 0-3 0-5 1-7.5z"/>',
   progreso: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   config: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   mas: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
@@ -16,7 +17,7 @@ const ic = (k, cls = 'ic') => `<svg class="${cls}" viewBox="0 0 24 24" fill="non
 const LOGO = `<svg width="34" height="34" viewBox="0 0 40 40"><rect x="4" y="7" width="32" height="29" rx="6" fill="#fff"/><rect x="4" y="7" width="32" height="9" rx="4" fill="#f08a24"/><rect x="4" y="12" width="32" height="4" fill="#f08a24"/><rect x="11" y="3" width="4" height="8" rx="2" fill="#fff" stroke="#174a96" stroke-width="1.5"/><rect x="25" y="3" width="4" height="8" rx="2" fill="#fff" stroke="#174a96" stroke-width="1.5"/><path d="M12.5 25.5l5 5 10-10" fill="none" stroke="#1f5fbf" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const SECTIONS = [
   ['dia', 'Mi Día', 'dia'], ['calendario', 'Calendario', 'cal'], ['areas', 'Áreas', 'areas'], ['rutina', 'Rutina semanal', 'rutina'],
-  ['tareas', 'Tareas', 'tareas'], ['enfoque', 'Enfoque', 'enfoque'], ['notas', 'Mis notas', 'notas'], ['progreso', 'Progreso', 'progreso'], ['config', 'Configuración', 'config']
+  ['tareas', 'Tareas', 'tareas'], ['habitos', 'Hábitos', 'habitos'], ['enfoque', 'Enfoque', 'enfoque'], ['notas', 'Mis notas', 'notas'], ['progreso', 'Progreso', 'progreso'], ['config', 'Configuración', 'config']
 ];
 const UI = {freeShown: {}, daySel: null, view: 'dia', q: '', calDate: todayISO(), selDate: todayISO(), sumTab: 'hoy', taskTab: 'todo', filters: {area: '', type: '', prio: '', sort: 'fecha'}, showHiddenNotes: false, sideTab: 'citas', taskMode: 'tareas', openList: null, openArea: null, areaType: '', motivHidden: false, motiv: '', qWhen: 'hoy', qDate: null};
 const isMobile = () => window.matchMedia('(max-width:820px)').matches;
@@ -39,6 +40,7 @@ function shell() {
     else if (UI.view === 'notas') { const t = $('#nNew'); if (t) t.focus(); }
     else if (UI.view === 'areas' && !UI.openArea) openAreaForm();
     else if (UI.view === 'rutina') openRoutineForm();
+    else if (UI.view === 'habitos') openHabitForm();
     else if (UI.view === 'tareas' && UI.taskMode === 'listas') { if (UI.openList && listById(UI.openList)) { const a = $('#liAdd'); a && a.focus(); } else openListForm(); }
     else openTaskForm(null, {areaId: UI.view === 'areas' ? UI.openArea : null});
   };
@@ -83,7 +85,7 @@ function render() {
 }
 function renderView() {
   const v = $('#view');
-  const fn = {dia: vDia2, calendario: vCal, areas: vAreas, rutina: vRutina, tareas: vTareas, enfoque: vEnfoque, notas: vNotas, progreso: vProgreso, config: vConfig}[UI.view];
+  const fn = {dia: vDia2, calendario: vCal, areas: vAreas, rutina: vRutina, tareas: vTareas, habitos: vHabitos, enfoque: vEnfoque, notas: vNotas, progreso: vProgreso, config: vConfig}[UI.view];
   v.innerHTML = ''; fn(v); listBadge();
 }
 
@@ -1284,3 +1286,118 @@ function calForecast(body, d) {
 
 // Color variado (como en tu imagen) para lo que no tiene área; si tiene área, usa el color del área
 function fcColor(i) { if (i.x.areaId && S.areas.some(a => a.id === i.x.areaId)) return colorOf(i.k, i.x); const id = String(i.x.id || i.x.title || ''); let h = 0; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) | 0; return HL_PASTEL[Math.abs(h) % HL_PASTEL.length]; }
+
+/* ========== HÁBITOS ========== */
+const HAB_ICONS = ['😊','💧','🍳','🍌','☀️','😴','📖','📘','💪','🧘','🌈','🧹','💬','🤸','🧖','👁️','🌳','🚶','🏃','💵','⚖️','🌱','🍎','🥗','🙏','💊','🦷','🛏️','📵','🍦','🍷','🍭','🎮','📺','🎸','📷','✍️','🚴','🏊','🐶'];
+const HAB_SUG = [['💧', 'Tomar agua', 8, 'vasos'], ['🚶', 'Caminar', 1, ''], ['📖', 'Leer', 20, 'páginas'], ['🧘', 'Meditar', 1, ''], ['☀️', 'Levantarme temprano', 1, ''], ['🍌', 'Comer frutas', 1, ''], ['💵', 'Ahorrar dinero', 1, ''], ['🙏', 'Orar', 1, '']];
+const habGoal = h => Math.max(1, +h.goal || 1);
+const habCount = (h, d) => (h.log && h.log[d]) || 0;
+const habDone = (h, d) => habCount(h, d) >= habGoal(h);
+const habDue = (h, d) => (!h.days || !h.days.length || h.days.includes(parseISO(d).getDay())) && (!h.created || d >= h.created);
+const habTotal = h => Object.keys(h.log || {}).filter(d => habDone(h, d)).length;
+function habStreak(h, upto) { let n = 0, d = upto; if (!habDone(h, d)) d = addDays(d, -1); for (let k = 0; k < 800; k++) { if (!habDue(h, d)) { if (h.created && d < h.created) break; d = addDays(d, -1); continue; } if (!habDone(h, d)) break; n++; d = addDays(d, -1); } return n; }
+function habTap(h, d) {
+  const g = habGoal(h), c = habCount(h, d); h.log = h.log || {};
+  if (c >= g) delete h.log[d]; else h.log[d] = c + 1;
+  save('habits');
+  if (habDone(h, d) && c < g) { toast(`${h.icon} ¡${h.name} listo!`); if (navigator.vibrate) try { navigator.vibrate(15); } catch (e) {} }
+}
+function vHabitos(v) {
+  UI.habTab = UI.habTab || 'hoy'; UI.habDay = UI.habDay || todayISO();
+  v.innerHTML = `<div class="habtop"><div class="seg">${[['hoy', 'Hoy'], ['informe', 'Informe']].map(([k, n]) => `<button data-ht="${k}" class="${UI.habTab === k ? 'on' : ''}">${n}</button>`).join('')}</div><button class="btn sm" id="hNew">+ Hábito</button></div><div id="habBody"></div>`;
+  v.querySelectorAll('[data-ht]').forEach(b => b.onclick = () => { UI.habTab = b.dataset.ht; renderView(); });
+  $('#hNew', v).onclick = () => openHabitForm();
+  const body = $('#habBody', v);
+  if (!S.habits.length) {
+    body.innerHTML = `<div class="card habempty"><div class="big">🌱</div><h3>Crea tus hábitos</h3><p>Marca cada día lo que haces y mira tu progreso. Toca uno para empezar:</p><div class="habsug">${HAB_SUG.map((x, i) => `<button data-sug="${i}"><span>${x[0]}</span>${x[1]}${x[2] > 1 ? ` <small>${x[2]} ${x[3]}</small>` : ''}</button>`).join('')}</div><button class="btn" id="hNew2">+ Crear mi propio hábito</button></div>`;
+    wireHabSug(body);
+    $('#hNew2', body).onclick = () => openHabitForm();
+    return;
+  }
+  if (UI.habTab === 'informe') return habReport(body);
+  const t = todayISO(), d = UI.habDay, w = weekDays(d);
+  const due = S.habits.filter(h => habDue(h, d)), done = due.filter(h => habDone(h, d)).length;
+  body.innerHTML = `<div class="card habcard">
+    <div class="habweek">${w.map(x => { const dd = parseISO(x), dueX = S.habits.filter(h => habDue(h, x)), all = dueX.length && dueX.every(h => habDone(h, x)); return `<button data-hd="${x}" class="${x === d ? 'on' : ''} ${x === t ? 'today' : ''} ${x > t ? 'fut' : ''}"><span>${DCORTO[dd.getDay()].slice(0, 1).toUpperCase()}</span><b>${dd.getDate()}</b><i class="${all ? 'all' : ''}"></i></button>`; }).join('')}</div>
+    <div class="habprog"><span>${d === t ? 'Hoy' : cap(fmtLong(d))}</span><span><b>${done}</b> de ${due.length} listos</span></div>
+    <div class="habbar"><i style="width:${due.length ? done / due.length * 100 : 0}%"></i></div>
+    <div class="hablist">${S.habits.map(h => {
+      const g = habGoal(h), c = habCount(h, d), ok = c >= g, isDue = habDue(h, d), st = habStreak(h, t);
+      return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
+        <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${Math.min(1, c / g) * 100}%">${h.icon}${ok ? '<em>✓</em>' : ''}</span>
+        <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : g > 1 ? `${c}/${g} ${esc(h.unit || '')}` : ok ? '¡Hecho!' : 'Toca para marcar'}${st > 1 ? ` · 🔥 ${st} días seguidos` : ''}</small></span>
+        <span class="habtot"><b>${habTotal(h)}</b><small>días en total</small></span>
+        <button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`;
+    }).join('')}</div>
+    ${d > t ? '<p class="hint">Este día todavía no llega: podrás marcarlo cuando sea el día.</p>' : ''}</div>
+    ${HAB_SUG.some(x => !S.habits.some(h => h.name === x[1])) ? `<div class="habideas"><span>Ideas:</span>${HAB_SUG.map((x, i) => S.habits.some(h => h.name === x[1]) ? '' : `<button data-sug="${i}">${x[0]} ${x[1]}</button>`).join('')}</div>` : ''}`;
+  body.querySelectorAll('[data-hd]').forEach(b => b.onclick = () => { UI.habDay = b.dataset.hd; renderView(); });
+  wireHabSug(body);
+  body.querySelectorAll('[data-hed]').forEach(b => b.onclick = e => { e.stopPropagation(); openHabitForm(S.habits.find(h => h.id === b.dataset.hed)); });
+  body.querySelectorAll('[data-hab]').forEach(r => r.onclick = () => { if (d > t) { toast('Ese día todavía no llega'); return; } const h = S.habits.find(x => x.id === r.dataset.hab); habTap(h, d); renderView(); });
+}
+function habReport(body) {
+  UI.habRep = UI.habRep || 'semana'; UI.habRef = UI.habRef || todayISO();
+  const t = todayISO(), ref = UI.habRef, rp = UI.habRep, r = parseISO(ref);
+  let days, title;
+  if (rp === 'semana') { days = weekDays(ref); const a = parseISO(days[0]), b = parseISO(days[6]); title = `${a.getDate()} ${MESES[a.getMonth()].slice(0, 3)} – ${b.getDate()} ${MESES[b.getMonth()].slice(0, 3)}`; }
+  else if (rp === 'mes') { const n = new Date(r.getFullYear(), r.getMonth() + 1, 0).getDate(); days = [...Array(n)].map((_, i) => iso(new Date(r.getFullYear(), r.getMonth(), i + 1))); title = cap(MESES[r.getMonth()]) + ' ' + r.getFullYear(); }
+  else { days = []; for (let x = iso(new Date(r.getFullYear(), 0, 1)); parseISO(x).getFullYear() === r.getFullYear(); x = addDays(x, 1)) days.push(x); title = String(r.getFullYear()); }
+  const past = days.filter(x => x <= t);
+  // estadísticas
+  let due = 0, ok = 0; const perfect = [];
+  past.forEach(x => { const hs = S.habits.filter(h => habDue(h, x)); hs.forEach(h => { due++; if (habDone(h, x)) ok++; }); if (hs.length && hs.every(h => habDone(h, x))) perfect.push(x); });
+  let best = 0, run = 0; past.forEach(x => { if (perfect.includes(x)) { run++; best = Math.max(best, run); } else run = 0; });
+  const pct = due ? Math.round(ok / due * 100) : 0;
+  const cell = (h, x) => { if (!habDue(h, x)) return '<span class="hq rest"></span>'; const dn = habDone(h, x), part = !dn && habCount(h, x) > 0; return `<span class="hq ${dn ? 'on' : ''} ${x > t ? 'fut' : ''}" style="--hc:${h.color};--hl:${hexA(h.color, part ? .45 : .18)}" title="${fmtShort(x)}"></span>`; };
+  let grid;
+  if (rp === 'semana') {
+    grid = `<table class="hgrid"><thead><tr><th></th>${days.map(x => `<th><span class="hwd">${DCORTO[parseISO(x).getDay()].slice(0, 1).toUpperCase()}</span></th>`).join('')}<th></th></tr></thead><tbody>
+      ${S.habits.map(h => { const dd = days.filter(x => habDue(h, x) && x <= t), perf = dd.length && dd.length === days.filter(x => habDue(h, x)).length && dd.every(x => habDone(h, x)); return `<tr><td class="hname"><span>${h.icon}</span>${esc(h.name)}</td>${days.map(x => `<td>${cell(h, x)}</td>`).join('')}<td>${perf ? '<span class="hbadge" title="¡Perfecto!">🏅</span>' : ''}</td></tr>`; }).join('')}
+      <tr class="hbest"><td class="hname">Día perfecto</td>${days.map(x => `<td>${perfect.includes(x) ? '🏵️' : ''}</td>`).join('')}<td>${perfect.length === 7 ? '👑' : ''}</td></tr></tbody></table>`;
+  } else if (rp === 'mes') {
+    grid = `<div class="hmonth">${S.habits.map(h => `<div class="hmrow"><div class="hname"><span>${h.icon}</span>${esc(h.name)}<small>${days.filter(x => habDone(h, x)).length} días</small></div><div class="hmcells">${days.map(x => cell(h, x)).join('')}</div></div>`).join('')}</div>`;
+  } else {
+    grid = `<div class="hmonth">${S.habits.map(h => `<div class="hmrow"><div class="hname"><span>${h.icon}</span>${esc(h.name)}<small>${days.filter(x => habDone(h, x)).length} días</small></div><div class="hyear">${MESES.map((m, i) => { const md = days.filter(x => parseISO(x).getMonth() === i && x <= t && habDue(h, x)), n = md.filter(x => habDone(h, x)).length, p = md.length ? n / md.length : 0; return `<span style="--hl:${hexA(h.color, md.length ? .12 + p * .88 : .06)}" title="${cap(m)}: ${n} días"><b>${m.slice(0, 1).toUpperCase()}</b></span>`; }).join('')}</div></div>`).join('')}</div>`;
+  }
+  body.innerHTML = `<div class="card habrep">
+    <div class="seg hrseg">${[['semana', 'Semanal'], ['mes', 'Mensual'], ['año', 'Anual']].map(([k, n]) => `<button data-hr="${k}" class="${rp === k ? 'on' : ''}">${n}</button>`).join('')}</div>
+    <div class="hrtitle"><span class="hrsun">☀️</span><h2>Mis hábitos</h2><span class="hrsun">🌙</span></div>
+    <div class="hrnav"><button class="hrarr" id="hrP" aria-label="Anterior">‹</button><span class="hl" style="--hlbg:#fff27a">${title}</span><button class="hrarr" id="hrN" aria-label="Siguiente">›</button></div>
+    ${grid}
+    <div class="hstats"><div><b style="color:#ff4d5e">${pct}<small>%</small></b><span>Cumplido</span></div><div><b style="color:#4a90ff">${perfect.length}<small>d</small></b><span>Días perfectos</span></div><div><b style="color:#2bc48a">${ok}</b><span>Total hechos</span></div><div><b style="color:#ff9a3d">${best}<small>d</small></b><span>Mejor racha</span></div></div>
+  </div>`;
+  body.querySelectorAll('[data-hr]').forEach(b => b.onclick = () => { UI.habRep = b.dataset.hr; renderView(); });
+  const mv = n => { const x = parseISO(UI.habRef); if (rp === 'semana') x.setDate(x.getDate() + 7 * n); else if (rp === 'mes') x.setMonth(x.getMonth() + n, 1); else x.setFullYear(x.getFullYear() + n, 0, 1); UI.habRef = iso(x); renderView(); };
+  $('#hrP', body).onclick = () => mv(-1); $('#hrN', body).onclick = () => mv(1);
+}
+function openHabitForm(h) {
+  const isNew = !h; h = h ? JSON.parse(JSON.stringify(h)) : {id: uid(), icon: '😊', name: '', goal: 1, unit: '', color: HL_PASTEL[S.habits.length % HL_PASTEL.length], days: [], log: {}, created: todayISO()};
+  const s = openSheet({title: isNew ? 'Nuevo hábito' : 'Editar hábito', body: `
+    <div class="fld"><label>Nombre</label><input class="inp" id="hName" value="${esc(h.name)}" placeholder="Ej.: Tomar agua" maxlength="40"></div>
+    <div class="fld"><label>Ícono</label><div class="habicons">${HAB_ICONS.map(i => `<button type="button" data-hi="${i}" class="${h.icon === i ? 'on' : ''}">${i}</button>`).join('')}</div></div>
+    <div class="fld"><label>Color</label><div class="habcols">${HL_PASTEL.map(c => `<button type="button" data-hc="${c}" class="${h.color === c ? 'on' : ''}" style="background:${c}" aria-label="Color"></button>`).join('')}</div></div>
+    <div class="fld"><label>Meta por día</label><div class="habgoal"><button type="button" class="btn sec sm" id="hgM">−</button><b id="hgV">${habGoal(h)}</b><button type="button" class="btn sec sm" id="hgP">+</button><input class="inp" id="hUnit" value="${esc(h.unit || '')}" placeholder="vasos, páginas, minutos…"></div><small class="hint">Con meta 1 se marca de un toque. Con más, cada toque suma uno.</small></div>
+    <div class="fld"><label>Días</label><div class="habdays">${[0,1,2,3,4,5,6].map(i => `<button type="button" data-hdw="${i}" class="${!h.days.length || h.days.includes(i) ? 'on' : ''}">${DCORTO[i].slice(0, 1).toUpperCase()}</button>`).join('')}</div><small class="hint">Los días apagados son de descanso y no cuentan en contra.</small></div>`,
+    foot: `${isNew ? '' : '<button class="btn ghost" id="hDel" style="color:var(--red)">Eliminar</button>'}<button class="btn" id="hSave">Guardar</button>`,
+    onMount: el => {
+      const q = x => el.querySelector(x);
+      el.querySelectorAll('[data-hi]').forEach(b => b.onclick = () => { h.icon = b.dataset.hi; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x === b)); });
+      el.querySelectorAll('[data-hc]').forEach(b => b.onclick = () => { h.color = b.dataset.hc; el.querySelectorAll('[data-hc]').forEach(x => x.classList.toggle('on', x === b)); });
+      q('#hgM').onclick = () => { h.goal = Math.max(1, habGoal(h) - 1); q('#hgV').textContent = h.goal; };
+      q('#hgP').onclick = () => { h.goal = Math.min(99, habGoal(h) + 1); q('#hgV').textContent = h.goal; };
+      el.querySelectorAll('[data-hdw]').forEach(b => b.onclick = () => b.classList.toggle('on'));
+      q('#hSave').onclick = () => {
+        h.name = q('#hName').value.trim(); if (!h.name) { toast('Escribe el nombre del hábito'); q('#hName').focus(); return; }
+        h.unit = q('#hUnit').value.trim();
+        const on = [...el.querySelectorAll('[data-hdw].on')].map(b => +b.dataset.hdw); if (!on.length) { toast('Elige al menos un día'); return; }
+        h.days = on.length === 7 ? [] : on;
+        const k = S.habits.findIndex(x => x.id === h.id); if (k >= 0) S.habits[k] = h; else S.habits.push(h);
+        save('habits'); s.close(); if (UI.view === 'habitos') renderView(); else go('habitos'); toast(isNew ? `${h.icon} Hábito creado` : 'Guardado');
+      };
+      const del = q('#hDel'); if (del) del.onclick = async () => { if (await ask(`¿Eliminar “${esc(h.name)}” y todo su historial?`, {yes: 'Eliminar'})) { S.habits = S.habits.filter(x => x.id !== h.id); save('habits'); s.close(); renderView(); } };
+      if (isNew) setTimeout(() => q('#hName').focus(), 250);
+    }});
+}
+
+function wireHabSug(root) { root.querySelectorAll('[data-sug]').forEach(b => b.onclick = () => { const x = HAB_SUG[+b.dataset.sug]; S.habits.push({id: uid(), icon: x[0], name: x[1], goal: x[2], unit: x[3], color: HL_PASTEL[S.habits.length % HL_PASTEL.length], days: [], log: {}, created: todayISO()}); save('habits'); toast(`${x[0]} ${x[1]} añadido`); renderView(); }); }

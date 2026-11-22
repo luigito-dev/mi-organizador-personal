@@ -191,7 +191,7 @@ function nextMotiv() {
 
 function blankState() {
   return {
-    v: 1, areas: [], tasks: [], events: [], routines: [], notes: [], lists: [],
+    v: 1, areas: [], tasks: [], events: [], routines: [], notes: [], lists: [], habits: [],
     types: DEFAULT_TYPES.map(t => ({...t, builtin: true})),
     settings: {theme: 'auto', weekStart: 0, hour24: false, showHolidays: true, notif: false, tutorialSeen: false, focusPreset: 1, hiddenAreas: [], calView: 'month'},
     weekGoals: {}, focusLog: {}, notified: {}
@@ -201,7 +201,7 @@ let S = blankState();
 
 /* ========== Guardado (nube del usuario o navegador) ========== */
 const LS_KEY = 'mi-organizador-personal-v1';
-const PARTS = ['areas', 'tasks', 'events', 'routines', 'notes', 'lists', 'meta'];
+const PARTS = ['areas', 'tasks', 'events', 'routines', 'notes', 'lists', 'habits', 'meta'];
 const Store = {
   mode: 'local', db: null, uid: null, timers: {}, writing: {}, again: {}, lastSent: {},
   partData(p) {
@@ -248,7 +248,7 @@ const Store = {
       const any = snaps.some(s => s.exists);
       const metaSnap = snaps[PARTS.indexOf('meta')];
       const cloudAt = metaSnap && metaSnap.exists ? (metaSnap.data().savedAt || 0) : 0;
-      if (any && (S.savedAt || 0) > cloudAt && (S.tasks.length || S.lists.length || S.events.length || S.notes.length || S.areas.length || S.routines.length)) {
+      if (any && (S.savedAt || 0) > cloudAt && (S.tasks.length || S.lists.length || S.events.length || S.notes.length || S.areas.length || S.routines.length || S.habits.length)) {
         // lo de este dispositivo es más nuevo: se combina con lo de la nube (sin perder nada) y se sube
         snaps.forEach((s, i) => {
           const p = PARTS[i]; if (!s.exists || p === 'meta') return;
@@ -269,7 +269,7 @@ const Store = {
         applyTheme(); render();
       } else {
         this.mode = 'cloud';
-        const hasLocal = S.tasks.length || S.lists.length || S.events.length || S.notes.length || S.areas.length || S.routines.length || S.settings.tutorialSeen;
+        const hasLocal = S.tasks.length || S.lists.length || S.events.length || S.notes.length || S.areas.length || S.routines.length || S.habits.length || S.settings.tutorialSeen;
         if (hasLocal) this.save();
       }
       setStoreLabel();
@@ -285,7 +285,7 @@ function normalize(st) {
   for (const k of Object.keys(b)) if (st[k] === undefined) st[k] = b[k];
   st.settings = Object.assign(b.settings, st.settings || {});
   if (!Array.isArray(st.types) || !st.types.length) st.types = b.types;
-  ['areas','tasks','events','routines','notes','lists'].forEach(k => { if (!Array.isArray(st[k])) st[k] = []; });
+  ['areas','tasks','events','routines','notes','lists','habits'].forEach(k => { if (!Array.isArray(st[k])) st[k] = []; });
   return st;
 }
 function save(...parts) { Store.save(parts.length ? parts : null); }
