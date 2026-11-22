@@ -18,6 +18,8 @@ with sync_playwright() as p:
     ok(f'[{lab}] meta con tiempo', pg.evaluate("dayDiff(S.habits[0].saveStart,S.habits[0].saveBy)")==180 and '6 meses' in pg.locator('#svG').inner_text(), pg.locator('#svG').inner_text())
     ok(f'[{lab}] pantalla principal sin plan ni reto', pg.locator('.svneed').count()==0 and pg.locator('#svChBox').count()==0)
     tap('#svCh'); pg.wait_for_timeout(400)
+    ok(f'[{lab}] retos listos sin los 3 pasos', pg.locator('.chown').is_hidden() and pg.locator('[data-crd]').first.is_visible())
+    tap('[data-ctab="crear"]'); pg.wait_for_timeout(200)
     wheel('#chA',1000); tap('[data-csp="12"]'); tap('[data-cf="semana"]'); pg.wait_for_timeout(200)
     ok(f'[{lab}] 3 pasos: $1000, 1 año, semanal', '52 veces' in pg.locator('#chRes').inner_text() and '$19.23' in pg.locator('#chRes').inner_text() and '$1,000 al año' in pg.locator('#chRes').inner_text(), pg.locator('#chRes').inner_text())
     tap('[data-cf="dia"]'); pg.wait_for_timeout(150)

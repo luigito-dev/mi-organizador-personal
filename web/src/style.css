@@ -1183,3 +1183,18 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .chvar{padding:8px 2px 0}
 .chnote{background:#eef4ff;color:#1d4fa8;border-radius:12px;padding:10px 12px;font-size:13.5px;margin-top:10px}
 [data-theme=dark] .chnote{background:#1e3358;color:#cfe0ff}
+.chcolrow{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.chcolrow>span{font-weight:700;font-size:13.5px;color:var(--muted);flex:none}
+.chcols{display:flex;gap:8px;overflow-x:auto;padding:4px 2px;scrollbar-width:none}
+.chcols button{flex:none;width:30px;height:30px;border-radius:50%;background:var(--sw);border:3px solid var(--card);box-shadow:0 0 0 1.5px var(--line)}
+.chcols button.on{box-shadow:0 0 0 2.5px var(--sw);transform:scale(1.08)}
+.chcolsave{margin:0 0 6px auto;display:block}
+.chtabs{display:flex;margin:8px 0 12px}
+.chtabs button{flex:1;padding:9px 6px;font-size:14px}
+.chvseg{display:flex;width:100%}
+.chvseg button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 4px;font-size:13.5px}
+.cvi{display:inline-flex;align-items:center}
+.cvi .envi{width:20px;height:16px}
+.cvi .dot{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;display:block}
+.cvi .bar{width:16px;height:12px;display:block;background:linear-gradient(currentColor,currentColor) 0 0/100% 2px no-repeat,linear-gradient(currentColor,currentColor) 0 5px/100% 2px no-repeat,linear-gradient(currentColor,currentColor) 0 10px/100% 2px no-repeat}
+.chown{margin-top:0}
