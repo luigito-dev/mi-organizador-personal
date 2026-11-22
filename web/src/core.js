@@ -298,8 +298,10 @@ const isLate = t => t.status !== 'Completada' && !!t.date && t.date < todayISO()
 const isDone = t => t.status === 'Completada';
 const areaVisible = id => !id || !S.settings.hiddenAreas.includes(id);
 const routineOn = (r, d) => r.days.includes(dow(d)) && (!r.from || d >= r.from) && (!r.to || d <= r.to);
+// Un evento puede durar varios días (endDate)
+const evOn = (e, d) => e.date === d || (!!e.endDate && e.date < d && d <= e.endDate);
 function itemsOn(d, opts = {}) {
-  const ev = S.events.filter(e => e.date === d && (opts.all || areaVisible(e.areaId)));
+  const ev = S.events.filter(e => evOn(e, d) && (opts.all || areaVisible(e.areaId)));
   const tk = S.tasks.filter(t => t.date === d && (opts.all || areaVisible(t.areaId)) && (opts.withDone || !isDone(t)));
   const rt = S.routines.filter(r => routineOn(r, d) && (opts.all || areaVisible(r.areaId)));
   return {ev, tk, rt};
@@ -307,7 +309,7 @@ function itemsOn(d, opts = {}) {
 function sortedDay(d, opts) {
   const {ev, tk, rt} = itemsOn(d, opts);
   const arr = [
-    ...ev.map(x => ({k: 'ev', x, m: x.allDay ? -1 : toMin(x.start)})),
+    ...ev.map(x => ({k: 'ev', x, m: x.allDay || x.date !== d ? -1 : toMin(x.start)})),
     ...tk.map(x => ({k: 'tk', x, m: x.time ? toMin(x.time) : 1500})),
     ...rt.map(x => ({k: 'rt', x, m: toMin(x.start)}))
   ];

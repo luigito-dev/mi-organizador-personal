@@ -159,6 +159,7 @@ function calTitle(view, d) {
   const dd = parseISO(d);
   if (view === 'month') return cap(MESES[dd.getMonth()]) + ' ' + dd.getFullYear();
   if (view === 'day') return fmtLong(d) + ' ' + dd.getFullYear();
+  if (view === 'forecast') { const e = parseISO(addDays(d, 13)); return `${dd.getDate()} ${MESES[dd.getMonth()].slice(0, 3)} – ${e.getDate()} ${MESES[e.getMonth()].slice(0, 3)} ${e.getFullYear()}`; }
   const w = weekDays8(d); const a = parseISO(w[0]), b = parseISO(w[w.length - 1]);
   return a.getMonth() === b.getMonth() ? `${a.getDate()} – ${b.getDate()} de ${MESES[b.getMonth()]} ${b.getFullYear()}` : `${a.getDate()} ${MESES[a.getMonth()].slice(0, 3)} – ${b.getDate()} ${MESES[b.getMonth()].slice(0, 3)} ${b.getFullYear()}`;
 }
@@ -174,7 +175,7 @@ function vCal(v) {
   const view = S.settings.calView || 'month', d = UI.calDate;
   v.innerHTML = `<div class="cal-wrap"><div class="cal-side"><div class="card mini" id="mini1"></div><div class="card" style="margin-top:12px"><h3>Mis áreas</h3><div class="areas-list" id="aList"></div></div></div>
     <div><div class="calbar"><button class="iconbtn" id="cPrev" aria-label="Anterior">‹</button><button class="iconbtn" id="cNext" aria-label="Siguiente">›</button><button class="btn sec sm" id="cToday">Hoy</button><h2>${calTitle(view, d)}</h2><span class="sp"></span>
-      <div class="seg">${[['month', 'Mes'], ['week', 'Semana'], ['day', 'Día']].map(([k, n]) => `<button data-cv="${k}" class="${view === k ? 'on' : ''}">${n}</button>`).join('')}</div>${view === 'month' ? '<button class="iconbtn" id="calBg" aria-label="Fondo del calendario" title="Fondo del calendario"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="9.5" r="1.8"/><path d="M21 16l-5-5-8 9"/></svg></button>' : ''}</div>
+      <div class="seg">${[['month', 'Mes'], ['week', 'Semana'], ['day', 'Día'], ['forecast', 'Próximos']].map(([k, n]) => `<button data-cv="${k}" class="${view === k ? 'on' : ''}">${n}</button>`).join('')}</div>${view === 'month' ? '<button class="iconbtn" id="calBg" aria-label="Fondo del calendario" title="Fondo del calendario"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="9.5" r="1.8"/><path d="M21 16l-5-5-8 9"/></svg></button>' : ''}</div>
       <div id="calBody"></div><div id="calExtra"></div></div></div>`;
   // Minicalendario
   const mc = monthCells(d), md = parseISO(d);
@@ -185,7 +186,7 @@ function vCal(v) {
   $('#aList', v).innerHTML = S.areas.length ? S.areas.map(a => `<label><input type="checkbox" data-ha="${a.id}" ${areaVisible(a.id) ? 'checked' : ''}><span class="dot" style="background:${a.color}"></span>${esc(a.name)}</label>`).join('') : '<div class="muted small">Aún no tienes áreas. Créalas en la sección Áreas.</div>';
   v.querySelectorAll('[data-ha]').forEach(c => c.onchange = () => { const id = c.dataset.ha; S.settings.hiddenAreas = c.checked ? S.settings.hiddenAreas.filter(x => x !== id) : [...S.settings.hiddenAreas, id]; save('meta'); renderView(); });
   // Navegación
-  const step = n => { const x = parseISO(d); if (view === 'month') x.setMonth(x.getMonth() + n, 1); else x.setDate(x.getDate() + (view === 'week' ? 7 : 1) * n); UI.calDate = iso(x); if (view === 'day') UI.selDate = UI.calDate; renderView(); };
+  const step = n => { const x = parseISO(d); if (view === 'month') x.setMonth(x.getMonth() + n, 1); else x.setDate(x.getDate() + (view === 'week' ? 7 : view === 'forecast' ? 14 : 1) * n); UI.calDate = iso(x); if (view === 'day') UI.selDate = UI.calDate; renderView(); };
   $('#cPrev', v).onclick = () => step(-1); $('#cNext', v).onclick = () => step(1);
   $('#cToday', v).onclick = () => { UI.calDate = UI.selDate = todayISO(); renderView(); };
   const cb = $('#calBg', v); if (cb) cb.onclick = openCalBg;
@@ -193,6 +194,7 @@ function vCal(v) {
   const body = $('#calBody', v), extra = $('#calExtra', v);
   if (view === 'month') { calMonth(body, d); extra.innerHTML = '<div class="daypanel card" id="dp"></div>'; dayPanel($('#dp', v), UI.selDate); }
   else if (view === 'week') { calWeek(body, d); planner(extra, d); }
+  else if (view === 'forecast') calForecast(body, d);
   else { UI.selDate = d; calDay(body, d); extra.innerHTML = '<div class="daypanel card" id="dp"></div>'; dayPanel($('#dp', v), d); }
 }
 function pillHTML(i) {
@@ -202,7 +204,7 @@ function pillHTML(i) {
   return `<span class="pill rt" style="border-color:${c}" data-rt="${i.x.id}">🔁 ${esc(i.x.name)}</span>`;
 }
 function calMonth(body, d) {
-  if (isMobile()) return calMonthClean(body, d);
+  if (isMobile()) return S.settings.monthStyle === 'puntos' ? calMonthClean(body, d) : calMonthDetail(body, d);
   const cells = monthCells(d), m = parseISO(d).getMonth(), max = isMobile() ? 2 : 3;
   body.innerHTML = `<div class="month mbg ${calBgDark() ? 'bgdark' : ''}" style="${calBgStyle(m)}">${wdHeaders().map(w => `<div class="wd">${w}</div>`).join('')}${cells.map(c => {
     const its = sortedDay(c, {withDone: true}); const ho = holidaysOn(c);
@@ -229,7 +231,7 @@ function timeGrid(body, days, onSlot, opts = {}) {
   days.forEach(d => { const ho = holidaysOn(d); h += `<div class="hh ${d === todayISO() ? 'today' : ''} ${ho.length ? 'holi' : ''}" ${opts.noHead ? '' : `data-hd="${d}"`} style="cursor:pointer">${opts.dayLabel ? opts.dayLabel(d) : DCORTO[dow(d)] + ' ' + parseISO(d).getDate()}${ho.length ? ' 🎉' : ''}</div>`; });
   if (!opts.noAllDay) {
     h += `<div class="tl" style="height:auto;transform:none;padding-top:4px">todo el día</div>`;
-    days.forEach(d => { const ad = [...holidaysOn(d).map(x => `<span class="pill ho">🎉 ${esc(x.name)}</span>`), ...S.events.filter(e => e.date === d && e.allDay && areaVisible(e.areaId)).map(e => pillHTML({k: 'ev', x: e})), ...S.tasks.filter(t => t.date === d && !t.time && areaVisible(t.areaId)).map(t => pillHTML({k: 'tk', x: t}))]; h += `<div class="allday">${ad.join('')}</div>`; });
+    days.forEach(d => { const ad = [...holidaysOn(d).map(x => `<span class="pill ho">🎉 ${esc(x.name)}</span>`), ...S.events.filter(e => evOn(e, d) && (e.date !== d || e.allDay) && areaVisible(e.areaId)).map(e => pillHTML({k: 'ev', x: e})), ...S.tasks.filter(t => t.date === d && !t.time && areaVisible(t.areaId)).map(t => pillHTML({k: 'tk', x: t}))]; h += `<div class="allday">${ad.join('')}</div>`; });
   }
   for (let hr = H0; hr < H1; hr++) {
     h += `<div class="tl">${hr === 0 ? '' : fmtHourLabel(hr)}</div>`;
@@ -1091,13 +1093,14 @@ function calMonthClean(body, d) {
       const colors = [...new Set(its.map(i => hlColor(i)))].slice(0, 4);
       return `<button class="cmday ${out ? 'out' : ''} ${c === t ? 'today' : ''} ${c === UI.selDate ? 'sel' : ''} ${ho.length ? 'holi' : ''}" data-day="${c}"><span class="cmn">${parseISO(c).getDate()}</span>${cake ? `<span class="cmcake">${cake}</span>` : `<span class="cmdots">${colors.map(col => `<i style="background:${col}"></i>`).join('')}${ho.length ? '<i style="background:var(--red)"></i>' : ''}</span>`}</button>`;
     }).join('')}</div>
-    <button class="cmfold" id="cmFold" aria-label="${UI.monthFold ? 'Ver el mes' : 'Plegar el mes'}">${UI.monthFold ? '▾ Ver todo el mes' : '▴ Plegar'}</button></div>`;
+    <div class="cmfoot"><button class="cmfold" id="cmFold" aria-label="${UI.monthFold ? 'Ver el mes' : 'Plegar el mes'}">${UI.monthFold ? '▾ Ver todo el mes' : '▴ Plegar'}</button>${monthStyleSwitch()}</div></div>`;
   body.querySelectorAll('[data-day]').forEach(c => c.onclick = () => {
     const day = c.dataset.day;
     if (UI.selDate === day) { openEventForm(null, {date: day}, 'month'); return; }
     UI.selDate = day; if (parseISO(day).getMonth() !== m) UI.calDate = day; renderView();
   });
   $('#cmFold', body).onclick = () => { UI.monthFold = !UI.monthFold; renderView(); };
+  wireMonthStyle(body);
 }
 
 function hexA(c, a) { const m = String(c).trim().match(/^#?([0-9a-f]{6})$/i); if (!m) return 'rgba(31,95,191,' + a + ')'; const n = parseInt(m[1], 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
@@ -1109,9 +1112,9 @@ function itemHl(i) { let h = 0; for (const ch of String(i.id || i.t)) h = (h * 3
 const EMOJI_RE = /(\p{Extended_Pictographic}(\uFE0F|\u200D\p{Extended_Pictographic})*)/u;
 const titleEmoji = t => { const m = String(t || '').match(EMOJI_RE); return m ? m[0] : ''; };
 function daySticker(d) {
-  const e = S.events.find(x => x.date === d && x.sticker && areaVisible(x.areaId)) || S.tasks.find(x => x.date === d && x.sticker && areaVisible(x.areaId));
+  const e = S.events.find(x => evOn(x, d) && x.sticker && areaVisible(x.areaId)) || S.tasks.find(x => x.date === d && x.sticker && areaVisible(x.areaId));
   if (e) return e.sticker;
-  const te = S.events.find(x => x.date === d && titleEmoji(x.title) && areaVisible(x.areaId)) || S.tasks.find(x => x.date === d && titleEmoji(x.title) && areaVisible(x.areaId));
+  const te = S.events.find(x => evOn(x, d) && titleEmoji(x.title) && areaVisible(x.areaId)) || S.tasks.find(x => x.date === d && titleEmoji(x.title) && areaVisible(x.areaId));
   if (te) return titleEmoji(te.title);
   return S.events.some(x => x.date === d && x.evType === 'celebracion' && areaVisible(x.areaId)) ? '🎂' : '';
 }
@@ -1221,3 +1224,63 @@ function shrinkImage(file, max = 900) {
     img.src = URL.createObjectURL(file);
   });
 }
+
+/* ===== Mes con detalle (teléfono): nombres con barrita de color, casillas y eventos de varios días ===== */
+function monthStyleSwitch() { const st = S.settings.monthStyle === 'puntos' ? 'puntos' : 'detalle'; return `<span class="mstyle"><button data-ms="detalle" class="${st === 'detalle' ? 'on' : ''}">Detalle</button><button data-ms="puntos" class="${st === 'puntos' ? 'on' : ''}">Puntos</button></span>`; }
+function wireMonthStyle(root) { root.querySelectorAll('[data-ms]').forEach(b => b.onclick = e => { e.stopPropagation(); S.settings.monthStyle = b.dataset.ms; save('meta'); renderView(); }); }
+function calMonthDetail(body, d) {
+  const cells = monthCells(d), m = parseISO(d).getMonth(), t = todayISO(), MAX = 3;
+  let show = cells;
+  if (UI.monthFold) { const k = Math.max(0, cells.indexOf(UI.selDate)); const r = Math.floor(k / 7) * 7; show = cells.slice(r, r + 7); }
+  const lab = (i, c) => {
+    const x = i.x, col = fcColor(i), cont = i.k === 'ev' && x.date !== c, startOfRow = (cells.indexOf(c) % 7) === 0;
+    const em = i.k === 'ev' ? (x.sticker || titleEmoji(x.title) || '') : i.k === 'tk' ? (x.sticker || '') : '';
+    const title = (i.k === 'rt' ? x.name : x.title).replace(em, '').trim();
+    const box = i.k === 'tk' ? `<span class="mlbox ${isDone(x) ? 'on' : ''}"></span>` : '';
+    const span = i.k === 'ev' && x.endDate ? (cont ? (c === x.endDate ? 'span-end' : 'span-mid') : 'span-start') : '';
+    return `<span class="mlab ${i.k} ${span} ${i.k === 'tk' && isDone(x) ? 'done' : ''}" style="--c:${col};--cb:${hexA(col, i.k === 'ev' ? .28 : .16)}" ${i.k === 'tk' ? `data-tk="${x.id}"` : i.k === 'ev' ? `data-ev="${x.id}"` : `data-rt="${x.id}"`}>${box}${cont && !startOfRow ? '&nbsp;' : `${em ? `<b class="mlem">${em}</b>` : ''}${esc(title)}`}</span>`;
+  };
+  body.innerHTML = `<div class="dmonth ${calBgDark() ? 'bgdark' : ''}" style="${calBgStyle(m)}">
+    <div class="cmwd">${wdHeaders().map(w => `<span>${w}</span>`).join('')}</div>
+    <div class="dmgrid">${show.map(c => {
+      const its = sortedDay(c, {withDone: true}), ho = holidaysOn(c), out = parseISO(c).getMonth() !== m;
+      const labs = [...ho.map(h => `<span class="mlab ho">🎉 ${esc(h.name)}</span>`), ...its.map(i => lab(i, c))];
+      return `<div class="dmday ${out ? 'out' : ''} ${c < t ? 'past' : ''} ${c === t ? 'today' : ''} ${c === UI.selDate ? 'sel' : ''} ${ho.length ? 'holi' : ''}" data-day="${c}"><span class="dmn">${parseISO(c).getDate()}</span>${labs.slice(0, MAX).join('')}${labs.length > MAX ? `<span class="mmore">+${labs.length - MAX}</span>` : ''}</div>`;
+    }).join('')}</div>
+    <div class="cmfoot"><button class="cmfold" id="cmFold">${UI.monthFold ? '▾ Ver todo el mes' : '▴ Plegar'}</button>${monthStyleSwitch()}</div></div>`;
+  body.querySelectorAll('[data-day]').forEach(c => c.onclick = () => {
+    const day = c.dataset.day;
+    if (UI.selDate === day) { openEventForm(null, {date: day}, 'month'); return; }
+    UI.selDate = day; if (parseISO(day).getMonth() !== m) UI.calDate = day; renderView();
+    setTimeout(() => { const p = $('#dp'); p && p.scrollIntoView({behavior: 'smooth', block: 'nearest'}); }, 60);
+  });
+  $('#cmFold', body).onclick = () => { UI.monthFold = !UI.monthFold; renderView(); };
+  wireMonthStyle(body);
+}
+/* ===== Vista "Próximos" (como Forecast): tarjetas de colores por día ===== */
+function calForecast(body, d) {
+  const days = [...Array(14)].map((_, i) => addDays(d, i)), t = todayISO();
+  const html = days.map(x => {
+    const its = sortedDay(x, {withDone: true}), ho = holidaysOn(x);
+    if (!its.length && !ho.length) return '';
+    const dd = parseISO(x);
+    const tile = i => {
+      const o = i.x, col = fcColor(i), dn = i.k === 'tk' && isDone(o);
+      const allDay = i.k === 'ev' ? (o.allDay || o.date !== x) : i.k === 'tk' ? !o.time : false;
+      const start = i.k === 'ev' ? o.start : i.k === 'tk' ? o.time : o.start, end = i.k === 'ev' ? o.end : i.k === 'rt' ? o.end : null;
+      const title = i.k === 'rt' ? o.name : o.title, em = o.sticker && !title.includes(o.sticker) ? ' ' + o.sticker : '';
+      const shortT = v => fmtTime(v).replace(' a. m.', ' am').replace(' p. m.', ' pm');
+      return `<div class="ftile ${i.k} ${dn ? 'done' : ''}" style="--fb:${hexA(col, .3)};--fc:${col}" ${i.k === 'tk' ? `data-tk="${o.id}"` : i.k === 'ev' ? `data-ev="${o.id}"` : `data-rt="${o.id}"`}>
+        <div class="fthead">${i.k === 'tk' ? `<button class="mlbox ${dn ? 'on' : ''}" data-chk="${o.id}" aria-label="Completar"></button>` : ''}<b>${allDay ? 'Todo el día' : shortT(start)}</b>${i.k === 'rt' ? '<span class="ftk">🔁</span>' : ''}</div>
+        <div class="fttl">${esc(title)}${em}</div>${o.place ? `<div class="ftpl">📍 ${esc(o.place)}</div>` : ''}
+        ${end && !allDay ? `<div class="ftend">${shortT(end)}</div>` : o.endDate && i.k === 'ev' ? `<div class="ftend">hasta ${parseISO(o.endDate).getDate()} ${MESES[parseISO(o.endDate).getMonth()].slice(0, 3)}</div>` : ''}</div>`;
+    };
+    return `<div class="fday ${x === t ? 'today' : ''}"><div class="fdate"><span>${cap(DCORTO[dd.getDay()])}</span><b>${dd.getDate()}</b><span>${MESES[dd.getMonth()].slice(0, 3)}</span></div>
+      <div class="fgrid">${ho.map(h => `<div class="ftile ho" style="--fb:var(--holi);--fc:var(--holiText)"><div class="fthead"><b>Todo el día</b></div><div class="fttl">🎉 ${esc(h.name)}</div></div>`).join('')}${its.map(tile).join('')}</div></div>`;
+  }).join('');
+  body.innerHTML = `<div class="forecast">${html || '<div class="card empty"><div class="big">🌤️</div>Nada en estos 14 días. Toca “+” para añadir.</div>'}</div>`;
+  wireItems(body);
+}
+
+// Color variado (como en tu imagen) para lo que no tiene área; si tiene área, usa el color del área
+function fcColor(i) { if (i.x.areaId && S.areas.some(a => a.id === i.x.areaId)) return colorOf(i.k, i.x); const id = String(i.x.id || i.x.title || ''); let h = 0; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) | 0; return HL_PASTEL[Math.abs(h) % HL_PASTEL.length]; }

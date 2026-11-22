@@ -9,7 +9,7 @@ with sync_playwright() as p:
   b=p.chromium.launch(); ctx=b.new_context(**p.devices['Pixel 7']); pg=ctx.new_page(); errs=[]; pg.on('pageerror',lambda e: errs.append(str(e)))
   # meses
   pg.goto('file:///home/claude/org/index.html'); pg.wait_for_timeout(300)
-  pg.evaluate("S.settings.tutorialSeen=true;sheets.slice().forEach(s=>s.close());go('calendario');S.settings.calView='month';renderView()"); pg.wait_for_timeout(300)
+  pg.evaluate("S.settings.tutorialSeen=true;S.settings.monthStyle='puntos';sheets.slice().forEach(s=>s.close());go('calendario');S.settings.calView='month';renderView()"); pg.wait_for_timeout(300)
   ok('fondo según el mes por defecto', 'svg' in (pg.locator('.cmonth').get_attribute('style') or ''))
   s1=pg.locator('.cmonth').get_attribute('style'); pg.tap('#cNext'); pg.wait_for_timeout(300); s2=pg.locator('.cmonth').get_attribute('style')
   ok('cambia al pasar de mes', s1!=s2)
@@ -20,7 +20,7 @@ with sync_playwright() as p:
   # foto con almacén bloqueado + nube
   ctx=b.new_context(**p.devices['Pixel 7']); pg=ctx.new_page(); errs=[]; pg.on('pageerror',lambda e: errs.append(str(e)))
   pg.goto('file:///home/claude/org/bg_block.html'); pg.wait_for_timeout(800)
-  pg.evaluate("S.settings.tutorialSeen=true;sheets.slice().forEach(s=>s.close());go('calendario');S.settings.calView='month';renderView()"); pg.wait_for_timeout(300)
+  pg.evaluate("S.settings.tutorialSeen=true;S.settings.monthStyle='puntos';sheets.slice().forEach(s=>s.close());go('calendario');S.settings.calView='month';renderView()"); pg.wait_for_timeout(300)
   pg.tap('#calBg'); pg.wait_for_timeout(300); pg.set_input_files('#bgFile','/tmp/foto.jpg'); pg.wait_for_timeout(1500)
   ok('con almacén bloqueado la foto se pone', 'data:image/jpeg' in (pg.locator('.cmonth').get_attribute('style') or ''), [t.inner_text() for t in pg.locator('.toast').all()])
   ok('se guardó en la cuenta', pg.evaluate("!!window.__docs['data/users/u_1/calbg']"))

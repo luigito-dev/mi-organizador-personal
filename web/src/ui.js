@@ -238,6 +238,7 @@ function openEventForm(ev, preset = {}, mode) {
       : mode ? '' : `<div class="fld"><label>Fecha</label><input type="date" class="inp" id="eDate" value="${e.date}"></div>`}
     ${editing ? `<div class="fld"><label>Fecha</label><input type="date" class="inp" id="eDate" value="${e.date}"></div>` : ''}
     <div class="fld"><button type="button" class="row" id="eAllRow" style="padding:4px 0;font-weight:600"><span class="switch blue ${e.allDay ? 'on' : ''}" id="eAll"></span>Todo el día</button></div>
+    ${mode === 'week' ? '' : `<div class="fld"><label>Termina otro día (para eventos de varios días)</label><input type="date" class="inp" id="eEnd" value="${e.endDate || ''}" min="${e.date}"></div>`}
     <div class="fld row" id="eTimes"></div>
     <div class="fld"><label>Tipo de evento</label><div class="opts hscroll" id="eTypes"></div></div>
     <div class="fld"><label>Sticker en el calendario</label><div class="opts hscroll stk" id="eStk"></div></div>
@@ -268,7 +269,8 @@ function openEventForm(ev, preset = {}, mode) {
         e.title = el.querySelector('#eTitle').value.trim();
         if (!e.title) { el.querySelector('#eTitle').focus(); toast('Escribe el nombre del evento'); return; }
         const di = el.querySelector('#eDate'); if (di && di.value) e.date = di.value;
-        if (!e.allDay && toMin(e.end) <= toMin(e.start)) { toast('La hora de fin debe ser después del inicio'); return; }
+        const ed = el.querySelector('#eEnd'); e.endDate = ed && ed.value && ed.value > e.date ? ed.value : null;
+        if (!e.allDay && !e.endDate && toMin(e.end) <= toMin(e.start)) { toast('La hora de fin debe ser después del inicio'); return; }
         e.place = el.querySelector('#ePlace').value.trim(); e.note = el.querySelector('#eNote').value;
         if (editing) S.events[S.events.findIndex(x => x.id === e.id)] = e;
         else if (days) { if (!days.size) { toast('Elige al menos un día'); return; } [...days].sort().forEach(d => S.events.push({...JSON.parse(JSON.stringify(e)), id: uid(), date: d})); }
@@ -283,7 +285,7 @@ function openEventDetail(id) {
   const t = evType(e.evType), a = areaById(e.areaId);
   const body = `<div class="row" style="margin-bottom:8px"><span style="font-size:26px">${t.icon}</span><div><div style="font-size:18px;font-weight:700">${esc(e.title)}</div><div class="row wrap small muted"><span>${t.name}</span>${a ? `<span class="tag"><span class="dot" style="background:${a.color}"></span>${esc(a.name)}</span>` : ''}</div></div></div>
     <div class="kv"><span class="k">Fecha</span><span>${fmtLong(e.date)}</span></div>
-    <div class="kv"><span class="k">Horario</span><span>${e.allDay ? 'Todo el día' : fmtTime(e.start) + ' – ' + fmtTime(e.end)}</span></div>
+    ${e.endDate ? `<div class="kv"><span class="k">Hasta</span><span>${fmtLong(e.endDate)}</span></div>` : ''}<div class="kv"><span class="k">Horario</span><span>${e.allDay ? 'Todo el día' : fmtTime(e.start) + ' – ' + fmtTime(e.end)}</span></div>
     ${e.place ? `<div class="kv"><span class="k">Lugar</span><span>${esc(e.place)}</span></div>` : ''}
     <div class="kv"><span class="k">Recordatorio</span><span id="dBell">${bellHTML(e.reminder)}</span></div>
     ${e.note ? `<div class="fld"><div class="lab">Nota</div><div style="white-space:pre-wrap">${esc(e.note)}</div></div>` : ''}

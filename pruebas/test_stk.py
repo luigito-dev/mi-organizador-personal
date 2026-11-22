@@ -7,7 +7,7 @@ with sync_playwright() as p:
     ctx=b.new_context(**kw); pg=ctx.new_page(); errs=[]; pg.on('pageerror',lambda e: errs.append(str(e)))
     tap=(lambda s: pg.tap(s)) if lab=='tel' else (lambda s: pg.click(s))
     pg.goto('file:///home/claude/org/index.html'); pg.wait_for_timeout(300)
-    pg.evaluate("S.settings.tutorialSeen=true;sheets.slice().forEach(s=>s.close());go('calendario');S.settings.calView='month';UI.selDate=todayISO();renderView()"); pg.wait_for_timeout(300)
+    pg.evaluate("S.settings.tutorialSeen=true;S.settings.monthStyle='puntos';sheets.slice().forEach(s=>s.close());go('calendario');S.settings.calView='month';UI.selDate=todayISO();renderView()"); pg.wait_for_timeout(300)
     d=pg.evaluate("addDays(todayISO(),2)")
     pg.evaluate(f"openEventForm(null,{{date:'{d}'}},'month')"); pg.wait_for_timeout(300)
     pg.fill('#eTitle','Viaje a Ponce'); tap('[data-stk="✈️"]'); tap('#eSave'); pg.wait_for_timeout(300)

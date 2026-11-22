@@ -1,7 +1,7 @@
 from playwright.sync_api import sync_playwright
 R=[]
 def ok(n,c,x=''): R.append(c); print(('PASS ' if c else 'FAIL ')+n+('' if c else ' -- '+str(x)))
-SEED="""S.settings.tutorialSeen=true;sheets.slice().forEach(s=>s.close());const t=todayISO();
+SEED="""S.settings.tutorialSeen=true;S.settings.monthStyle='puntos';sheets.slice().forEach(s=>s.close());const t=todayISO();
  S.areas.push({id:'a1',name:'Salud',color:'#e0566b'},{id:'a2',name:'Hogar',color:'#d4a017'});
  const T=(id,title,time,ty,ar,st,date,pr)=>({id,title,date:date||t,time,typeId:ty,areaId:ar||null,priority:pr||'Media',details:'',steps:[],status:st||'Pendiente',obs:'',reminder:null,createdAt:1});
  S.tasks.push(T('1','Tomar un vaso de agua','07:00','salud','a1'),T('2','Correr en la mañana','07:30','ejercicio','a2'),T('3','Almuerzo con Jenny','12:00','familia',null,null,null,'Alta'),T('4','Enviar correo a Tim','13:30','trabajo',null,'Completada'),T('5','Ir al supermercado','15:00','compras',null,'Completada'),T('6','Lavar el carro',null,'hogar','a2',null,addDays(t,1)));

@@ -133,7 +133,7 @@ def run(width, height, label, full=True):
         sh('rutina')
         go('calendario'); pg.wait_for_timeout(200); pg.click('[data-cv="month"]'); pg.wait_for_timeout(200)
         pg.click('#cNext'); pg.wait_for_timeout(250)
-        ok(f'[{label}] rutina en el mes siguiente', (pg.locator('.pill.rt >> text=Gimnasio').count() if width > 820 else pg.locator('.cmdots i').count()) >= 4)
+        ok(f'[{label}] rutina en el mes siguiente', (pg.locator('.pill.rt >> text=Gimnasio').count() if width > 820 else pg.locator('.cmdots i, .mlab.rt').count()) >= 4)
         pg.click('#cToday')
         # 6 reloj: horas giran, minutos de 5 en 5
         pg.click('#fab'); pg.wait_for_timeout(200); pg.click('[data-sw]'); pg.wait_for_timeout(200)
