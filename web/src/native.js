@@ -27,7 +27,7 @@
     persist() { return Pref.set({key: 'datos', value: JSON.stringify(S)}).catch(() => {}); },
     onSave(parts) {
       clearTimeout(this._p); this._p = setTimeout(() => this.persist(), 300);
-      if (!parts || parts.some(p => ['tasks', 'events', 'routines', 'meta', 'areas'].includes(p))) {
+      if (!parts || parts.some(p => ['tasks', 'events', 'routines', 'meta', 'areas', 'habits'].includes(p))) {
         clearTimeout(this._s); this._s = setTimeout(() => { this.reschedule(); this.pushWidget(); }, 700);
       }
     },
@@ -55,6 +55,7 @@
         const at = reminderTime(e.date, e.allDay ? null : e.start, e.reminder);
         if (at > now + 3000 && at < horizon) out.push({at, kind: 'e', id: e.id, title: evType(e.evType).icon + ' ' + e.title, body: relDay(e.date) + (e.allDay ? ' · todo el día' : ' a las ' + fmtTime(e.start)) + (e.place ? ' · ' + e.place : '')});
       });
+      if (typeof waterReminderList === 'function') waterReminderList(3).filter(x => x.at > now + 3000).forEach(x => out.push({at: x.at, kind: 'h', id: x.id, title: x.title, body: x.body}));
       this.snoozes.filter(z => z.at > now + 1000).forEach(z => out.push(z));
       return out.sort((a, b) => a.at - b.at).slice(0, 60);
     },
@@ -67,7 +68,7 @@
         await LN.schedule({notifications: list.map(x => ({
           id: this.idOf(x.kind + x.id + x.at), title: x.title, body: x.body,
           schedule: {at: new Date(x.at), allowWhileIdle: true}, channelId: 'recordatorios',
-          actionTypeId: x.kind === 't' ? 'TAREA' : 'EVENTO', extra: {kind: x.kind, id: x.id},
+          actionTypeId: x.kind === 't' ? 'TAREA' : x.kind === 'h' ? 'AGUA' : 'EVENTO', extra: {kind: x.kind, id: x.id},
           smallIcon: 'ic_stat_notify', iconColor: '#1F5FBF'
         }))});
       } catch (e) { console.warn('avisos', e); }
@@ -155,14 +156,17 @@
         await LN.createChannel({id: 'recordatorios', name: 'Recordatorios', description: 'Avisos de tus tareas y eventos', importance: 5, visibility: 1, vibration: true});
         await LN.registerActionTypes({types: [
           {id: 'TAREA', actions: [{id: 'hecha', title: '✓ Completar'}, {id: 'posponer', title: 'Posponer 10 min'}]},
-          {id: 'EVENTO', actions: [{id: 'posponer', title: 'Posponer 10 min'}]}
+          {id: 'EVENTO', actions: [{id: 'posponer', title: 'Posponer 10 min'}]},
+          {id: 'AGUA', actions: [{id: 'bebi', title: '💧 Bebí 8 oz'}, {id: 'posponer', title: 'Posponer 10 min'}]}
         ]});
         LN.addListener('localNotificationActionPerformed', ev => whenReady(() => {
           const n = ev.notification || {}, ex = n.extra || {};
           if (ev.actionId === 'hecha' && ex.kind === 't') setDone(ex.id, true);
+          else if (ev.actionId === 'bebi' && ex.kind === 'h') { const h = (S.habits || []).find(x => x.id === ex.id); if (h) { const d = todayISO(); h.log = h.log || {}; h.log[d] = habCount(h, d) + OZ; save('habits'); if (UI.view === 'habitos') renderView(); toast('💧 +8 oz anotadas'); } }
           else if (ev.actionId === 'posponer') this.snooze(n);
           else if (ex.kind === 't' && S.tasks.some(t => t.id === ex.id)) openTaskDetail(ex.id);
           else if (ex.kind === 'e' && S.events.some(e => e.id === ex.id)) openEventDetail(ex.id);
+          else if (ex.kind === 'h') { const h = (S.habits || []).find(x => x.id === ex.id); if (h) { go('habitos'); openWater(h, todayISO()); } }
         }));
       } catch (e) { console.warn(e); }
       // Botón de atrás de Android

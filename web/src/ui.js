@@ -209,7 +209,7 @@ function openTaskDetail(id) {
     ${t.obs ? `<div class="fld"><div class="lab">Observaciones</div><div style="white-space:pre-wrap">${esc(t.obs)}</div></div>` : ''}
     ${calLinks({title: t.title, date: t.date, start: t.time, allDay: !t.time, details: desc})}`;
   const s = openSheet({title: 'Tarea', body,
-    foot: `<button class="btn sec" id="dDel">🗑 Eliminar</button><button class="btn sec" id="dEdit">✎ Editar</button><button class="btn" id="dDone">${isDone(t) ? '↺ Reabrir' : '✓ Completar'}</button>`,
+    foot: `<button class="btn sec" id="dDel"><i class="xdel"></i> Eliminar</button><button class="btn sec" id="dEdit">✎ Editar</button><button class="btn" id="dDone">${isDone(t) ? '↺ Reabrir' : '✓ Completar'}</button>`,
     onMount: el => {
       wireBell(el.querySelector('#dBell'), t, () => { save('tasks'); render(); toast(t.reminder == null ? 'Recordatorio apagado' : 'Recordatorio: ' + remLabel(t.reminder)); });
       el.querySelectorAll('[data-step]').forEach(c => c.onchange = () => { t.steps[+c.dataset.step].done = c.checked; c.nextElementSibling.classList.toggle('done', c.checked); save('tasks'); render(); });
@@ -290,7 +290,7 @@ function openEventDetail(id) {
     <div class="kv"><span class="k">Recordatorio</span><span id="dBell">${bellHTML(e.reminder)}</span></div>
     ${e.note ? `<div class="fld"><div class="lab">Nota</div><div style="white-space:pre-wrap">${esc(e.note)}</div></div>` : ''}
     ${calLinks({title: e.title, date: e.date, start: e.start, end: e.end, allDay: e.allDay, details: e.note, place: e.place})}`;
-  const s = openSheet({title: 'Evento', body, foot: `<button class="btn sec" id="dDel">🗑 Eliminar</button><button class="btn" id="dEdit">✎ Editar</button>`,
+  const s = openSheet({title: 'Evento', body, foot: `<button class="btn sec" id="dDel"><i class="xdel"></i> Eliminar</button><button class="btn" id="dEdit">✎ Editar</button>`,
     onMount: el => {
       wireBell(el.querySelector('#dBell'), e, () => { save('events'); render(); toast(e.reminder == null ? 'Recordatorio apagado' : 'Recordatorio: ' + remLabel(e.reminder)); });
       el.querySelector('#dEdit').onclick = () => { s.close(); openEventForm(e); };
@@ -326,7 +326,7 @@ function openTypesManager(after) {
         el.querySelector('#tyL').innerHTML = S.types.map(t => {
           const used = S.tasks.filter(x => x.typeId === t.id).length;
           return `<div class="item" style="cursor:default"><span class="em">${t.icon}</span><span class="dot" style="background:${t.color}"></span><div class="body"><div class="t">${esc(t.name)}</div><div class="m">${t.builtin ? 'Original' : 'Creado por ti'} · ${used} actividad${used === 1 ? '' : 'es'}</div></div>
-            <button class="btn ghost sm" data-ed="${t.id}">Editar</button>${t.builtin ? '' : `<button class="btn ghost sm" data-del="${t.id}" style="color:var(--red)">Eliminar</button>`}</div>`;
+            <button class="btn ghost sm" data-ed="${t.id}">Editar</button>${t.builtin ? '' : `<button class="btn ghost sm" data-del="${t.id}"><i class="xdel"></i> Eliminar</button>`}</div>`;
         }).join('');
         el.querySelectorAll('[data-ed]').forEach(b => b.onclick = () => openTypeForm(S.types.find(x => x.id === b.dataset.ed), paint));
         el.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
@@ -393,7 +393,7 @@ function openRoutineForm(r0, preset = {}) {
       <div class="fld"><label>Lugar</label><input class="inp" id="rL" value="${esc(r.place)}"></div>
       <details class="fold" ${r.from || r.to ? 'open' : ''}><summary>Fechas de inicio y fin</summary><div class="cols">
         <div class="fld"><label>Empieza</label><input type="date" class="inp" id="rF" value="${r.from}"></div><div class="fld"><label>Termina</label><input type="date" class="inp" id="rTo" value="${r.to}"></div></div></details>`,
-    foot: `${editing ? '<button class="btn sec" id="rDel">🗑 Eliminar</button>' : '<button class="btn sec" data-close>Cancelar</button>'}<button class="btn" id="rS">Guardar rutina</button>`,
+    foot: `${editing ? '<button class="btn sec" id="rDel"><i class="xdel"></i> Eliminar</button>' : '<button class="btn sec" data-close>Cancelar</button>'}<button class="btn" id="rS">Guardar rutina</button>`,
     onMount: el => {
       const pa = () => { el.querySelector('#rA').innerHTML = areaButtons(r.areaId); el.querySelectorAll('[data-area]').forEach(b => b.onclick = () => { r.areaId = b.dataset.area || null; pa(); }); }; pa();
       const pd = () => el.querySelectorAll('[data-d]').forEach(b => { const d = +b.dataset.d; b.classList.toggle('on', r.days.includes(d)); b.onclick = () => { r.days = r.days.includes(d) ? r.days.filter(x => x !== d) : [...r.days, d]; pd(); }; }); pd();
@@ -429,7 +429,7 @@ function openNote(id) {
       <details class="fold" ${n.category || n.areaId ? 'open' : ''}><summary>Más opciones</summary>
         <div class="fld"><label>Categoría</label><input class="inp" id="nC" value="${esc(n.category || '')}" placeholder="Ej. Ideas, Recetas, Compras"></div>
         <div class="fld"><label>Área</label><div class="opts hscroll" id="nA"></div></div></details>`,
-    foot: `<button class="btn sec" id="nDel">🗑</button><button class="btn sec" id="nTask">→ Convertir en tarea</button><button class="btn" id="nS">Guardar</button>`,
+    foot: `<button class="btn sec" id="nDel"><i class="xdel"></i></button><button class="btn sec" id="nTask">→ Convertir en tarea</button><button class="btn" id="nS">Guardar</button>`,
     onMount: el => {
       let areaId = n.areaId || null;
       const pa = () => { el.querySelector('#nA').innerHTML = areaButtons(areaId); el.querySelectorAll('[data-area]').forEach(b => b.onclick = () => { areaId = b.dataset.area || null; pa(); }); }; pa();

@@ -331,7 +331,7 @@ function vAreaDetail(v, a) {
   const fT = UI.areaType ? tks.filter(t => t.typeId === UI.areaType) : tks;
   const pend = fT.filter(t => !isDone(t)).sort((x, y) => (x.date + (x.time || '')).localeCompare(y.date + (y.time || ''))), done = fT.filter(isDone);
   v.innerHTML = `<button class="btn ghost sm" id="back">‹ Todas las áreas</button>
-    <div class="card" style="border-top:6px solid ${a.color};margin-top:6px"><div class="row wrap"><h2 style="margin:0;font-size:20px">${esc(a.name)}</h2><span class="sp"></span><button class="btn sec sm" id="aEd">✎ Editar</button><button class="btn sec sm" id="aDel">🗑 Eliminar</button></div>
+    <div class="card" style="border-top:6px solid ${a.color};margin-top:6px"><div class="row wrap"><h2 style="margin:0;font-size:20px">${esc(a.name)}</h2><span class="sp"></span><button class="btn sec sm" id="aEd">✎ Editar</button><button class="btn sec sm" id="aDel"><i class="xdel"></i> Eliminar</button></div>
       <div class="small muted" style="margin-top:6px">${a.contact ? '👤 ' + esc(a.contact) + ' · ' : ''}${a.place ? '📍 ' + esc(a.place) : ''}</div>${a.obs ? `<div class="small" style="margin-top:6px;white-space:pre-wrap">${esc(a.obs)}</div>` : ''}
       <div class="row wrap" style="margin-top:12px"><button class="btn sm" id="adT">+ Tarea</button><button class="btn sm sec" id="adE">+ Evento</button><button class="btn sm sec" id="adR">+ Rutina</button><button class="btn sm sec" id="adN">+ Nota</button></div></div>
     <div class="sec-title">Actividades</div>
@@ -646,7 +646,7 @@ function vNotas(v) {
   v.innerHTML = `<div class="card"><div class="note-new"><textarea class="inp" id="nNew" placeholder="Escribe una nota…"></textarea><button class="btn" id="nSave">Guardar</button></div></div>
     <div class="row" style="margin:14px 0 8px"><b>${UI.showHiddenNotes ? 'Notas ocultas' : 'Mis notas'}</b><span class="sp"></span>${hidden.length || UI.showHiddenNotes ? `<button class="btn ghost sm" id="nHid">${UI.showHiddenNotes ? '‹ Volver a mis notas' : `Ver ocultas (${hidden.length})`}</button>` : ''}</div>
     ${list.length ? list.map(n => { const a = areaById(n.areaId); return `<div class="nitem" data-note="${n.id}"><div class="body"><div class="t">${esc(noteTitle(n))}</div>${noteSnippet(n) ? `<div class="s">${esc(noteSnippet(n))}</div>` : ''}<div class="xs muted row" style="margin-top:3px"><span>${fmtShort(n.date)}</span>${n.category ? `<span class="tag">${esc(n.category)}</span>` : ''}${a ? `<span class="tag"><span class="dot" style="background:${a.color}"></span>${esc(a.name)}</span>` : ''}</div></div>
-      <div class="acts"><button data-nh="${n.id}" title="${n.hidden ? 'Mostrar' : 'Ocultar'}" aria-label="${n.hidden ? 'Mostrar' : 'Ocultar'}">${n.hidden ? '👁‍🗨' : '👁'}</button><button data-nd="${n.id}" title="Eliminar" aria-label="Eliminar">🗑</button></div></div>`; }).join('')
+      <div class="acts"><button data-nh="${n.id}" title="${n.hidden ? 'Mostrar' : 'Ocultar'}" aria-label="${n.hidden ? 'Mostrar' : 'Ocultar'}">${n.hidden ? '👁‍🗨' : '👁'}</button><button data-nd="${n.id}" title="Eliminar" aria-label="Eliminar"><i class="xdel"></i></button></div></div>`; }).join('')
       : `<div class="empty">${q ? 'No hay notas que coincidan con “' + esc(UI.q) + '”.' : UI.showHiddenNotes ? 'No hay notas ocultas.' : '<div class="big">🗒️</div>Escribe arriba tu primera nota.'}</div>`}`;
   const nn = $('#nNew', v);
   $('#nSave', v).onclick = () => { const tx = nn.value.trim(); if (!tx) { nn.focus(); return; } S.notes.push({id: uid(), text: tx, date: todayISO(), created: String(Date.now()), hidden: false, category: '', areaId: null}); save('notes'); UI.showHiddenNotes = false; renderView(); toast('Nota guardada ✓'); };
@@ -810,9 +810,9 @@ function vListaDetalle(v, l) {
   const its = l.items.filter(i => !q || norm(i.t).includes(q));
   const pend = its.filter(i => !i.done), done = its.filter(i => i.done);
   const nd = l.items.filter(i => i.done).length;
-  const row = i => `<div class="item ${i.done ? 'done' : ''}" data-li="${i.id}"><button class="check ${i.done ? 'on' : ''}" data-lc="${i.id}" aria-label="${i.done ? 'Desmarcar' : 'Marcar'}">${i.done ? '✓' : ''}</button><div class="body"><div class="t" style="white-space:normal"><span class="hl" style="--hlbg:${hexA(itemHl(i), i.done ? .22 : .45)}">${esc(i.t)}</span></div></div><button class="btn ghost sm" data-ld="${i.id}" aria-label="Quitar de la lista" title="Quitar de la lista" style="color:var(--muted)">✕</button></div>`;
+  const row = i => `<div class="item ${i.done ? 'done' : ''}" data-li="${i.id}"><button class="check ${i.done ? 'on' : ''}" data-lc="${i.id}" aria-label="${i.done ? 'Desmarcar' : 'Marcar'}">${i.done ? '✓' : ''}</button><div class="body"><div class="t" style="white-space:normal"><span class="hl" style="--hlbg:${hexA(itemHl(i), i.done ? .22 : .45)}">${esc(i.t)}</span></div></div><button class="btn ghost sm" data-ld="${i.id}" aria-label="Quitar de la lista" title="Quitar de la lista"><i class="xdel"></i></button></div>`;
   v.innerHTML = `<button class="btn ghost sm" id="lBack">‹ Todas las listas</button>
-    <div class="card" style="border-top:6px solid ${l.color};margin-top:6px"><div class="row wrap"><h2 style="margin:0;font-size:20px">${l.icon} ${esc(l.name)}</h2><span class="sp"></span><button class="btn sec sm" id="lPin" title="Acceso rápido desde el botón 📋">${l.hideOnDay ? '📌 Poner en acceso rápido' : '📌 En acceso rápido ✓'}</button><button class="btn sec sm" id="lEd">✎ Editar</button><button class="btn sec sm" id="lDel">🗑 Eliminar lista</button></div>
+    <div class="card" style="border-top:6px solid ${l.color};margin-top:6px"><div class="row wrap"><h2 style="margin:0;font-size:20px">${l.icon} ${esc(l.name)}</h2><span class="sp"></span><button class="btn sec sm" id="lPin" title="Acceso rápido desde el botón 📋">${l.hideOnDay ? '📌 Poner en acceso rápido' : '📌 En acceso rápido ✓'}</button><button class="btn sec sm" id="lEd">✎ Editar</button><button class="btn sec sm" id="lDel"><i class="xdel"></i> Eliminar lista</button></div>
       <div class="small muted" style="margin-top:6px">${l.items.length ? `${l.items.length - nd} por hacer · ${nd} listo${nd === 1 ? '' : 's'}` : 'Lista vacía'}</div>
       <div class="goal" style="margin-top:12px"><input id="liAdd" placeholder="Añadir a la lista…" maxlength="300" autocomplete="off"><button class="btn" id="liBtn">Añadir</button></div>
       <div class="xs muted" style="margin-top:6px">Consejo: separa con comas para añadir varias cosas a la vez (leche, pan, huevos).</div></div>
@@ -892,13 +892,13 @@ function dayLists(box) {
     const total = today.length + late.length;
     head = `<div class="qhead" style="--lc:var(--blue)"><span class="qtitle">HOY</span><span class="qcount">${done.length}/${total}</span></div>`;
     const tint = x => isLate(x) || x.priority === 'Urgente' ? 'r' : x.priority === 'Alta' ? 'o' : '';
-    rows = [...pend, ...done].map(x => `<div class="qrow ${isDone(x) ? 'done' : ''} ${isDone(x) ? '' : tint(x)}" data-qtk="${x.id}" role="button" tabindex="0"><span class="qbox"></span><span class="qtx"><span class="hl" style="--hlbg:${hexA(hlColor({k: 'tk', x}), isDone(x) ? .22 : .45)}">${esc(x.title)}</span>${x.time ? ` <span class="qtime">${isLate(x) ? fmtShort(x.date) + ' · ' : ''}${fmtTime(x.time)}</span>` : isLate(x) ? ` <span class="qtime">${fmtShort(x.date)}</span>` : ''}</span><button class="qdel" data-qdel="${x.id}" aria-label="Borrar" title="Borrar">🗑</button></div>`).join('') || '<div class="qempty">✓ Nada pendiente para hoy</div>';
+    rows = [...pend, ...done].map(x => `<div class="qrow ${isDone(x) ? 'done' : ''} ${isDone(x) ? '' : tint(x)}" data-qtk="${x.id}" role="button" tabindex="0"><span class="qbox"></span><span class="qtx"><span class="hl" style="--hlbg:${hexA(hlColor({k: 'tk', x}), isDone(x) ? .22 : .45)}">${esc(x.title)}</span>${x.time ? ` <span class="qtime">${isLate(x) ? fmtShort(x.date) + ' · ' : ''}${fmtTime(x.time)}</span>` : isLate(x) ? ` <span class="qtime">${fmtShort(x.date)}</span>` : ''}</span><button class="qdel" data-qdel="${x.id}" aria-label="Borrar" title="Borrar"><i class="xdel"></i></button></div>`).join('') || '<div class="qempty">✓ Nada pendiente para hoy</div>';
     addPh = 'Añadir para hoy…';
     foot = `<button class="btn ghost sm" id="qGo">Ver Mi Día ›</button>`;
   } else {
     const l = lists.find(x => x.id === UI.popTab), done = l.items.filter(i => i.done);
     head = `<div class="qhead" style="--lc:${l.color}"><span class="qtitle">${esc(l.name.toUpperCase())}</span><span class="qcount">${done.length}/${l.items.length}</span></div>`;
-    rows = [...l.items.filter(i => !i.done), ...done].map(i => `<div class="qrow ${i.done ? 'done' : ''}" data-qli="${i.id}" role="button" tabindex="0"><span class="qbox"></span><span class="qtx"><span class="hl" style="--hlbg:${hexA(itemHl(i), i.done ? .22 : .45)}">${esc(i.t)}</span></span><button class="qdel" data-qdel="${i.id}" aria-label="Borrar" title="Borrar">🗑</button></div>`).join('') || '<div class="qempty">Lista vacía: añade lo primero abajo.</div>';
+    rows = [...l.items.filter(i => !i.done), ...done].map(i => `<div class="qrow ${i.done ? 'done' : ''}" data-qli="${i.id}" role="button" tabindex="0"><span class="qbox"></span><span class="qtx"><span class="hl" style="--hlbg:${hexA(itemHl(i), i.done ? .22 : .45)}">${esc(i.t)}</span></span><button class="qdel" data-qdel="${i.id}" aria-label="Borrar" title="Borrar"><i class="xdel"></i></button></div>`).join('') || '<div class="qempty">Lista vacía: añade lo primero abajo.</div>';
     addPh = 'Añadir a ' + l.name + '…';
     foot = `${done.length ? '<button class="btn ghost sm" id="qUndo">↺ Desmarcar todos</button>' : ''}<span class="sp"></span><button class="btn ghost sm" id="qOpen">Abrir la lista ›</button>`;
   }
@@ -1017,7 +1017,7 @@ function tlRow(i, past) {
     return `<div class="tlrow ${past ? 'past' : ''}" data-tk="${x.id}"><span class="tltime">${tshort}</span><div class="tlcard swipe ${dn ? 'done' : ''} ${x.priority === 'Urgente' ? 'r' : x.priority === 'Alta' ? 'o' : ''}" data-sw="${x.id}" style="--c:${c}">
       <button class="check ${dn ? 'on' : ''}" data-chk="${x.id}" aria-label="Completar">${dn ? '✓' : ''}</button><span class="em">${ty.icon}</span>
       <div class="body"><div class="t">${esc(x.title)}</div>${a || x.reminder != null || (x.steps && x.steps.length) ? `<div class="m">${a ? `<span class="tag"><span class="dot" style="background:${a.color}"></span>${esc(a.name)}</span>` : ''}${x.steps && x.steps.length ? `<span>☑ ${x.steps.filter(s => s.done).length}/${x.steps.length}</span>` : ''}${x.reminder != null ? '<span class="bell">🔔</span>' : ''}</div>` : ''}</div>
-      ${dn ? '' : `<span class="hoveracts"><button class="btn sec sm" data-done="${x.id}" title="Completar">✓</button><button class="btn sec sm" data-tom="${x.id}" title="Pasar a mañana">→ Mañana</button><button class="btn sec sm" data-tdel="${x.id}" title="Borrar">🗑</button></span>`}</div></div>`;
+      ${dn ? '' : `<span class="hoveracts"><button class="btn sec sm" data-done="${x.id}" title="Completar">✓</button><button class="btn sec sm" data-tom="${x.id}" title="Pasar a mañana">→ Mañana</button><button class="btn sec sm" data-tdel="${x.id}" title="Borrar"><i class="xdel"></i></button></span>`}</div></div>`;
   }
   if (i.k === 'ev') { const et = evType(x.evType); return `<div class="tlrow ${past ? 'past' : ''}" data-ev="${x.id}"><span class="tltime">${tshort}</span><div class="tlcard ev" style="--c:${c}"><span class="em">${et.icon}</span><div class="body"><div class="t">${esc(x.title)}</div><div class="m">${x.allDay ? '' : `<span>hasta ${fmtTime(x.end)}</span>`}${x.place ? `<span>📍 ${esc(x.place)}</span>` : ''}${x.reminder != null ? '<span class="bell">🔔</span>' : ''}</div></div></div></div>`; }
   return `<div class="tlrow ${past ? 'past' : ''}" data-rt="${x.id}"><span class="tltime">${tshort}</span><div class="tlcard rt" style="--c:${c}"><span class="em">🔁</span><div class="body"><div class="t">${esc(x.name)}</div><div class="m"><span>hasta ${fmtTime(x.end)}</span>${x.place ? `<span>📍 ${esc(x.place)}</span>` : ''}</div></div></div></div>`;
@@ -1330,6 +1330,7 @@ function openReading(h, d) {
 const habPages = h => Object.values(h.log || {}).reduce((a, b) => a + (+b || 0), 0);
 function habTap(h, d) {
   if (habKind(h) === 'lectura') return openReading(h, d);
+  if (habKind(h) === 'agua' && !habTap.direct) return openWater(h, d);
   if (habKind(h) === 'agua') { const g = habGoal(h), c = habCount(h, d); h.log = h.log || {}; h.log[d] = c + 1; save('habits');
     if ((c + 1) % OZ === 0) toast(c + 1 >= g && c < g ? `💧 ¡Meta de agua cumplida! ${(c + 1) / OZ} botellas` : `💧 ¡Botella ${(c + 1) / OZ} llena!`);
     if (navigator.vibrate) try { navigator.vibrate(10); } catch (e) {} return; }
@@ -1363,7 +1364,7 @@ function vHabitos(v) {
       if (kd === 'agua') { const nb = Math.floor(c / OZ), gb = g / OZ, cur = c === 0 ? 0 : (c % OZ || OZ);
         return `<div class="habrow water ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habbot">${bottleSVG(h, c)}${ok ? '<em>✓</em>' : ''}</span>
-        <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : `<b class="ozn">${cur} de ${OZ} oz</b> · ${nb} de ${gb} botellas`}${st > 1 ? ` · 🔥 ${st}` : ''}</small><span class="botrow">${[...Array(gb)].map((_, i) => `<i class="${i < nb ? 'on' : ''}"></i>`).join('')}</span></span>
+        <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : `<b class="ozn">${cur} de ${OZ} oz</b> · ${nb} de ${gb} botellas`}${(h.reminders || []).some(r => r.on !== false) && h.remOn !== false ? ' · ⏰' : ''}${st > 1 ? ` · 🔥 ${st}` : ''}</small><span class="botrow">${[...Array(gb)].map((_, i) => `<i class="${i < nb ? 'on' : ''}"></i>`).join('')}</span></span>
         <span class="habtot"><b>${c}</b><small>oz hoy</small></span>
         <span class="habside"><button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button>${c ? `<button class="habminus" data-hmin="${h.id}" aria-label="Quitar 1 onza">−1</button>` : ''}</span></div>`; }
       if (kd === 'lectura') return `<div class="habrow read ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
@@ -1431,7 +1432,7 @@ function openHabitForm(h) {
     <div class="fld hk-agua"><label>Meta de botellas por día (cada botella = 8 oz)</label><div class="habgoal"><button type="button" class="btn sec sm" id="hbM">−</button><b id="hbV">${habKind(h) === 'agua' ? Math.max(1, +h.goal || 1) : 8}</b><button type="button" class="btn sec sm" id="hbP">+</button><span class="hint" id="hbOz">${(habKind(h) === 'agua' ? Math.max(1, +h.goal || 1) : 8) * 8} oz</span></div><small class="hint">Cada toque suma 1 onza. Al llegar a 8 oz se llena una botella.</small></div>
     <div class="fld hk-"><label>Meta por día</label><div class="habgoal"><button type="button" class="btn sec sm" id="hgM">−</button><b id="hgV">${habGoal(h)}</b><button type="button" class="btn sec sm" id="hgP">+</button><input class="inp" id="hUnit" value="${esc(h.unit || '')}" placeholder="vasos, páginas, minutos…"></div><small class="hint">Con meta 1 se marca de un toque. Con más, cada toque suma uno.</small></div>
     <div class="fld"><label>Días</label><div class="habdays">${[0,1,2,3,4,5,6].map(i => `<button type="button" data-hdw="${i}" class="${!h.days.length || h.days.includes(i) ? 'on' : ''}">${DCORTO[i].slice(0, 1).toUpperCase()}</button>`).join('')}</div><small class="hint">Los días apagados son de descanso y no cuentan en contra.</small></div>`,
-    foot: `${isNew ? '' : '<button class="btn ghost" id="hDel" style="color:var(--red)">Eliminar</button>'}<button class="btn" id="hSave">Guardar</button>`,
+    foot: `${isNew ? '' : '<button class="btn sec" id="hDel"><i class="xdel"></i> Eliminar</button>'}<button class="btn" id="hSave">Guardar</button>`,
     onMount: el => {
       const q = x => el.querySelector(x);
       el.querySelectorAll('[data-hi]').forEach(b => b.onclick = () => { h.icon = b.dataset.hi; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x === b)); });
@@ -1466,3 +1467,82 @@ function migrateHabits() { let ch = false; (S.habits || []).forEach(h => {
   if (!h.kind && h.name === 'Tomar agua' && h.unit === 'vasos') { h.kind = 'agua'; const l = {}; Object.keys(h.log || {}).forEach(d => l[d] = h.log[d] * OZ); h.log = l; h.goal = Math.max(1, +h.goal || 8); h.unit = ''; ch = true; }
   if (!h.kind && h.name === 'Leer' && h.unit === 'páginas') { h.kind = 'lectura'; h.goal = 1; h.unit = ''; ch = true; }
 }); if (ch) save('habits'); }
+
+/* ===== Pantalla de agua (botella grande) ===== */
+function bigBottle(oz) {
+  const lvl = oz === 0 ? 0 : (oz % OZ === 0 ? 1 : (oz % OZ) / OZ), y = 262 - 214 * lvl;
+  return `<svg class="bigbot" viewBox="0 0 200 280" aria-hidden="true"><defs>
+    <clipPath id="bbClip"><path d="M72 40h56v22c26 10 40 26 40 52v128a24 24 0 0 1-24 24H56a24 24 0 0 1-24-24V114c0-26 14-42 40-52z"/></clipPath>
+    <linearGradient id="bbW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3fa2ff"/><stop offset="1" stop-color="#1565ff"/></linearGradient></defs>
+    <rect x="66" y="8" width="68" height="30" rx="8" fill="#2f7de1"/><rect x="66" y="22" width="68" height="4" fill="#5aa8ff"/>
+    <g clip-path="url(#bbClip)"><rect width="200" height="280" fill="#e6efff"/>
+      <g class="bbwater" style="transform:translateY(${y}px)"><path class="wv2" fill="#8cc4ff" d="M-200 10 q25 -12 50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 V300 H-200z"/><path class="wv1" fill="url(#bbW)" d="M-200 14 q25 10 50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 V300 H-200z"/>
+        <circle class="bub b1" cx="80" cy="120" r="4" fill="#fff" opacity=".35"/><circle class="bub b2" cx="120" cy="160" r="3" fill="#fff" opacity=".35"/><circle class="bub b3" cx="100" cy="200" r="5" fill="#fff" opacity=".3"/></g>
+      ${[1,2,3,4,5,6,7].map(i => `<g><line x1="36" x2="50" y1="${262 - 26.75 * i}" y2="${262 - 26.75 * i}" stroke="#fff" stroke-opacity=".8" stroke-width="2"/><text x="54" y="${266 - 26.75 * i}" font-size="11" fill="#fff" fill-opacity=".85">${i}</text></g>`).join('')}</g>
+    <path d="M72 40h56v22c26 10 40 26 40 52v128a24 24 0 0 1-24 24H56a24 24 0 0 1-24-24V114c0-26 14-42 40-52z" fill="none" stroke="#9cc6ff" stroke-width="3"/>
+    <path d="M48 120v110" stroke="#fff" stroke-opacity=".55" stroke-width="6" stroke-linecap="round"/></svg>`;
+}
+function openWater(h, d) {
+  const draw = el => {
+    const c = habCount(h, d), g = habGoal(h), gb = g / OZ, nb = Math.floor(c / OZ), cur = c === 0 ? 0 : (c % OZ || OZ);
+    const nr = (h.reminders || []).filter(r => r.on !== false).length;
+    el.querySelector('#wBody').innerHTML = `
+      <div class="wtop"><span>${d === todayISO() ? 'Hoy' : cap(fmtLong(d))}</span><b>${c} oz</b><span>de ${g} oz</span></div>
+      <div class="wbot">${bigBottle(c)}<div class="wnum"><b>${cur}</b><span>oz</span></div></div>
+      <div class="wbottles">${[...Array(Math.max(gb, nb))].map((_, i) => `<span class="${i < nb ? 'on' : ''} ${i === nb - 1 && cur === OZ ? 'pop' : ''}">${bottleSVG({id: 'w' + i, goal: 99}, i < nb ? OZ : 0)}</span>`).join('')}</div>
+      <div class="wmsg">${c >= g ? '🎉 ¡Meta del día cumplida!' : `${nb} de ${gb} botellas · faltan ${g - c} oz`}</div>
+      <div class="wacts"><button class="wsmall" id="wMinus" ${c ? '' : 'disabled'} aria-label="Quitar 1 onza">−1</button><button class="wdrink" id="wDrink">+ BEBER <small>1 oz</small></button><button class="wsmall" id="wRem" aria-label="Recordatorios">⏰${nr ? `<i>${nr}</i>` : ''}</button></div>`;
+    el.querySelector('#wDrink').onclick = () => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } habTap.direct = true; habTap(h, d); habTap.direct = false; draw(el); };
+    el.querySelector('#wMinus').onclick = () => { habUndo(h, d); draw(el); };
+    el.querySelector('#wRem').onclick = () => openWaterReminders(h);
+  };
+  openSheet({title: `💧 ${esc(h.name)}`, cls: 'watersheet', body: '<div id="wBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
+}
+/* ===== Recordatorios de agua (editables) ===== */
+const WATER_REM_DEF = [['08:00', 'Agua al despertar'], ['10:00', 'Media mañana'], ['12:00', 'Con el almuerzo'], ['15:00', 'Media tarde'], ['18:00', 'Antes de la cena'], ['20:00', 'Último vaso del día']];
+function openWaterReminders(h) {
+  let rem = JSON.parse(JSON.stringify(h.reminders || [])), on = h.remOn !== false;
+  const s = openSheet({title: '⏰ Recordatorios de agua', body: '<div id="wrBody"></div>', foot: '<button class="btn" id="wrS">Guardar</button>',
+    onMount: el => {
+      const draw = () => {
+        rem.sort((a, b) => a.time.localeCompare(b.time));
+        el.querySelector('#wrBody').innerHTML = `
+          <label class="wrsw"><span><b>Recordarme tomar agua</b><small>Te aviso a cada hora que pongas aquí.</small></span><input type="checkbox" id="wrOn" ${on ? 'checked' : ''}><i></i></label>
+          <div class="wrlist ${on ? '' : 'off'}">${rem.length ? rem.map(r => `<div class="wrrow" data-wr="${r.id}"><input type="time" class="inp wrt" value="${r.time}" data-wrt="${r.id}"><input class="inp wrl" value="${esc(r.label || '')}" placeholder="Mensaje" data-wrl="${r.id}" maxlength="40"><label class="mini-sw"><input type="checkbox" data-wro="${r.id}" ${r.on !== false ? 'checked' : ''}><i></i></label><button class="wrdel" data-wrd="${r.id}" aria-label="Eliminar">${'<i class="xdel"></i>'}</button></div>`).join('') : '<div class="hint" style="padding:8px 2px">No tienes recordatorios. Añade uno o usa el horario sugerido.</div>'}</div>
+          <div class="wradd"><button class="btn sec" id="wrAdd">+ Añadir hora</button><button class="btn ghost" id="wrSug">Usar horario sugerido</button></div>
+          ${window.NATIVE ? '<small class="hint">Te llegan aunque la app esté cerrada. Si ya cumpliste la meta del día, no te avisa.</small>' : '<small class="hint">En esta versión web el aviso sale mientras la app está abierta. En la app de Android te llega aunque esté cerrada.</small>'}`;
+        const sync = () => { el.querySelectorAll('[data-wrt]').forEach(i => { const r = rem.find(x => x.id === i.dataset.wrt); if (r && i.value) r.time = i.value; }); el.querySelectorAll('[data-wrl]').forEach(i => { const r = rem.find(x => x.id === i.dataset.wrl); if (r) r.label = i.value.trim(); }); el.querySelectorAll('[data-wro]').forEach(i => { const r = rem.find(x => x.id === i.dataset.wro); if (r) r.on = i.checked; }); on = el.querySelector('#wrOn').checked; };
+        el.querySelector('#wrOn').onchange = () => { sync(); draw(); };
+        el.querySelectorAll('[data-wrd]').forEach(b => b.onclick = () => { sync(); rem = rem.filter(x => x.id !== b.dataset.wrd); draw(); });
+        el.querySelector('#wrAdd').onclick = () => { sync(); const last = rem.length ? rem[rem.length - 1].time : '07:00'; const [hh, mm] = last.split(':').map(Number); rem.push({id: uid(), time: `${String(Math.min(23, hh + 2)).padStart(2, '0')}:${String(mm).padStart(2, '0')}`, label: 'Hora de tomar agua', on: true}); on = true; draw(); };
+        el.querySelector('#wrSug').onclick = () => { sync(); WATER_REM_DEF.forEach(([t, l]) => { if (!rem.some(r => r.time === t)) rem.push({id: uid(), time: t, label: l, on: true}); }); on = true; draw(); };
+        el.sync = sync;
+      };
+      draw();
+      el.querySelector('#wrS').onclick = async () => {
+        el.sync(); h.reminders = rem; h.remOn = on; save('habits'); s.close();
+        if (on && rem.some(r => r.on !== false)) {
+          if (window.NATIVE) { await NATIVE.ensurePermission(); NATIVE.reschedule(); }
+          else if ('Notification' in window && Notification.permission === 'default') { try { await Notification.requestPermission(); S.settings.notif = Notification.permission === 'granted'; save('meta'); } catch (e) {} }
+          toast(`⏰ ${rem.filter(r => r.on !== false).length} recordatorios de agua listos`);
+        } else toast('Recordatorios de agua apagados');
+        if (UI.view === 'habitos' && !sheets.length) renderView();
+      };
+    }});
+}
+// Próximos avisos de agua (para la web y para Android)
+function waterReminderList(days = 3) {
+  const out = [], now = Date.now();
+  (S.habits || []).forEach(h => {
+    if (habKind(h) !== 'agua' || h.remOn === false) return;
+    for (let k = 0; k < days; k++) {
+      const d = addDays(todayISO(), k); if (!habDue(h, d)) continue;
+      (h.reminders || []).forEach(r => {
+        if (r.on === false || !r.time) return;
+        const [hh, mm] = r.time.split(':').map(Number), dt = parseISO(d); dt.setHours(hh, mm, 0, 0);
+        out.push({at: dt.getTime(), d, h, r, kind: 'h', id: h.id, title: '💧 ' + (r.label || 'Hora de tomar agua'), body: k === 0 ? `Llevas ${habCount(h, d)} de ${habGoal(h)} oz hoy. ¡Toca para anotar!` : `Meta: ${habGoal(h)} oz (${habGoal(h) / OZ} botellas)`});
+      });
+    }
+  });
+  return out.filter(x => !(x.d === todayISO() && habDone(x.h, x.d)) && x.at > now - 6 * 3600000);
+}
