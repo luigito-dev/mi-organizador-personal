@@ -1802,38 +1802,134 @@ function jarSVG(p, drop) {
     <path d="M42 110v90" stroke="#fff" stroke-opacity=".6" stroke-width="7" stroke-linecap="round"/>
     ${drop ? '<g class="coindrop"><ellipse cx="100" cy="20" rx="14" ry="14" fill="url(#coinG)" stroke="#d99400" stroke-width="2"/><text x="100" y="26" text-anchor="middle" font-size="16" font-weight="800" fill="#8a5a00">$</text></g>' : ''}</svg>`;
 }
+function savePlan(h) {
+  const t = saveTotal(h), g = +h.saveGoal || 0; if (!g || !h.saveBy) return null;
+  const start = h.saveStart || todayISO(), end = h.saveBy, today = todayISO();
+  const total = Math.max(1, dayDiff(start, end)), left = Math.max(0, dayDiff(today, end)), gone = Math.min(total, Math.max(0, dayDiff(start, today)));
+  const rest = Math.max(0, g - t), expected = g * gone / total;
+  return {t, g, start, end, total, left, rest, perDay: left ? rest / left : rest, perWeek: left ? rest / Math.max(1, left / 7) : rest, perMonth: left ? rest / Math.max(1, left / 30.44) : rest, diff: t - expected};
+}
+const dayDiff = (a, b) => Math.round((parseISO(b) - parseISO(a)) / 86400000);
 function openSave(h, d) {
   let drop = false;
   const draw = el => {
     const t = saveTotal(h), g = +h.saveGoal || 0, today = habCount(h, d), mv = (h.moves || []).slice().sort((a, b) => b.date.localeCompare(a.date) || b.at - a.at);
+    const P = savePlan(h), ch = h.challenge, chDone = ch ? Object.keys(ch.marked || {}).length : 0;
     el.querySelector('#svBody').innerHTML = `
       <div class="svtop"><b>${money(t)}</b><span>${g ? `de ${money(g)}${h.saveFor ? ' para ' + esc(h.saveFor) : ''}` : 'ahorrado en total'}</span></div>
+      <div class="wgoalrow"><button class="wgoal" id="svG">Meta: <b>${g ? money(g) : 'sin meta'}</b>${h.saveBy ? ` · ${durTxtD(dayDiff(h.saveStart || todayISO(), h.saveBy))}` : ''} <span>Cambiar ✎</span></button></div>
       <div class="svjar">${jarSVG(g ? t / g : Math.min(1, t / 500), drop)}${g ? `<div class="svpct">${Math.min(100, Math.round(t / g * 100))}%</div>` : ''}</div>
-      <div class="wmsg">${g && t >= g ? '🎉 ¡Llegaste a tu meta!' : g ? `Faltan ${money(g - t)}` : ''}${today ? ` · Hoy ${today > 0 ? '+' : ''}${money(today)}` : ''}</div>
-      <div class="wacts"><button class="wsmall" id="svOut" aria-label="Sacar dinero">−$</button><button class="wdrink svin" id="svIn">+ GUARDAR</button><button class="wsmall" id="svG" aria-label="Meta">✎</button></div>
-      <div class="svlist"><div class="bknh"><b>Movimientos</b><span>${mv.length}</span></div>${mv.slice(0, 30).map(m => `<div class="svmv ${m.amt < 0 ? 'out' : ''}"><span>${m.amt < 0 ? '↘︎' : '🪙'}</span><span class="d">${fmtShort(m.date)}${m.note ? ' · ' + esc(m.note) : ''}</span><b>${m.amt > 0 ? '+' : ''}${money(m.amt)}</b><button class="wrdel" data-svd="${m.id}" aria-label="Eliminar"><i class="xdel"></i></button></div>`).join('') || '<div class="hint" style="padding:4px 2px">Cada vez que guardes dinero, anótalo aquí.</div>'}</div>`;
+      ${P ? `<div class="svplan">${t >= g ? '<b class="ok">🎉 ¡Llegaste a tu meta!</b>' : `<div class="svpace ${P.diff >= 0 ? 'ok' : 'late'}">${P.diff >= 0 ? `✓ Vas al día${P.diff >= 1 ? ` (+${money(P.diff)} adelantado)` : ''}` : `Vas ${money(-P.diff)} atrasado`}</div>
+        <div class="svneed"><div><b>${money(P.perDay)}</b><span>al día</span></div><div><b>${money(P.perWeek)}</b><span>a la semana</span></div><div><b>${money(P.perMonth)}</b><span>al mes</span></div></div>
+        <small class="hint">Faltan ${money(P.rest)} · quedan ${P.left} días (hasta ${fmtShort(P.end)})</small>`}</div>` : `<div class="wmsg">${g && t >= g ? '🎉 ¡Llegaste a tu meta!' : g ? `Faltan ${money(g - t)}` : ''}${today ? ` · Hoy ${today > 0 ? '+' : ''}${money(today)}` : ''}</div>`}
+      <div class="wacts"><button class="wsmall" id="svOut" aria-label="Sacar dinero">−$</button><button class="wdrink svin" id="svIn">+ GUARDAR</button><button class="wsmall" id="svCh" aria-label="Reto de ahorro">🏆</button></div>
+      <div class="svch" id="svChBox">${ch ? `<div class="svchh"><b>🏆 ${esc(ch.name)}</b><span>${chDone} de ${ch.vals.length}</span></div>
+        <div class="habbar"><i style="width:${chDone / ch.vals.length * 100}%"></i></div>
+        <div class="svchs"><span>${money(chSaved(ch))} de ${money(ch.amount)}</span><button class="btn sm" id="svChOpen">Abrir tabla</button></div>` : `<div class="svchh"><b>🏆 Retos de ahorro</b></div><p class="hint">Divide tu meta en casillas (por ejemplo $1,000 en 365 días) y márcalas cuando guardes ese dinero.</p><button class="btn sec" id="svChNew">Crear un reto</button>`}</div>
+      <div class="svlist"><div class="bknh"><b>Movimientos</b><span>${mv.length}</span></div>${mv.slice(0, 40).map(m => `<div class="svmv ${m.amt < 0 ? 'out' : ''}"><span>${m.amt < 0 ? '↘︎' : m.cell != null ? '🏆' : '🪙'}</span><span class="d">${fmtShort(m.date)}${m.note ? ' · ' + esc(m.note) : ''}</span><b>${m.amt > 0 ? '+' : ''}${money(m.amt)}</b><button class="wrdel" data-svd="${m.id}" aria-label="Eliminar"><i class="xdel"></i></button></div>`).join('') || '<div class="hint" style="padding:4px 2px">Cada vez que guardes dinero, anótalo aquí.</div>'}</div>`;
     drop = false;
     const q = x => el.querySelector(x);
     const add = async sign => {
       if (d > todayISO()) { toast('Ese día todavía no llega'); return; }
-      const v = await pickNumber(sign > 0 ? 5 : 1, {min: 0, max: 5000, dec: 2, unit: '$', title: sign > 0 ? '¿Cuánto guardaste?' : '¿Cuánto sacaste?'});
+      const sug = P && sign > 0 ? Math.max(1, Math.round(P.perDay * 100) / 100) : sign > 0 ? 5 : 1;
+      const v = await pickNumber(sug, {min: 0, max: 5000, dec: 2, unit: '$', title: sign > 0 ? '¿Cuánto guardaste?' : '¿Cuánto sacaste?'});
       if (!v) return;
       h.moves = h.moves || []; h.moves.push({id: uid(), date: d, amt: sign * v, at: Date.now()}); recalcSave(h); save('habits');
-      if (sign > 0) { drop = true; toast(`🐷 +${money(v)} guardado`); if (+h.saveGoal && saveTotal(h) >= h.saveGoal && saveTotal(h) - v < h.saveGoal) setTimeout(() => toast('🎉 ¡Meta de ahorro cumplida!'), 500); }
+      if (sign > 0) { drop = true; toast(`🐷 +${money(v)} guardado`); goalCheer(h, v); }
       draw(el);
     };
     q('#svIn').onclick = () => add(1); q('#svOut').onclick = () => add(-1);
     q('#svG').onclick = () => openSaveGoal(h, () => draw(el));
-    el.querySelectorAll('[data-svd]').forEach(b => b.onclick = async () => { if (await ask('¿Eliminar este movimiento?', {yes: 'Eliminar'})) { h.moves = h.moves.filter(m => m.id !== b.dataset.svd); recalcSave(h); save('habits'); draw(el); } });
+    q('#svCh').onclick = () => h.challenge ? openChallengeTable(h, d, () => draw(el)) : openChallengeForm(h, () => draw(el));
+    const co = q('#svChOpen'); if (co) co.onclick = () => openChallengeTable(h, d, () => draw(el));
+    const cn = q('#svChNew'); if (cn) cn.onclick = () => openChallengeForm(h, () => draw(el));
+    el.querySelectorAll('[data-svd]').forEach(b => b.onclick = async () => { if (await ask('¿Eliminar este movimiento?', {yes: 'Eliminar'})) { const m = h.moves.find(x => x.id === b.dataset.svd); if (m && m.cell != null && h.challenge) delete h.challenge.marked[m.cell]; h.moves = h.moves.filter(x => x.id !== b.dataset.svd); recalcSave(h); save('habits'); draw(el); } });
   };
   openSheet({title: `${h.icon} ${esc(h.name)}`, cls: 'savesheet', body: '<div id="svBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
 }
+function goalCheer(h, v) { const t = saveTotal(h); if (+h.saveGoal && t >= h.saveGoal && t - v < h.saveGoal) setTimeout(() => toast('🎉 ¡Meta de ahorro cumplida!'), 500); }
+const durTxtD = n => n % 365 === 0 ? `${n / 365} ${n === 365 ? 'año' : 'años'}` : n % 30 === 0 && n >= 30 ? `${n / 30} ${n === 30 ? 'mes' : 'meses'}` : n % 7 === 0 && n >= 7 ? `${n / 7} ${n === 7 ? 'semana' : 'semanas'}` : `${n} días`;
 function recalcSave(h) { const l = {}; (h.moves || []).forEach(m => l[m.date] = Math.round(((l[m.date] || 0) + m.amt) * 100) / 100); h.log = {}; Object.keys(l).forEach(k => { if (l[k]) h.log[k] = l[k]; }); }
 function openSaveGoal(h, done) {
+  const UN = [['dias', 'días', 1], ['semanas', 'semanas', 7], ['meses', 'meses', 30], ['anos', 'años', 365]];
+  const span = h.saveBy ? dayDiff(h.saveStart || todayISO(), h.saveBy) : 365;
+  let unit = span % 365 === 0 ? 'anos' : span % 30 === 0 ? 'meses' : span % 7 === 0 ? 'semanas' : 'dias';
+  const qty0 = span / UN.find(u => u[0] === unit)[2];
   const s = openSheet({title: '🐷 Meta de ahorro', body: `<div class="fld"><label>¿Para qué ahorras?</label><input class="inp" id="sgF" value="${esc(h.saveFor || '')}" placeholder="Ej.: Viaje, emergencias, carro…" maxlength="40"></div>
-    <div class="fld"><label>¿Cuánto quieres juntar?</label><input class="inp rdnum" id="sgV" readonly inputmode="none" data-wheel data-min="0" data-max="20000" data-step="25" data-unit="$" data-title="Meta de ahorro" value="${+h.saveGoal || ''}" placeholder="Sin meta" style="max-width:none"></div>`,
+    <div class="fld"><label>¿Cuánto quieres juntar?</label><input class="inp rdnum" id="sgV" readonly inputmode="none" data-wheel data-min="0" data-max="20000" data-step="25" data-unit="$" data-title="Meta de ahorro" value="${+h.saveGoal || ''}" placeholder="Sin meta" style="max-width:none"></div>
+    <div class="fld"><label>¿En cuánto tiempo?</label><label class="wrsw" style="padding:0 2px 8px"><span><b>Ponerle fecha a la meta</b></span><input type="checkbox" id="sgOn" ${h.saveBy || !h.saveGoal ? 'checked' : ''}><i></i></label>
+      <div id="sgT"><div class="habgoal"><input class="inp rdnum" id="sgQ" readonly inputmode="none" data-wheel data-min="1" data-max="365" data-title="¿Cuánto tiempo?" value="${qty0}" style="max-width:110px"><div class="seg sgu">${UN.map(([k, n]) => `<button type="button" data-su="${k}" class="${unit === k ? 'on' : ''}">${n}</button>`).join('')}</div></div><small class="hint" id="sgH"></small></div></div>`,
     foot: '<button class="btn" id="sgS">Guardar</button>',
-    onMount: el => { el.querySelector('#sgS').onclick = () => { h.saveFor = el.querySelector('#sgF').value.trim(); h.saveGoal = parseFloat(el.querySelector('#sgV').value) || null; save('habits'); s.close(); toast('🐷 Meta guardada'); done && done(); }; }});
+    onMount: el => {
+      const q = x => el.querySelector(x);
+      const days = () => (parseInt(q('#sgQ').value, 10) || 1) * UN.find(u => u[0] === unit)[2];
+      const hint = () => { const g = parseFloat(q('#sgV').value) || 0, n = days(), rest = Math.max(0, g - saveTotal(h)); q('#sgT').style.display = q('#sgOn').checked ? '' : 'none'; q('#sgH').textContent = g ? `Hasta el ${fmtShort(addDays(todayISO(), n))} ${parseISO(addDays(todayISO(), n)).getFullYear()}: ${money(rest / n)} al día · ${money(rest / Math.max(1, n / 7))} a la semana · ${money(rest / Math.max(1, n / 30.44))} al mes` : 'Pon primero cuánto quieres juntar.'; };
+      el.querySelectorAll('[data-su]').forEach(b => b.onclick = () => { unit = b.dataset.su; el.querySelectorAll('[data-su]').forEach(x => x.classList.toggle('on', x === b)); hint(); });
+      ['#sgV', '#sgQ'].forEach(x => q(x).addEventListener('change', hint)); q('#sgOn').onchange = hint; hint();
+      q('#sgS').onclick = () => { h.saveFor = q('#sgF').value.trim(); h.saveGoal = parseFloat(q('#sgV').value) || null;
+        if (q('#sgOn').checked && h.saveGoal) { h.saveStart = todayISO(); h.saveBy = addDays(todayISO(), days()); } else { h.saveBy = null; }
+        save('habits'); s.close(); toast('🐷 Meta guardada'); done && done(); };
+    }});
+}
+/* ===== Retos de ahorro: tabla con la cantidad dividida ===== */
+const chSaved = ch => Object.keys(ch.marked || {}).reduce((a, i) => a + (ch.vals[i] || 0), 0);
+function chValues(amount, n, style) {
+  const C = Math.round(amount * 100), out = [];
+  if (style === 'creciente') { const W = n * (n + 1) / 2; let acc = 0; for (let i = 1; i <= n; i++) { const v = i === n ? C - acc : Math.round(C * i / W); out.push(v); acc += v; } }
+  else if (style === 'variado') {
+    let seed = n * 7919 + C % 9973; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const avg = C / n, unit = avg >= 500 ? 100 : avg >= 100 ? 25 : 1, w = [...Array(n)].map(() => .3 + rnd() * 1.4), W = w.reduce((a, b) => a + b, 0);
+    let acc = 0; w.forEach((x, i) => { const v = Math.max(unit, Math.round(C * x / W / unit) * unit); out.push(v); acc += v; });
+    let diff = C - acc, k = 0; while (diff !== 0 && k < n * 50) { const i = k % n, step = Math.sign(diff) * Math.min(Math.abs(diff), unit); if (out[i] + step >= unit || step > 0) { out[i] += step; diff -= step; } k++; }
+    if (diff) out[0] += diff;
+  } else { const base = Math.floor(C / n); let r = C - base * n; for (let i = 0; i < n; i++) out.push(base + (r-- > 0 ? 1 : 0)); }
+  return out.map(v => v / 100);
+}
+const CH_PRESETS = [['$1,000 en 1 año', 1000, 365, 'variado'], ['Reto 52 semanas', 1378, 52, 'creciente'], ['$500 en 100 días', 500, 100, 'variado'], ['$100 en 30 días', 100, 30, 'igual']];
+function openChallengeForm(h, done) {
+  const c = h.challenge || {}; let style = c.style || 'variado';
+  const s = openSheet({title: '🏆 Reto de ahorro', body: `
+    <div class="chpre">${CH_PRESETS.map((p, i) => `<button type="button" data-cp="${i}">${p[0]}</button>`).join('')}</div>
+    <div class="fld"><label>Cantidad total</label><input class="inp rdnum" id="chA" readonly inputmode="none" data-wheel data-min="10" data-max="20000" data-step="10" data-unit="$" data-title="Cantidad del reto" value="${c.amount || 1000}" style="max-width:none"></div>
+    <div class="fld"><label>¿En cuántas casillas (días) lo divides?</label><input class="inp rdnum" id="chN" readonly inputmode="none" data-wheel data-min="5" data-max="366" data-title="Casillas" data-unit="casillas" value="${c.vals ? c.vals.length : 365}" style="max-width:none"></div>
+    <div class="fld"><label>¿Cómo se reparte?</label><div class="seg chst">${[['variado', '🎲 Variado'], ['igual', '= Igual'], ['creciente', '📈 Creciente']].map(([k, n]) => `<button type="button" data-cs="${k}" class="${style === k ? 'on' : ''}">${n}</button>`).join('')}</div><small class="hint" id="chH"></small></div>
+    <div class="chprev" id="chP"></div>
+    ${c.vals ? '<small class="hint">Al cambiar el reto, las casillas marcadas se quitan, pero el dinero que guardaste se queda en tus movimientos.</small>' : ''}`,
+    foot: `${c.vals ? '<button class="btn sec" id="chDel"><i class="xdel"></i> Quitar reto</button>' : ''}<button class="btn" id="chS">${c.vals ? 'Guardar' : 'Crear reto'}</button>`,
+    onMount: el => {
+      const q = x => el.querySelector(x), A = () => parseFloat(q('#chA').value) || 1000, N = () => parseInt(q('#chN').value, 10) || 365;
+      const prev = () => { const v = chValues(A(), N(), style); q('#chH').textContent = style === 'igual' ? `Cada casilla: ${money(v[v.length - 1])}` : style === 'creciente' ? `Empieza en ${money(v[0])} y sube hasta ${money(v[v.length - 1])}` : `Cantidades distintas entre ${money(Math.min(...v))} y ${money(Math.max(...v))}`; q('#chP').innerHTML = v.slice(0, 12).map(x => `<span>${money(x)}</span>`).join('') + (v.length > 12 ? `<span class="more">+${v.length - 12} más</span>` : ''); };
+      el.querySelectorAll('[data-cs]').forEach(b => b.onclick = () => { style = b.dataset.cs; el.querySelectorAll('[data-cs]').forEach(x => x.classList.toggle('on', x === b)); prev(); });
+      el.querySelectorAll('[data-cp]').forEach(b => b.onclick = () => { const p = CH_PRESETS[+b.dataset.cp]; q('#chA').value = p[1]; q('#chN').value = p[2]; style = p[3]; el.querySelectorAll('[data-cs]').forEach(x => x.classList.toggle('on', x.dataset.cs === style)); prev(); });
+      ['#chA', '#chN'].forEach(x => q(x).addEventListener('change', prev)); prev();
+      q('#chS').onclick = () => {
+        const amount = A(), n = N(), vals = chValues(amount, n, style);
+        if (h.challenge) (h.moves || []).forEach(m => { if (m.cell != null) delete m.cell; });
+        h.challenge = {name: `${money(amount)} en ${durTxtD(n)}`, amount, style, vals, marked: {}, start: todayISO()};
+        if (!+h.saveGoal || h.saveGoal < amount) { h.saveGoal = amount; h.saveStart = todayISO(); h.saveBy = addDays(todayISO(), n); }
+        save('habits'); s.close(); toast('🏆 Reto creado'); done && done(); openChallengeTable(h, todayISO(), done);
+      };
+      const del = q('#chDel'); if (del) del.onclick = async () => { if (await ask('¿Quitar el reto? El dinero guardado se queda en tus movimientos.', {yes: 'Quitar'})) { (h.moves || []).forEach(m => { if (m.cell != null) delete m.cell; }); h.challenge = null; save('habits'); s.close(); done && done(); } };
+    }});
+}
+function openChallengeTable(h, d, done) {
+  const ch = h.challenge; if (!ch) return;
+  const draw = el => {
+    const n = Object.keys(ch.marked).length, sv = chSaved(ch);
+    el.querySelector('#ctBody').innerHTML = `
+      <div class="cthead"><div><b>${money(sv)}</b><span>de ${money(ch.amount)}</span></div><div><b>${n}</b><span>de ${ch.vals.length} casillas</span></div></div>
+      <div class="habbar"><i style="width:${sv / ch.amount * 100}%"></i></div>
+      <div class="cthint">Toca una casilla cuando guardes esa cantidad. Se suma a tu ahorro.</div>
+      <div class="ctgrid ${ch.vals.length > 120 ? 'tiny' : ''}">${ch.vals.map((v, i) => `<button class="ctc ${ch.marked[i] ? 'on' : ''}" data-ct="${i}" title="Casilla ${i + 1}">${ch.marked[i] ? '✓' : ''}<span>${money(v).replace('.00', '')}</span></button>`).join('')}</div>`;
+    el.querySelectorAll('[data-ct]').forEach(b => b.onclick = () => {
+      const i = +b.dataset.ct, v = ch.vals[i]; h.moves = h.moves || [];
+      if (ch.marked[i]) { h.moves = h.moves.filter(m => m.cell !== i); delete ch.marked[i]; }
+      else { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } ch.marked[i] = d; h.moves.push({id: uid(), date: d, amt: v, at: Date.now(), cell: i, note: `Reto · casilla ${i + 1}`}); toast(`🏆 +${money(v)}`); goalCheer(h, v); if (Object.keys(ch.marked).length === ch.vals.length) setTimeout(() => toast('🎉 ¡Completaste el reto!'), 600); }
+      recalcSave(h); save('habits'); const st = el.querySelector('.ctgrid').scrollTop; draw(el); el.querySelector('.ctgrid').scrollTop = st;
+    });
+    el.querySelector('#ctEdit').onclick = () => { s.close(); openChallengeForm(h, done); };
+  };
+  const s = openSheet({title: `🏆 ${esc(ch.name)}`, float: true, cls: 'ctsheet', body: '<div id="ctBody"></div>', foot: '<button class="btn sec" id="ctEdit">Cambiar reto</button><button class="btn" data-close>Listo</button>', onMount: draw, onClose: () => { done && done(); }});
 }
 /* ===== Despertar: hora meta, cielo y aviso para acostarse ===== */
 function skySVG(h, w) {
