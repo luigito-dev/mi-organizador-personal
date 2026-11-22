@@ -28,6 +28,7 @@ function shell() {
     <aside class="side"><div class="brand">${LOGO}<span>Mi Organizador<br>Personal</span></div><nav class="nav" id="nav">${SECTIONS.map(([k, n, i]) => `<button data-go="${k}">${ic(i)}${n}</button>`).join('')}</nav><div class="store storeLbl"></div></aside>
     <main class="main"><header class="top"><h1 id="vt"></h1><button class="iconbtn lsbtn hidden" id="lsBtn" aria-label="Hoy y mis listas"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="4" height="4" rx="1"/><path d="M4.5 7l1 1 1.5-2"/><rect x="3.5" y="14" width="4" height="4" rx="1"/><path d="M11 7h9M11 16h9"/></svg><span class="lsbadge" id="lsBadge"></span></button><button class="iconbtn sopen" id="sOpen" aria-label="Buscar">${ic('search')}</button><div class="search" id="sbox">${ic('search', 'si')}<input id="q" type="search" placeholder="Buscar…" autocomplete="off" aria-label="Buscar"><button class="sx hidden" id="qx" aria-label="Borrar">✕</button><div class="results hidden" id="res"></div></div></header>
     <section class="view" id="view"></section></main>
+    <button class="pinedge" id="pinEdge" aria-label="Abrir fijados"></button>
     <nav class="bottom" id="bnav">${[['dia', 'Mi Día', 'dia'], ['calendario', 'Calendario', 'cal'], ['tareas', 'Tareas', 'tareas'], ['notas', 'Notas', 'notas'], ['mas', 'Más', 'mas']].map(([k, n, i]) => `<button data-go="${k}">${ic(i)}${n}</button>`).join('')}</nav>
     <button class="fab" id="fab" aria-label="Añadir">+</button><div id="mini"></div><div class="toasts" id="toasts"></div></div>`;
   document.addEventListener('click', e => {
@@ -46,6 +47,7 @@ function shell() {
   };
   const q = $('#q');
   $('#lsBtn').onclick = openListsPopup;
+  $('#pinEdge').onclick = openListsPopup;
   $('#sOpen').onclick = () => { const t = $('.top'); t.classList.toggle('srch'); if (t.classList.contains('srch')) q.focus(); else { q.value = ''; UI.q = ''; $('#res').classList.add('hidden'); renderView(); } };
   q.addEventListener('input', () => { UI.q = q.value; $('#qx').classList.toggle('hidden', !UI.q); if (UI.view === 'tareas' || UI.view === 'notas') renderView(); else globalResults(); });
   q.addEventListener('focus', () => { if (UI.q && UI.view !== 'tareas' && UI.view !== 'notas') globalResults(); });
@@ -882,9 +884,13 @@ function openListsPopup() {
 function dayLists(box) {
   if (!box) return;
   const t = todayISO(), lists = S.lists.filter(l => !l.hideOnDay);
-  if (!UI.popTab || (UI.popTab !== 'hoy' && !String(UI.popTab).startsWith('reto:') && !lists.some(l => l.id === UI.popTab))) UI.popTab = 'hoy';
-  const tabs = `<div class="qtabs hscroll"><button class="qtab ${UI.popTab === 'hoy' ? 'on' : ''}" data-qt="hoy" style="--lc:var(--blue)">☀️ Hoy</button>${lists.map(l => { const n = l.items.filter(i => !i.done).length; return `<button class="qtab ${UI.popTab === l.id ? 'on' : ''}" data-qt="${l.id}" style="--lc:${l.color}">${l.icon} ${esc(l.name)}${n ? ` <span class="cnt">${n}</span>` : ''}</button>`; }).join('')}${retoHabits().map(h => `<button class="qtab ${UI.popTab === 'reto:' + h.id ? 'on' : ''}" data-qt="reto:${h.id}" style="--lc:${h.challenge.color || '#d99400'}">🏆 Reto</button>`).join('')}</div>`;
-  if (String(UI.popTab).startsWith('reto:')) { const h = S.habits.find(x => 'reto:' + x.id === UI.popTab); if (h && h.challenge) { challengeBox(box, h, tabs, null); box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; dayLists(box); listBadge(); }); return; } UI.popTab = 'hoy'; return dayLists(box); }
+  if (!UI.popTab || (UI.popTab !== 'hoy' && UI.popTab !== 'cal' && !/^(reto|hab):/.test(String(UI.popTab)) && !lists.some(l => l.id === UI.popTab))) UI.popTab = 'hoy';
+  const tabs = `<div class="qtabs hscroll">${pins().hoy === false ? '' : `<button class="qtab ${UI.popTab === 'hoy' ? 'on' : ''}" data-qt="hoy" style="--lc:var(--blue)">☀️ Hoy</button>`}${lists.map(l => { const n = l.items.filter(i => !i.done).length; return `<button class="qtab ${UI.popTab === l.id ? 'on' : ''}" data-qt="${l.id}" style="--lc:${l.color}">${l.icon}<span class="tl"> ${esc(l.name)}</span>${n ? ` <span class="cnt">${n}</span>` : ''}</button>`; }).join('')}${retoHabits().map(h => `<button class="qtab ${UI.popTab === 'reto:' + h.id ? 'on' : ''}" data-qt="reto:${h.id}" style="--lc:${h.challenge.color || '#d99400'}">🏆<span class="tl"> Reto</span></button>`).join('')}${pinHabits().map(h => `<button class="qtab ${UI.popTab === 'hab:' + h.id ? 'on' : ''}" data-qt="hab:${h.id}" style="--lc:${h.color}">${h.icon}<span class="tl"> ${esc(h.name.split(' ').slice(0, 2).join(' '))}</span></button>`).join('')}${pins().cal ? `<button class="qtab ${UI.popTab === 'cal' ? 'on' : ''}" data-qt="cal" style="--lc:var(--teal,#0f9d8f)">📅<span class="tl"> Calendario</span></button>` : ''}<button class="qtab qpin" data-qpins aria-label="Escoger qué fijar">📌</button></div>`;
+  if (UI.popTab === 'hoy' && pins().hoy === false) { const first = [...lists.map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(pins().cal ? ['cal'] : [])][0]; if (first) UI.popTab = first; }
+  const wireTabs = () => { box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; dayLists(box); listBadge(); }); box.querySelectorAll('[data-qpins]').forEach(b => b.onclick = () => openPinManager(() => dayLists(box))); };
+  if (String(UI.popTab).startsWith('hab:')) { const h = S.habits.find(x => 'hab:' + x.id === UI.popTab); if (h) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="pinhost" id="pinHost"></div>`; pinHabit(h, box.querySelector('#pinHost'), () => dayLists(box)); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
+  if (UI.popTab === 'cal') { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div id="pinCal"></div>`; pinCalendar(box.querySelector('#pinCal')); wireTabs(); return; }
+  if (String(UI.popTab).startsWith('reto:')) { const h = S.habits.find(x => 'reto:' + x.id === UI.popTab); if (h && h.challenge) { challengeBox(box, h, tabs, null); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
   let head, rows, addPh, foot;
   if (UI.popTab === 'hoy') {
     const late = S.tasks.filter(isLate), today = S.tasks.filter(x => x.date === t);
@@ -908,6 +914,7 @@ function dayLists(box) {
     <div class="row qfoot">${foot}${UI.popTab === 'hoy' && !lists.length ? '<span class="sp"></span><button class="btn ghost sm" id="qNewList">+ Nueva lista</button>' : ''}</div>`;
   const redraw = () => { dayLists(box); listBadge(); };
   box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; redraw(); });
+  box.querySelectorAll('[data-qpins]').forEach(b => b.onclick = () => openPinManager(() => dayLists(box)));
   box.querySelectorAll('[data-qdel]').forEach(b => b.onclick = async e => {
     e.stopPropagation(); const id = b.dataset.qdel;
     if (UI.popTab === 'hoy') {
@@ -1568,7 +1575,7 @@ function bigBottle(oz) {
     <path d="M72 40h56v22c26 10 40 26 40 52v128a24 24 0 0 1-24 24H56a24 24 0 0 1-24-24V114c0-26 14-42 40-52z" fill="none" stroke="#9cc6ff" stroke-width="3"/>
     <path d="M48 120v110" stroke="#fff" stroke-opacity=".55" stroke-width="6" stroke-linecap="round"/></svg>`;
 }
-function openWater(h, d) {
+function openWater(h, d, host) {
   let just = false, empty = false;
   const draw = el => {
     const c = habCount(h, d), g = habGoal(h), gb = habBottles(h), nb = Math.floor(c / OZ);
@@ -1607,7 +1614,7 @@ function openWater(h, d) {
     el.querySelector('#wRem').onclick = () => openWaterReminders(h);
     el.querySelector('#wGoal').onclick = () => openWaterGoal(h, () => draw(el));
   };
-  openSheet({title: `💧 ${esc(h.name)}`, cls: 'watersheet', body: '<div id="wBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
+  hostOrSheet(host, {title: `💧 ${esc(h.name)}`, cls: 'watersheet', body: '<div id="wBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
 }
 function openWaterGoal(h, done) {
   const s = openSheet({title: '🎯 Meta de agua', body: `<div class="fld"><label>¿Cuántas onzas quieres tomar al día?</label><div class="habgoal"><button type="button" class="btn sec" id="gM">−</button><input class="inp rdnum" id="gV" readonly inputmode="none" data-wheel data-min="1" data-max="300" data-title="Meta de agua" data-unit="oz" value="${habGoal(h)}"><button type="button" class="btn sec" id="gP">+</button><span class="hint">oz</span></div>
@@ -1622,7 +1629,7 @@ function openWaterGoal(h, done) {
     }});
 }
 /* ===== Lectura: un libro con páginas, marcador y notas ===== */
-function openBook(h, d) {
+function openBook(h, d, host) {
   h.notes = h.notes || []; let keepFn = null;
   const draw = el => {
     const c = habCount(h, d), tot = +h.bookPages || 0, bm = +h.bookmark || 0, pct = tot && bm ? Math.min(100, Math.round(bm / tot * 100)) : 0;
@@ -1669,10 +1676,10 @@ function openBook(h, d) {
       h.book = ''; h.bookmark = null; h.bookPages = null; h.notes = []; save('habits'); draw(el); setTimeout(() => { const t = q('#bkT'); t && t.focus(); }, 100); };
     const sh = q('#bkShelf'); if (sh) sh.onclick = () => openSheet({title: '📚 Mis libros', body: h.shelf.slice().reverse().map(b => `<div class="card shelfbk"><b>📕 ${esc(b.book)}</b><small>${b.bookmark ? `Llegaste a la pág. ${b.bookmark}${b.pages ? ' de ' + b.pages : ''} · ` : ''}${fmtShort(b.ended)}</small>${(b.notes || []).map(n => `<div class="bknote"><span class="bkpg">${n.page ? 'pág. ' + n.page : '—'}</span><p>${esc(n.text)}</p></div>`).join('')}</div>`).join('')});
   };
-  openSheet({title: `${h.icon} ${esc(h.name)}`, cls: 'booksheet', body: '<div id="bkBody"></div>', onMount: draw, onClose: () => { keepFn && keepFn(); if (UI.view === 'habitos') renderView(); }});
+  hostOrSheet(host, {title: `${h.icon} ${esc(h.name)}`, cls: 'booksheet', body: '<div id="bkBody"></div>', onMount: draw, onClose: () => { keepFn && keepFn(); if (UI.view === 'habitos') renderView(); }});
 }
 /* ===== Tiempo: aro con cronómetro (meditar, caminar, orar…) ===== */
-function openTimer(h, d) {
+function openTimer(h, d, host) {
   let tick = null; const act = habKind(h) === 'actividad';
   const ring = el => {
     const c = habCount(h, d), g = habGoal(h), run = UI.habTimer && UI.habTimer.id === h.id;
@@ -1725,7 +1732,7 @@ function openTimer(h, d) {
         onMount: e2 => { e2.querySelector('#pwS').onclick = () => { const n = parseFloat(e2.querySelector('#pwV').value); S.settings.pesoLb = n > 50 && n < 700 ? Math.round(n) : null; save('meta'); w.close(); stats(el); toast(S.settings.pesoLb ? `⚖️ ${S.settings.pesoLb} lb guardado` : 'Se usará 160 lb'); }; }});
     };
   };
-  openSheet({title: `${h.icon} ${esc(h.name)}`, cls: 'timersheet', body: '<div id="tmBody"></div>', onMount: el => { draw(el); tick = setInterval(() => { if (!el.isConnected) { clearInterval(tick); return; } if (UI.habTimer && UI.habTimer.id === h.id) ring(el); }, 1000); }, onClose: () => { clearInterval(tick); if (UI.view === 'habitos') renderView(); }});
+  hostOrSheet(host, {title: `${h.icon} ${esc(h.name)}`, cls: 'timersheet', body: '<div id="tmBody"></div>', onMount: el => { draw(el); tick = setInterval(() => { if (!el.isConnected) { clearInterval(tick); return; } if (UI.habTimer && UI.habTimer.id === h.id) ring(el); }, 1000); }, onClose: () => { clearInterval(tick); if (UI.view === 'habitos') renderView(); }});
 }
 function openActGoal(h, done) {
   const act = habKind(h) === 'actividad', u0 = h.unitD || 'mi';
@@ -1811,7 +1818,7 @@ function savePlan(h) {
   return {t, g, start, end, total, left, rest, perDay: left ? rest / left : rest, perWeek: left ? rest / Math.max(1, left / 7) : rest, perMonth: left ? rest / Math.max(1, left / 30.44) : rest, diff: t - expected};
 }
 const dayDiff = (a, b) => Math.round((parseISO(b) - parseISO(a)) / 86400000);
-function openSave(h, d) {
+function openSave(h, d, host) {
   chMigrate(h); let drop = false;
   const draw = el => {
     const t = saveTotal(h), g = +h.saveGoal || 0, today = habCount(h, d), mv = (h.moves || []).slice().sort((a, b) => b.date.localeCompare(a.date) || b.at - a.at);
@@ -1838,7 +1845,7 @@ function openSave(h, d) {
     q('#svCh').onclick = () => h.challenge ? openChallengeTable(h, d, () => draw(el)) : openChallengeForm(h, () => draw(el));
     el.querySelectorAll('[data-svd]').forEach(b => b.onclick = async () => { if (await ask('¿Eliminar este movimiento?', {yes: 'Eliminar'})) { h.moves = h.moves.filter(x => x.id !== b.dataset.svd); recalcSave(h); save('habits'); draw(el); } });
   };
-  openSheet({title: `${h.icon} ${esc(h.name)}`, cls: 'savesheet', body: '<div id="svBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
+  hostOrSheet(host, {title: `${h.icon} ${esc(h.name)}`, cls: 'savesheet', body: '<div id="svBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
 }
 function goalCheer(h, v) { const t = saveTotal(h); if (+h.saveGoal && t >= h.saveGoal && t - v < h.saveGoal) setTimeout(() => toast('🎉 ¡Meta de ahorro cumplida!'), 500); }
 const durTxtD = n => n % 365 === 0 ? `${n / 365} ${n === 365 ? 'año' : 'años'}` : n % 30 === 0 && n >= 30 ? `${n / 30} ${n === 30 ? 'mes' : 'meses'}` : n % 7 === 0 && n >= 7 ? `${n / 7} ${n === 7 ? 'semana' : 'semanas'}` : `${n} días`;
@@ -1973,7 +1980,7 @@ function skySVG(h, w) {
     <circle class="sun" cx="160" cy="${sunY}" r="30" fill="#ffcf3f" style="filter:drop-shadow(0 0 14px #ffcf3f)"/>
     <path d="M0 140 Q60 110 120 135 T240 128 T320 132 V170 H0z" fill="#5a9b5a"/><path d="M0 150 Q80 128 160 148 T320 144 V170 H0z" fill="#3f7d45"/></svg>`;
 }
-function openWake(h, d) {
+function openWake(h, d, host) {
   const draw = el => {
     h.woke = h.woke || {}; const w = h.woke[d], tgt = h.wakeAt || '06:00', today = d === todayISO();
     const diff = w && w !== 'ok' ? toMinT(w) - toMinT(tgt) : null, bed = fromMin((toMinT(tgt) - 8 * 60 + 1440) % 1440);
@@ -1998,7 +2005,7 @@ function openWake(h, d) {
     const rem = async () => { h.wakeRem = q('#wkR1').checked; h.bedRem = q('#wkR2').checked; syncWakeRem(h); save('habits'); if (h.wakeRem || h.bedRem) { if (window.NATIVE) { await NATIVE.ensurePermission(); NATIVE.reschedule(); } else if ('Notification' in window && Notification.permission === 'default') { try { await Notification.requestPermission(); } catch (e) {} } toast('⏰ Avisos listos'); } };
     q('#wkR1').onchange = rem; q('#wkR2').onchange = rem;
   };
-  openSheet({title: `${h.icon} ${esc(h.name)}`, cls: 'wakesheet', body: '<div id="wkBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
+  hostOrSheet(host, {title: `${h.icon} ${esc(h.name)}`, cls: 'wakesheet', body: '<div id="wkBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
 }
 function syncWakeRem(h) { const tgt = h.wakeAt || '06:00', bed = fromMin((toMinT(tgt) - 480 + 1440) % 1440); h.remOn = true; h.reminders = [{id: 'wk', time: tgt, label: '☀️ ¡Buenos días! Hora de levantarte', on: !!h.wakeRem}, {id: 'bd', time: bed, label: '🌙 Hora de acostarte', on: !!h.bedRem, bed: true}]; }
 /* ===== Comer sano: plato con frutas y vegetales ===== */
@@ -2011,7 +2018,7 @@ function plateSVG(n, g, items) {
     ${[...Array(g)].map((_, i) => { const a = -Math.PI / 2 + (i + .5) * 2 * Math.PI / g, on = i < n, it = items[i]; return `<path d="${seg(i)}" fill="${on ? (it === 'v' ? '#b9e8a6' : '#ffd3b0') : '#fafaf7'}" stroke="#fff" stroke-width="3" class="${on && i === n - 1 ? 'segpop' : ''}"/>${on ? `<text x="${110 + 58 * Math.cos(a)}" y="${118 + 58 * Math.sin(a)}" text-anchor="middle" font-size="24">${it === 'v' ? '🥦' : '🍎'}</text>` : ''}`; }).join('')}
     <circle cx="110" cy="110" r="30" fill="#fff" stroke="#eee"/><text x="110" y="118" text-anchor="middle" font-size="22" font-weight="800" fill="#2e7d32">${n}/${g}</text></svg>`;
 }
-function openFood(h, d) {
+function openFood(h, d, host) {
   const draw = el => {
     h.food = h.food || {}; const f = h.food[d] = h.food[d] || {f: 0, v: 0, meals: {}}, g = FOOD_GOAL(h), n = (f.f || 0) + (f.v || 0);
     const items = [...Array(f.f || 0).fill('f'), ...Array(f.v || 0).fill('v')];
@@ -2032,12 +2039,12 @@ function openFood(h, d) {
     el.querySelectorAll('[data-ml]').forEach(b => b.onclick = () => { const k = b.dataset.ml; f.meals[k] = f.meals[k] === b.dataset.ms ? undefined : b.dataset.ms; if (!f.meals[k]) delete f.meals[k]; save('habits'); draw(el); });
     q('#fdG').onclick = async () => { const v = await pickNumber(g, {min: 1, max: 12, unit: 'porciones', title: 'Frutas y vegetales al día'}); if (v) { h.goal = v; setLog(); draw(el); } };
   };
-  openSheet({title: `${h.icon} ${esc(h.name)}`, cls: 'foodsheet', body: '<div id="fdBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
+  hostOrSheet(host, {title: `${h.icon} ${esc(h.name)}`, cls: 'foodsheet', body: '<div id="fdBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
 }
 
 const durTxt = m => m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}`;
 
-const retoHabits = () => (S.habits || []).filter(h => h.challenge && h.challenge.vals && Object.keys(h.challenge.marked || {}).length < h.challenge.vals.length);
+const retoHabits = () => (S.habits || []).filter(h => h.challenge && h.challenge.vals && Object.keys(h.challenge.marked || {}).length < h.challenge.vals.length && !(pins().noReto || []).includes(h.id));
 
 const ENV_SVG = '<svg class="envi" viewBox="0 0 40 28" aria-hidden="true"><rect x="1.5" y="1.5" width="37" height="25" rx="3" fill="var(--envf,none)" stroke="currentColor" stroke-width="2.4"/><path d="M2.5 3l17.5 13 17.5-13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg>';
 const rng = (a, b, f = x => x) => Array.from({length: b - a + 1}, (_, i) => f(a + i));
@@ -2061,3 +2068,68 @@ function envSVG(open, amt) {
 
 const CH_SPANS = [[1, '1 mes'], [3, '3 meses'], [6, '6 meses'], [12, '1 año'], [24, '2 años']];
 const spanCount = (m, f) => f === 'mes' ? m : f === 'semana' ? Math.round(m * 52 / 12) : (m % 12 === 0 ? m / 12 * 365 : Math.round(m * 30.42));
+
+/* ===== 📌 Fijados: acceso rápido que se abre deslizando ===== */
+const pins = () => { S.settings.pins = S.settings.pins || {hoy: true, cal: false, habs: [], noReto: []}; return S.settings.pins; };
+const pinHabits = () => (pins().habs || []).map(id => (S.habits || []).find(h => h.id === id)).filter(Boolean);
+function hostOrSheet(host, o) {
+  if (!host) return openSheet(o);
+  host.className = 'pinhost ' + (o.cls || ''); host.innerHTML = o.body; o.onMount && o.onMount(host);
+  return {el: host, close() {}};
+}
+function pinHabit(h, host, redraw) {
+  const d = todayISO(), k = habKind(h);
+  const fn = {agua: openWater, lectura: openBook, ahorro: openSave, despertar: openWake, comida: openFood}[k] || (isTimeKind(h) ? openTimer : null);
+  if (fn) return fn(h, d, host);
+  const ok = habDone(h, d);
+  host.className = 'pinhost';
+  host.innerHTML = `<div class="pinmark"><button class="pinbig ${ok ? 'on' : ''}" id="pmB" style="--hc:${h.color}"><span>${h.icon}</span>${ok ? '<em>✓</em>' : ''}</button><b>${esc(h.name)}</b><small>${ok ? '¡Hecho hoy! Toca para desmarcar' : 'Toca para marcarlo como hecho'}</small><div class="pinst">🔥 ${habStreak(h, d)} días seguidos · ${habTotal(h)} en total</div></div>`;
+  host.querySelector('#pmB').onclick = () => { habTap(h, d); redraw(); };
+}
+function pinCalendar(box) {
+  UI.pinDay = UI.pinDay || todayISO();
+  const d = UI.pinDay, m = parseISO(d), cells = monthCells(iso(new Date(m.getFullYear(), m.getMonth(), 1))), t = todayISO();
+  const its = sortedDay(d, {withDone: true});
+  box.innerHTML = `<div class="pcal">
+    <div class="pcalh"><button class="iconbtn" id="pcP" aria-label="Mes anterior">‹</button><b>${cap(MESES[m.getMonth()])} ${m.getFullYear()}</b><button class="iconbtn" id="pcN" aria-label="Mes siguiente">›</button></div>
+    <div class="pcalg">${wdHeaders().map(w => `<span class="wd">${w.slice(0, 1)}</span>`).join('')}${cells.map(c => { const n = sortedDay(c).length, st = daySticker(c), out = parseISO(c).getMonth() !== m.getMonth(); return `<button data-pcd="${c}" class="${c === d ? 'sel' : ''} ${c === t ? 'today' : ''} ${out ? 'out' : ''}">${parseISO(c).getDate()}${st ? `<i class="st">${st}</i>` : n ? '<i class="dt"></i>' : ''}</button>`; }).join('')}</div>
+    <div class="pcald"><b>${d === t ? 'Hoy' : cap(fmtLong(d))}</b><span>${its.length ? its.length + ' cosas' : 'Libre'}</span></div>
+    <div class="qrows">${its.map(i => { const x = i.x, title = i.k === 'rt' ? x.name : x.title, tm = i.k === 'ev' ? (x.allDay || x.date !== d ? 'Todo el día' : fmtTime(x.start)) : i.k === 'tk' ? (x.time ? fmtTime(x.time) : '') : fmtTime(x.start); return `<div class="qrow ${i.k === 'tk' && isDone(x) ? 'done' : ''}" ${i.k === 'tk' ? `data-pctk="${x.id}"` : i.k === 'ev' ? `data-pcev="${x.id}"` : ''} role="button" tabindex="0">${i.k === 'tk' ? '<span class="qbox"></span>' : `<span class="pcdot" style="background:${colorOf(i.k, x)}"></span>`}<span class="qtx">${esc(title)}${tm ? ` <span class="qtime">${tm}</span>` : ''}</span></div>`; }).join('') || '<div class="qempty">✓ Nada para este día</div>'}</div>
+    <div class="qadd"><input id="pcAdd" placeholder="Añadir a este día…" maxlength="200" autocomplete="off"><button class="btn" id="pcBtn" aria-label="Añadir">+</button></div>
+    <div class="row qfoot"><span class="sp"></span><button class="btn ghost sm" id="pcGo">Abrir calendario ›</button></div></div>`;
+  const q = x => box.querySelector(x), redraw = () => pinCalendar(box);
+  q('#pcP').onclick = () => { const x = parseISO(d); x.setMonth(x.getMonth() - 1, 1); UI.pinDay = iso(x); redraw(); };
+  q('#pcN').onclick = () => { const x = parseISO(d); x.setMonth(x.getMonth() + 1, 1); UI.pinDay = iso(x); redraw(); };
+  box.querySelectorAll('[data-pcd]').forEach(b => b.onclick = () => { UI.pinDay = b.dataset.pcd; redraw(); });
+  box.querySelectorAll('[data-pctk]').forEach(r => r.onclick = () => { const x = S.tasks.find(y => y.id === r.dataset.pctk); setDone(x.id, !isDone(x)); setTimeout(redraw, 120); });
+  box.querySelectorAll('[data-pcev]').forEach(r => r.onclick = () => openEventDetail(r.dataset.pcev));
+  const add = () => { const raw = q('#pcAdd').value.trim(); if (!raw) { q('#pcAdd').focus(); return; } const g = guess(raw); S.tasks.push({id: uid(), title: raw, date: d, time: g.time, typeId: g.typeId, areaId: g.areaId, priority: 'Media', details: '', steps: [], status: 'Pendiente', obs: '', reminder: null, createdAt: Date.now()}); save('tasks'); toast('Añadido'); redraw(); };
+  q('#pcBtn').onclick = add; q('#pcAdd').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
+  q('#pcGo').onclick = () => { UI.calDate = UI.selDate = d; go('calendario'); };
+}
+function openPinManager(done) {
+  const P = pins(), retos = (S.habits || []).filter(h => h.challenge && h.challenge.vals);
+  const row = (key, icon, name, on, sub = '') => `<label class="wrsw pinrow"><span><b>${icon} ${esc(name)}</b>${sub ? `<small>${sub}</small>` : ''}</span><input type="checkbox" data-pk="${key}" ${on ? 'checked' : ''}><i></i></label>`;
+  const s = openSheet({title: '📌 Fijar en el acceso rápido', body: `<p class="hint" style="margin-top:0">Lo que fijes sale en la ventana flotante. Ábrela con el botón de arriba o deslizando desde el borde derecho de la pantalla.</p>
+    <div class="pingrp"><b>Básicos</b>${row('hoy', '☀️', 'Hoy', P.hoy !== false, 'Tareas de hoy')}${row('cal', '📅', 'Calendario', !!P.cal, 'Mes y cosas del día')}</div>
+    ${S.lists.length ? `<div class="pingrp"><b>Listas</b>${S.lists.map(l => row('list:' + l.id, l.icon, l.name, !l.hideOnDay)).join('')}</div>` : ''}
+    ${(S.habits || []).length ? `<div class="pingrp"><b>Hábitos</b>${S.habits.map(h => row('hab:' + h.id, h.icon, h.name, (P.habs || []).includes(h.id))).join('')}</div>` : ''}
+    ${retos.length ? `<div class="pingrp"><b>Retos de ahorro</b>${retos.map(h => row('reto:' + h.id, '🏆', h.challenge.name, !(P.noReto || []).includes(h.id))).join('')}</div>` : ''}`,
+    foot: '<button class="btn" data-close>Listo</button>',
+    onClose: () => { done && done(); },
+    onMount: el => el.querySelectorAll('[data-pk]').forEach(c => c.onchange = () => {
+      const k = c.dataset.pk, on = c.checked, P2 = pins();
+      if (k === 'hoy') P2.hoy = on; else if (k === 'cal') P2.cal = on;
+      else if (k.startsWith('list:')) { const l = S.lists.find(x => 'list:' + x.id === k); if (l) { l.hideOnDay = !on; save('lists'); } }
+      else if (k.startsWith('hab:')) { const id = k.slice(4); P2.habs = (P2.habs || []).filter(x => x !== id); if (on) P2.habs.push(id); }
+      else if (k.startsWith('reto:')) { const id = k.slice(5); P2.noReto = (P2.noReto || []).filter(x => x !== id); if (!on) P2.noReto.push(id); }
+      save('meta'); toast(on ? '📌 Fijado' : 'Quitado del acceso rápido');
+    })});
+}
+// Deslizar desde el borde derecho abre los fijados
+(function edgeSwipe() {
+  let sx = null, sy = 0, st = 0;
+  document.addEventListener('touchstart', e => { const t = e.touches[0]; sx = t.clientX > window.innerWidth - 28 && !sheets.length ? t.clientX : null; sy = t.clientY; st = Date.now(); }, {passive: true});
+  document.addEventListener('touchmove', e => { if (sx == null) return; const t = e.touches[0], dx = sx - t.clientX, dy = Math.abs(t.clientY - sy); if (dy > 40) { sx = null; return; } if (dx > 55 && Date.now() - st < 800) { sx = null; openListsPopup(); } }, {passive: true});
+  document.addEventListener('touchend', () => { sx = null; }, {passive: true});
+})();
