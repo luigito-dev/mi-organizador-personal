@@ -1259,3 +1259,24 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .qcard .pinhost .wtop,.qcard .pinhost .svtop{display:none}
 .qcard .pinhost{max-height:52vh}
 .qtitle.long{font-size:clamp(20px,6.4vw,28px);white-space:normal;line-height:1.05}
+.pinhd{display:flex;align-items:center;gap:8px;margin:14px 2px 6px}
+.pincards{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;align-items:flex-start;overscroll-behavior-x:contain}
+.pincards::-webkit-scrollbar{display:none}
+.pincard{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always}
+.pinbox{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px 14px 8px;box-shadow:0 4px 14px rgba(10,30,70,.08)}
+.pinbox .qtop{display:none}
+.pinbox .qrows{max-height:none}
+.pinbox .pinhost{max-height:none}
+.pindots{display:flex;justify-content:center;gap:6px;margin:8px 0 2px}
+.pindots i{width:7px;height:7px;border-radius:50%;background:var(--line);cursor:pointer;transition:all .2s}
+.pindots i.on{width:20px;border-radius:4px;background:var(--blue)}
+.pinbox .bigbot{width:130px;height:182px}.pinbox .wbot{width:130px}
+.pinbox .whandle{width:48px;height:48px;margin:-24px 0 0 -24px}
+.pinbox .wtip,.pinbox .wbottles{display:none}
+.pinbox .watersheet .wnum b,.pinbox .wnum b{font-size:44px}
+.pinbox .wdrink{padding:12px 22px;font-size:17px;white-space:nowrap}
+.pinbox .wsmall{width:44px;height:44px}
+.pinbox .jar{width:130px;height:165px}.pinbox .svjar{width:130px}
+.pinbox .tmring{width:160px;height:160px}
+.pinbox .plate,.pinbox .fdplate{width:160px;height:160px}
+.pinbox .sky{max-height:130px}

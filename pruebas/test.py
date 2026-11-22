@@ -72,7 +72,7 @@ def run(width, height, label, full=True):
         pg.locator('#tList .hlrow', has_text='Comprar medicina').locator('.hlbox').click(); pg.wait_for_timeout(200)
         ok(f'[{label}] sale de Por hacer', pg.locator('#tList >> text=Comprar medicina').count() == 0)
         go('dia'); pg.wait_for_timeout(200)
-        n_ag = pg.locator('#tline >> text=Comprar medicina').count(); n_all = pg.locator('.view >> text=Comprar medicina').count()
+        n_ag = pg.locator('#tline >> text=Comprar medicina').count(); n_all = pg.locator('.view .donesec >> text=Comprar medicina').count()
         ok(f'[{label}] completada aparece una sola vez', n_ag == 0 and n_all == 1, (n_ag, n_all))
         go('progreso'); pg.wait_for_timeout(200)
         ok(f'[{label}] progreso actualizado', pg.locator('.stat.ok b').first.inner_text() == '1')

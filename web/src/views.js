@@ -881,11 +881,12 @@ function openListsPopup() {
 }
 function dayLists(box) {
   if (!box) return;
+  if (box.dataset.fixkey) { UI.popTab = box.dataset.fixkey; if (!box._fx) { box._fx = 1; const fix = () => { UI.popTab = box.dataset.fixkey; }; ['click', 'keydown', 'pointerdown', 'change', 'input'].forEach(ev => box.addEventListener(ev, fix, true)); } }
   const t = todayISO(), lists = S.lists.filter(l => !l.hideOnDay);
   if (!UI.popTab || (UI.popTab !== 'hoy' && UI.popTab !== 'cal' && !/^(reto|hab):/.test(String(UI.popTab)) && !lists.some(l => l.id === UI.popTab))) UI.popTab = 'hoy';
   const keys = popKeys(), ki = Math.max(0, keys.indexOf(UI.popTab)), kprev = keys[(ki - 1 + keys.length) % keys.length], knext = keys[(ki + 1) % keys.length];
   const tabs = `<div class="qnav">${keys.length > 1 ? `<button class="qarr" data-qt="${kprev}" aria-label="Anterior">‹</button>` : ''}<div class="qdots">${keys.map(k => `<i class="${k === UI.popTab ? 'on' : ''}"></i>`).join('')}</div>${keys.length > 1 ? `<button class="qarr" data-qt="${knext}" aria-label="Siguiente">›</button>` : ''}</div>`;
-  popSwipe(box);
+  if (!box.dataset.fixkey) popSwipe(box);
   if (UI.popTab === 'hoy' && pins().hoy === false) { const first = [...lists.map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(pins().cal ? ['cal'] : [])][0]; if (first) UI.popTab = first; }
   const wireTabs = () => { addUnpin(box); box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; dayLists(box); listBadge(); }); box.querySelectorAll('[data-qpins]').forEach(b => b.onclick = () => openPinManager(() => dayLists(box))); };
   if (String(UI.popTab).startsWith('hab:')) { const h = S.habits.find(x => 'hab:' + x.id === UI.popTab); if (h) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:${h.color}"><span class="qtitle ${h.name.length > 9 ? 'long' : ''}">${esc(h.name.toUpperCase())}</span><span class="qcount">${habPill(h)}</span></div><div class="pinhost" id="pinHost"></div><div class="row qfoot"><span class="sp"></span><button class="btn ghost sm" id="qHab">Abrir hábito ›</button></div>`; box.querySelector('#qHab').onclick = () => { go('habitos'); }; pinHabit(h, box.querySelector('#pinHost'), () => dayLists(box)); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
@@ -984,7 +985,7 @@ function vDia2(v) {
   v.innerHTML = `${heroHTML()}
     <div class="card daycard">
       <div class="dstrip hscroll" id="dstrip">${strip.map(x => { const it = sortedDay(x, {all: true}); const hol = holidaysOn(x).length; return `<button class="dpill ${x === d ? 'on' : ''} ${x === t ? 'today' : ''} ${hol ? 'holi' : ''}" data-dd="${x}"><span class="dw">${x === t ? 'Hoy' : DCORTO[dow(x)]}</span><span class="dn">${parseISO(x).getDate()}</span>${daySticker(x) ? `<span class="dstk">${daySticker(x)}</span>` : `<span class="ddots">${it.slice(0, 3).map(i => `<i style="background:${colorOf(i.k, i.x)}"></i>`).join('')}${hol ? '<i style="background:var(--red)"></i>' : ''}</span>`}</button>`; }).join('')}<button class="dpill more" id="dMore"><span class="dw">Otra</span><span class="dn">📅</span><span class="ddots"></span></button></div>
-      <div class="pinbar hscroll" id="pinbar">${pinChips()}</div>
+      ${pinCardsHTML()}
       <div class="dhead"><div><b>${dayName}</b><span class="muted"> · ${parseISO(d).getDate()} de ${MESES[parseISO(d).getMonth()]}</span>${ho.map(h => ` <span class="tag" style="background:var(--holi);color:var(--holiText)">🎉 ${esc(h.name)}</span>`).join('')}</div>
         <div class="muted small">${[nPend ? `${nPend} por hacer` : '', nDone ? `${nDone} hecha${nDone === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ')}</div></div>
       <div class="qadd daddbar"><input id="qIn" placeholder="Añadir a ${isToday ? 'hoy' : dayName.toLowerCase()}… (ej. dentista a las 3 pm)" maxlength="140" autocomplete="off"><button class="btn" id="qAdd" aria-label="Añadir">+</button></div>
@@ -999,7 +1000,7 @@ function vDia2(v) {
   const fm = $('#freeMsg', v);
   if (fm) { clearTimeout(UI.freeTimer); UI.freeTimer = setTimeout(() => { const m = $('#freeMsg'); if (m) { m.classList.add('fade'); setTimeout(() => m.remove(), 600); } }, Math.max(0, 35000 - (Date.now() - UI.freeShown[d]))); }
   v.querySelectorAll('[data-dd]').forEach(b => b.onclick = () => { UI.daySel = b.dataset.dd; renderView(); });
-  wirePinBar(v);
+  wirePinCards(v);
   const sel = v.querySelector('.dpill.on'); if (sel && sel.scrollIntoView) { const strip = $('#dstrip', v); strip.scrollLeft = Math.max(0, sel.offsetLeft - 60); }
   $('#dMore', v).onclick = () => { const i = document.createElement('input'); i.type = 'date'; i.min = t; i.style.cssText = 'position:fixed;opacity:0;left:50%;top:50%'; document.body.appendChild(i); i.onchange = () => { if (i.value) { UI.daySel = i.value; renderView(); } i.remove(); }; i.onblur = () => setTimeout(() => i.remove(), 500); try { i.showPicker(); } catch (e) { i.click(); } };
   const at = $('#allToday', v); if (at) at.onclick = () => { S.tasks.filter(isLate).forEach(x => x.date = t); save('tasks'); renderView(); toast('Atrasadas movidas a hoy'); };
@@ -2193,8 +2194,30 @@ function addUnpin(box) {
     else if (k.startsWith('reto:')) { P.noReto = (P.noReto || []).filter(x => x !== k.slice(5)); P.noReto.push(k.slice(5)); }
     else if (k.startsWith('hab:')) P.habs = (P.habs || []).filter(x => x !== k.slice(4));
     else { const l = S.lists.find(x => x.id === k); if (l) { l.hideOnDay = true; save('lists'); } }
-    save('meta'); toast('📍 Quitado de fijados'); if (UI.view === 'dia') renderView();
+    save('meta'); toast('📍 Quitado de fijados'); if (box.dataset.fixkey) { UI.pinIdx = Math.max(0, (UI.pinIdx || 0) - 1); renderView(); return; } if (UI.view === 'dia') renderView();
     const keys = popKeys(); if (!keys.length) { const sh = sheets.find(x => x.el.contains(box)); sh && sh.close(); return; }
     UI.popTab = keys[0]; dayLists(box); listBadge();
   };
+}
+
+/* Fijados en Mi Día: una tarjeta a la vez, se pasan de lado */
+function pinCardsHTML() {
+  const keys = popKeys();
+  if (!keys.length) return '<div class="pinhd"><b>📍 Fijados</b><button class="btn ghost sm" data-pinmgr>📌 Fijar</button></div>';
+  return `<div class="pinhd"><b>📍 Fijados</b><span class="muted xs">desliza de lado</span><span class="sp"></span><button class="btn ghost sm" data-pinmgr>📌 Fijar</button></div>
+    <div class="pincards" id="pinCards">${keys.map(k => `<div class="pincard"><div class="pinbox" data-fixkey="${esc(k)}"></div></div>`).join('')}</div>
+    ${keys.length > 1 ? `<div class="pindots">${keys.map((k, i) => `<i data-pdi="${i}"></i>`).join('')}</div>` : ''}`;
+}
+function wirePinCards(v) {
+  v.querySelectorAll('[data-pinmgr]').forEach(b => b.onclick = () => openPinManager(() => renderView()));
+  const wrap = v.querySelector('#pinCards'); if (!wrap) return;
+  const keep = UI.popTab;
+  wrap.querySelectorAll('.pinbox').forEach(b => dayLists(b));
+  UI.popTab = keep;
+  const n = wrap.children.length, dots = [...v.querySelectorAll('[data-pdi]')];
+  UI.pinIdx = Math.min(UI.pinIdx || 0, n - 1);
+  const mark = () => dots.forEach((d, i) => d.classList.toggle('on', i === UI.pinIdx));
+  requestAnimationFrame(() => { wrap.scrollLeft = UI.pinIdx * wrap.clientWidth; mark(); });
+  let t; wrap.addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(() => { UI.pinIdx = Math.round(wrap.scrollLeft / wrap.clientWidth); mark(); }, 80); }, {passive: true});
+  dots.forEach((d, i) => d.onclick = () => wrap.scrollTo({left: i * wrap.clientWidth, behavior: 'smooth'}));
 }
