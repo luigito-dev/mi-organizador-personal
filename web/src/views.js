@@ -1437,6 +1437,7 @@ function openHabitForm(h) {
       const q = x => el.querySelector(x);
       el.querySelectorAll('[data-hi]').forEach(b => b.onclick = () => { h.icon = b.dataset.hi; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x === b)); });
       el.querySelectorAll('[data-hc]').forEach(b => b.onclick = () => { h.color = b.dataset.hc; el.querySelectorAll('[data-hc]').forEach(x => x.classList.toggle('on', x === b)); });
+      q('#hName').addEventListener('input', () => { const nm = q('#hName').value; if (isNew && !kind) { if (/agua/i.test(nm)) { el.querySelector('[data-hk="agua"]').click(); } else if (/^(leer|lectura)/i.test(nm)) { el.querySelector('[data-hk="lectura"]').click(); } } });
       q('#hgM').onclick = () => { h.goal = Math.max(1, habGoal(h) - 1); q('#hgV').textContent = h.goal; };
       q('#hgP').onclick = () => { h.goal = Math.min(99, habGoal(h) + 1); q('#hgV').textContent = h.goal; };
       el.querySelectorAll('[data-hdw]').forEach(b => b.onclick = () => b.classList.toggle('on'));
@@ -1447,7 +1448,7 @@ function openHabitForm(h) {
       q('#hbM').onclick = () => setB(bot - 1); q('#hbP').onclick = () => setB(bot + 1); showK();
       q('#hSave').onclick = () => {
         h.name = q('#hName').value.trim(); if (!h.name) { toast('Escribe el nombre del hábito'); q('#hName').focus(); return; }
-        h.unit = q('#hUnit').value.trim(); h.kind = kind;
+        h.unit = q('#hUnit').value.trim(); h.kind = kind; h.migW = 1;
         if (kind === 'agua') { if (habKind(S.habits.find(x => x.id === h.id) || {}) !== 'agua') h.log = {}; h.goal = bot; h.unit = ''; }
         if (kind === 'lectura') { h.unit = ''; }
         const on = [...el.querySelectorAll('[data-hdw].on')].map(b => +b.dataset.hdw); if (!on.length) { toast('Elige al menos un día'); return; }
@@ -1464,6 +1465,8 @@ function wireHabSug(root) { root.querySelectorAll('[data-sug]').forEach(b => b.o
 
 // Convierte los hábitos de agua y lectura creados antes (vasos / páginas con meta)
 function migrateHabits() { let ch = false; (S.habits || []).forEach(h => {
+  if (!h.kind && !h.migW && (/agua/i.test(h.name || '') || h.icon === '💧')) { h.kind = 'agua'; h.migW = 1; h.goal = h.unit === 'vasos' ? Math.max(1, +h.goal || 8) : 8; if (h.unit === 'vasos') { const l = {}; Object.keys(h.log || {}).forEach(d => l[d] = h.log[d] * OZ); h.log = l; } h.unit = ''; ch = true; return; }
+  if (!h.kind && !h.migW && /^(leer|lectura)/i.test(h.name || '')) { h.kind = 'lectura'; h.migW = 1; h.goal = 1; h.unit = ''; ch = true; return; }
   if (!h.kind && h.name === 'Tomar agua' && h.unit === 'vasos') { h.kind = 'agua'; const l = {}; Object.keys(h.log || {}).forEach(d => l[d] = h.log[d] * OZ); h.log = l; h.goal = Math.max(1, +h.goal || 8); h.unit = ''; ch = true; }
   if (!h.kind && h.name === 'Leer' && h.unit === 'páginas') { h.kind = 'lectura'; h.goal = 1; h.unit = ''; ch = true; }
 }); if (ch) save('habits'); }
