@@ -887,9 +887,9 @@ function dayLists(box) {
   const tabs = `<div class="qnav">${keys.length > 1 ? `<button class="qarr" data-qt="${kprev}" aria-label="Anterior">‹</button>` : ''}<div class="qdots">${keys.map(k => `<i class="${k === UI.popTab ? 'on' : ''}"></i>`).join('')}</div>${keys.length > 1 ? `<button class="qarr" data-qt="${knext}" aria-label="Siguiente">›</button>` : ''}</div>`;
   popSwipe(box);
   if (UI.popTab === 'hoy' && pins().hoy === false) { const first = [...lists.map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(pins().cal ? ['cal'] : [])][0]; if (first) UI.popTab = first; }
-  const wireTabs = () => { box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; dayLists(box); listBadge(); }); box.querySelectorAll('[data-qpins]').forEach(b => b.onclick = () => openPinManager(() => dayLists(box))); };
-  if (String(UI.popTab).startsWith('hab:')) { const h = S.habits.find(x => 'hab:' + x.id === UI.popTab); if (h) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:${h.color}"><span class="qtitle">${h.icon} ${esc(h.name.toUpperCase())}</span></div><div class="pinhost" id="pinHost"></div>`; pinHabit(h, box.querySelector('#pinHost'), () => dayLists(box)); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
-  if (UI.popTab === 'cal') { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:var(--teal,#0f9d8f)"><span class="qtitle">📅 CALENDARIO</span></div><div id="pinCal"></div>`; pinCalendar(box.querySelector('#pinCal')); wireTabs(); return; }
+  const wireTabs = () => { addUnpin(box); box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; dayLists(box); listBadge(); }); box.querySelectorAll('[data-qpins]').forEach(b => b.onclick = () => openPinManager(() => dayLists(box))); };
+  if (String(UI.popTab).startsWith('hab:')) { const h = S.habits.find(x => 'hab:' + x.id === UI.popTab); if (h) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:${h.color}"><span class="qtitle ${h.name.length > 9 ? 'long' : ''}">${esc(h.name.toUpperCase())}</span><span class="qcount">${habPill(h)}</span></div><div class="pinhost" id="pinHost"></div><div class="row qfoot"><span class="sp"></span><button class="btn ghost sm" id="qHab">Abrir hábito ›</button></div>`; box.querySelector('#qHab').onclick = () => { go('habitos'); }; pinHabit(h, box.querySelector('#pinHost'), () => dayLists(box)); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
+  if (UI.popTab === 'cal') { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:var(--teal,#0f9d8f)"><span class="qtitle">CALENDARIO</span><span class="qcount">${sortedDay(todayISO()).length} hoy</span></div><div id="pinCal"></div>`; pinCalendar(box.querySelector('#pinCal')); wireTabs(); return; }
   if (String(UI.popTab).startsWith('reto:')) { const h = S.habits.find(x => 'reto:' + x.id === UI.popTab); if (h && h.challenge) { challengeBox(box, h, tabs, null); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
   let head, rows, addPh, foot;
   if (UI.popTab === 'hoy') {
@@ -915,6 +915,7 @@ function dayLists(box) {
   const redraw = () => { dayLists(box); listBadge(); };
   box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; redraw(); });
   box.querySelectorAll('[data-qpins]').forEach(b => b.onclick = () => openPinManager(() => dayLists(box)));
+  addUnpin(box);
   box.querySelectorAll('[data-qdel]').forEach(b => b.onclick = async e => {
     e.stopPropagation(); const id = b.dataset.qdel;
     if (UI.popTab === 'hoy') {
@@ -2109,6 +2110,7 @@ function pinCalendar(box) {
   const add = () => { const raw = q('#pcAdd').value.trim(); if (!raw) { q('#pcAdd').focus(); return; } const g = guess(raw); S.tasks.push({id: uid(), title: raw, date: d, time: g.time, typeId: g.typeId, areaId: g.areaId, priority: 'Media', details: '', steps: [], status: 'Pendiente', obs: '', reminder: null, createdAt: Date.now()}); save('tasks'); toast('Añadido'); redraw(); };
   q('#pcBtn').onclick = add; q('#pcAdd').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
   q('#pcGo').onclick = () => { UI.calDate = UI.selDate = d; go('calendario'); };
+  const pop = box.closest('.qcard .sh-body > div'); if (pop) addUnpin(pop);
 }
 function openPinManager(done) {
   const P = pins(), retos = (S.habits || []).filter(h => h.challenge && h.challenge.vals);
@@ -2168,4 +2170,31 @@ function popSwipe(box) {
     box.classList.remove('slideL', 'slideR'); void box.offsetWidth; box.classList.add(dx < 0 ? 'slideL' : 'slideR');
     dayLists(box); listBadge();
   }, {passive: true});
+}
+
+function habPill(h) {
+  const d = todayISO(), k = habKind(h), c = habCount(h, d), g = habGoal(h);
+  if (k === 'agua') return `${c}/${g} oz`;
+  if (k === 'lectura') return `${c} pág.`;
+  if (isTimeKind(h)) return `${c}/${g} min`;
+  if (k === 'ahorro') return money(saveTotal(h));
+  if (k === 'despertar') { const w = (h.woke || {})[d]; return w && w !== 'ok' ? fmtTime(w) : w ? '✓' : fmtTime(h.wakeAt || '06:00'); }
+  if (k === 'comida') return `${c}/${g}`;
+  return habDone(h, d) ? '1/1' : '0/1';
+}
+// Botón para quitar de fijados desde la misma ventana
+function addUnpin(box) {
+  const f = box.querySelector('.qfoot'); if (!f || f.querySelector('[data-unpin]')) return;
+  const b = document.createElement('button'); b.className = 'btn ghost sm qunpin'; b.dataset.unpin = UI.popTab; b.textContent = '📍 Quitar de fijados';
+  f.prepend(b);
+  b.onclick = () => {
+    const k = b.dataset.unpin, P = pins();
+    if (k === 'hoy') P.hoy = false; else if (k === 'cal') P.cal = false;
+    else if (k.startsWith('reto:')) { P.noReto = (P.noReto || []).filter(x => x !== k.slice(5)); P.noReto.push(k.slice(5)); }
+    else if (k.startsWith('hab:')) P.habs = (P.habs || []).filter(x => x !== k.slice(4));
+    else { const l = S.lists.find(x => x.id === k); if (l) { l.hideOnDay = true; save('lists'); } }
+    save('meta'); toast('📍 Quitado de fijados'); if (UI.view === 'dia') renderView();
+    const keys = popKeys(); if (!keys.length) { const sh = sheets.find(x => x.el.contains(box)); sh && sh.close(); return; }
+    UI.popTab = keys[0]; dayLists(box); listBadge();
+  };
 }
