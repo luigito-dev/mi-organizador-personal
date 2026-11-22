@@ -1289,10 +1289,11 @@ function fcColor(i) { if (i.x.areaId && S.areas.some(a => a.id === i.x.areaId)) 
 
 /* ========== HÁBITOS ========== */
 const HAB_ICONS = ['😊','💧','🍳','🍌','☀️','😴','📖','📘','💪','🧘','🌈','🧹','💬','🤸','🧖','👁️','🌳','🚶','🏃','💵','⚖️','🌱','🍎','🥗','🙏','💊','🦷','🛏️','📵','🍦','🍷','🍭','🎮','📺','🎸','📷','✍️','🚴','🏊','🐶'];
-const HAB_SUG = [['💧', 'Tomar agua', 8, 'agua'], ['🚶', 'Caminar', 1, ''], ['📖', 'Leer', 1, 'lectura'], ['🧘', 'Meditar', 1, ''], ['☀️', 'Levantarme temprano', 1, ''], ['🍌', 'Comer frutas', 1, ''], ['💵', 'Ahorrar dinero', 1, ''], ['🙏', 'Orar', 1, '']];
+const HAB_SUG = [['💧', 'Tomar agua', 8, 'agua'], ['🚶', 'Caminar', 30, 'tiempo'], ['📖', 'Leer', 1, 'lectura'], ['🧘', 'Meditar', 10, 'tiempo'], ['☀️', 'Levantarme temprano', 1, ''], ['🍌', 'Comer frutas', 1, ''], ['💵', 'Ahorrar dinero', 1, ''], ['🙏', 'Orar', 10, 'tiempo']];
 const OZ = 8; // onzas por botella
-const habKind = h => h.kind || (h.unit === 'agua' ? 'agua' : h.unit === 'lectura' ? 'lectura' : '');
-const habGoal = h => habKind(h) === 'lectura' ? 1 : habKind(h) === 'agua' ? Math.max(1, +h.goal || 1) * OZ : Math.max(1, +h.goal || 1);
+const habKind = h => h.kind || (h.unit === 'agua' ? 'agua' : h.unit === 'lectura' ? 'lectura' : h.unit === 'tiempo' ? 'tiempo' : '');
+const habGoal = h => habKind(h) === 'lectura' ? 1 : habKind(h) === 'agua' ? (+h.goalOz > 0 ? +h.goalOz : Math.max(1, +h.goal || 1) * OZ) : habKind(h) === 'tiempo' ? Math.max(1, +h.goal || 10) : Math.max(1, +h.goal || 1);
+const habBottles = h => Math.ceil(habGoal(h) / OZ);
 const habCount = (h, d) => (h.log && h.log[d]) || 0;
 const habDone = (h, d) => habCount(h, d) >= habGoal(h);
 const habDue = (h, d) => (!h.days || !h.days.length || h.days.includes(parseISO(d).getDay())) && (!h.created || d >= h.created);
@@ -1306,33 +1307,14 @@ function bottleSVG(h, oz) {
     <g clip-path="url(#${id})"><rect x="0" y="0" width="40" height="60" fill="#eaf4ff"/><rect class="water" x="0" y="${58 - 40 * lvl}" width="40" height="60" fill="${full ? '#5ad1a0' : '#5aa8ff'}"/>${[1,2,3,4,5,6,7].map(i => `<line x1="7" x2="11" y1="${58 - 5 * i}" y2="${58 - 5 * i}" stroke="#fff" stroke-width="1"/>`).join('')}</g>
     <path d="M15 12h10v5c5 2 8 5 8 10v25a6 6 0 0 1-6 6H13a6 6 0 0 1-6-6V27c0-5 3-8 8-10z" fill="none" stroke="#5aa8ff" stroke-width="1.6"/></svg>`;
 }
-function openReading(h, d) {
-  const c = habCount(h, d);
-  const s = openSheet({title: `${h.icon} ${esc(h.name)}`, body: `
-    <div class="fld"><label>¿Cuántas páginas leíste ${d === todayISO() ? 'hoy' : 'ese día'}?</label><div class="habgoal"><button type="button" class="btn sec" id="rpM">−</button><input class="inp rdnum" id="rpV" type="number" inputmode="numeric" min="0" value="${c}"><button type="button" class="btn sec" id="rpP">+</button></div>
-      <div class="rdquick">${[1, 5, 10, 20].map(n => `<button type="button" data-rq="${n}">+${n}</button>`).join('')}</div></div>
-    <div class="fld bkmk"><label>🔖 Marcador: ¿en qué página te quedaste?</label><input class="inp rdnum" id="rpB" type="number" inputmode="numeric" min="0" value="${h.bookmark || ''}" placeholder="Página"></div>
-    <div class="fld"><label>Libro que estás leyendo</label><input class="inp" id="rpL" value="${esc(h.book || '')}" placeholder="Ej.: Mente de Campeón"></div>
-    <small class="hint">No hay límite: anota todas las páginas que leas. Total leído: <b>${habPages(h)}</b> páginas.</small>`,
-    foot: `<button class="btn" id="rpS">Guardar</button>`,
-    onMount: el => {
-      const q = x => el.querySelector(x), v = q('#rpV'), B = q('#rpB'), num = () => Math.max(0, parseInt(v.value, 10) || 0);
-      const set = n => { const before = num(); n = Math.max(0, n); v.value = n; if (B.value !== '') B.value = Math.max(1, (+B.value || 0) + (n - before)); }; // el 🔖 avanza solo con las páginas
-      q('#rpM').onclick = () => set(num() - 1); q('#rpP').onclick = () => set(num() + 1);
-      el.querySelectorAll('[data-rq]').forEach(b => b.onclick = () => set(num() + +b.dataset.rq));
-      q('#rpS').onclick = () => {
-        h.log = h.log || {}; const n = num(); if (n) h.log[d] = n; else delete h.log[d];
-        const bp = parseInt(B.value, 10); h.bookmark = bp > 0 ? bp : null; h.book = q('#rpL').value.trim();
-        save('habits'); s.close(); renderView(); if (n && !c) toast(`📖 ¡${n} páginas! Sigue así`); else toast(h.bookmark ? `🔖 Marcador en la página ${h.bookmark}` : 'Guardado');
-      };
-    }});
-}
 const habPages = h => Object.values(h.log || {}).reduce((a, b) => a + (+b || 0), 0);
 function habTap(h, d) {
-  if (habKind(h) === 'lectura') return openReading(h, d);
+  if (habKind(h) === 'lectura') return openBook(h, d);
+  if (habKind(h) === 'tiempo') return openTimer(h, d);
   if (habKind(h) === 'agua' && !habTap.direct) return openWater(h, d);
   if (habKind(h) === 'agua') { const g = habGoal(h), c = habCount(h, d); h.log = h.log || {}; h.log[d] = c + 1; save('habits');
-    if ((c + 1) % OZ === 0) toast(c + 1 >= g && c < g ? `💧 ¡Meta de agua cumplida! ${(c + 1) / OZ} botellas` : `💧 ¡Botella ${(c + 1) / OZ} llena!`);
+    if ((c + 1) % OZ === 0) toast(`💧 ¡Botella ${(c + 1) / OZ} llena!`);
+    if (c + 1 >= g && c < g) setTimeout(() => toast('🎉 ¡Meta de agua cumplida!'), 400);
     if (navigator.vibrate) try { navigator.vibrate(10); } catch (e) {} return; }
   const g = habGoal(h), c = habCount(h, d); h.log = h.log || {};
   if (c >= g) delete h.log[d]; else h.log[d] = c + 1;
@@ -1347,7 +1329,7 @@ function vHabitos(v) {
   $('#hNew', v).onclick = () => openHabitForm();
   const body = $('#habBody', v);
   if (!S.habits.length) {
-    body.innerHTML = `<div class="card habempty"><div class="big">🌱</div><h3>Crea tus hábitos</h3><p>Marca cada día lo que haces y mira tu progreso. Toca uno para empezar:</p><div class="habsug">${HAB_SUG.map((x, i) => `<button data-sug="${i}"><span>${x[0]}</span>${x[1]}${x[3] === 'agua' ? ' <small>botella de 8 oz</small>' : x[3] === 'lectura' ? ' <small>con 🔖</small>' : ''}</button>`).join('')}</div><button class="btn" id="hNew2">+ Crear mi propio hábito</button></div>`;
+    body.innerHTML = `<div class="card habempty"><div class="big">🌱</div><h3>Crea tus hábitos</h3><p>Marca cada día lo que haces y mira tu progreso. Toca uno para empezar:</p><div class="habsug">${HAB_SUG.map((x, i) => `<button data-sug="${i}"><span>${x[0]}</span>${x[1]}${x[3] === 'agua' ? ' <small>botella de 8 oz</small>' : x[3] === 'lectura' ? ' <small>con 🔖</small>' : x[3] === 'tiempo' ? ` <small>${x[2]} min</small>` : ''}</button>`).join('')}</div><button class="btn" id="hNew2">+ Crear mi propio hábito</button></div>`;
     wireHabSug(body);
     $('#hNew2', body).onclick = () => openHabitForm();
     return;
@@ -1361,12 +1343,18 @@ function vHabitos(v) {
     <div class="habbar"><i style="width:${due.length ? done / due.length * 100 : 0}%"></i></div>
     <div class="hablist">${S.habits.map(h => {
       const g = habGoal(h), c = habCount(h, d), ok = c >= g, isDue = habDue(h, d), st = habStreak(h, t), kd = habKind(h);
-      if (kd === 'agua') { const nb = Math.floor(c / OZ), gb = g / OZ, cur = c === 0 ? 0 : (c % OZ || OZ);
+      if (kd === 'agua') { const nb = Math.floor(c / OZ), gb = habBottles(h), cur = c % OZ;
         return `<div class="habrow water ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habbot">${bottleSVG(h, c)}${ok ? '<em>✓</em>' : ''}</span>
-        <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : `<b class="ozn">${cur} de ${OZ} oz</b> · ${nb} de ${gb} botellas`}${(h.reminders || []).some(r => r.on !== false) && h.remOn !== false ? ' · ⏰' : ''}${st > 1 ? ` · 🔥 ${st}` : ''}</small><span class="botrow">${[...Array(gb)].map((_, i) => `<i class="${i < nb ? 'on' : ''}"></i>`).join('')}</span></span>
+        <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : `<b class="ozn">${cur} de ${OZ} oz</b> · ${nb} de ${gb} botellas`}${(h.reminders || []).some(r => r.on !== false) && h.remOn !== false ? ' · ⏰' : ''}${st > 1 ? ` · 🔥 ${st}` : ''}</small><span class="botrow">${[...Array(Math.max(gb, nb))].map((_, i) => `<i class="${i < nb ? 'on' : ''}"></i>`).join('')}</span></span>
         <span class="habtot"><b>${c}</b><small>oz hoy</small></span>
         <span class="habside"><button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button>${c ? `<button class="habminus" data-hmin="${h.id}" aria-label="Quitar 1 onza">−1</button>` : ''}</span></div>`; }
+      if (kd === 'tiempo') { const run = UI.habTimer && UI.habTimer.id === h.id;
+        return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
+        <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${Math.min(1, c / g) * 100}%">${h.icon}${ok ? '<em>✓</em>' : ''}</span>
+        <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : run ? '⏱ Contando tiempo…' : `${c} de ${g} min`}${st > 1 ? ` · 🔥 ${st}` : ''}</small></span>
+        <span class="habtot"><b>${c}</b><small>min hoy</small></span>
+        <button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`; }
       if (kd === 'lectura') return `<div class="habrow read ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${ok ? 100 : 0}%">${h.icon}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : c ? `${c} páginas ${d === t ? 'hoy' : 'ese día'}` : 'Toca para anotar páginas'}${st > 1 ? ` · 🔥 ${st}` : ''}</small>${h.bookmark || h.book ? `<span class="bkpill">🔖 ${h.bookmark ? `pág. ${h.bookmark}` : ''}${h.book ? `${h.bookmark ? ' · ' : ''}${esc(h.book)}` : ''}</span>` : ''}</span>
@@ -1427,9 +1415,10 @@ function openHabitForm(h) {
     <div class="fld"><label>Nombre</label><input class="inp" id="hName" value="${esc(h.name)}" placeholder="Ej.: Tomar agua" maxlength="40"></div>
     <div class="fld"><label>Ícono</label><div class="habicons">${HAB_ICONS.map(i => `<button type="button" data-hi="${i}" class="${h.icon === i ? 'on' : ''}">${i}</button>`).join('')}</div></div>
     <div class="fld"><label>Color</label><div class="habcols">${HL_PASTEL.map(c => `<button type="button" data-hc="${c}" class="${h.color === c ? 'on' : ''}" style="background:${c}" aria-label="Color"></button>`).join('')}</div></div>
-    <div class="fld"><label>Tipo</label><div class="seg habkind">${[['', '✓ Marcar'], ['agua', '💧 Agua'], ['lectura', '📖 Lectura']].map(([k, n]) => `<button type="button" data-hk="${k}" class="${habKind(h) === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
+    <div class="fld"><label>Tipo</label><div class="seg habkind">${[['', '✓ Marcar'], ['agua', '💧 Agua'], ['lectura', '📖 Lectura'], ['tiempo', '⏱ Tiempo']].map(([k, n]) => `<button type="button" data-hk="${k}" class="${habKind(h) === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
     <div class="fld hk-lectura"><small class="hint">📖 Lectura: sin límite por día. Cada día anotas cuántas páginas leíste y guardas tu 🔖 marcador.</small></div>
-    <div class="fld hk-agua"><label>Meta de botellas por día (cada botella = 8 oz)</label><div class="habgoal"><button type="button" class="btn sec sm" id="hbM">−</button><b id="hbV">${habKind(h) === 'agua' ? Math.max(1, +h.goal || 1) : 8}</b><button type="button" class="btn sec sm" id="hbP">+</button><span class="hint" id="hbOz">${(habKind(h) === 'agua' ? Math.max(1, +h.goal || 1) : 8) * 8} oz</span></div><small class="hint">Cada toque suma 1 onza. Al llegar a 8 oz se llena una botella.</small></div>
+    <div class="fld hk-agua"><label>Meta de agua por día (en onzas)</label><div class="habgoal"><button type="button" class="btn sec sm" id="hbM">−</button><input class="inp rdnum" id="hbOz" type="number" inputmode="numeric" min="1" max="400" value="${habKind(h) === 'agua' ? habGoal(h) : 64}"><button type="button" class="btn sec sm" id="hbP">+</button><span class="hint">oz</span></div><div class="rdquick">${[32, 48, 64, 80, 100].map(n => `<button type="button" data-goz="${n}">${n}</button>`).join('')}</div><small class="hint">Escribe la meta que quieras. Cada botella es de 8 oz.</small></div>
+    <div class="fld hk-tiempo"><label>Meta de minutos por día</label><div class="habgoal"><button type="button" class="btn sec sm" id="htM">−</button><input class="inp rdnum" id="htV" type="number" inputmode="numeric" min="1" max="600" value="${habKind(h) === 'tiempo' ? habGoal(h) : 10}"><button type="button" class="btn sec sm" id="htP">+</button><span class="hint">min</span></div><small class="hint">Para meditar, caminar, orar, hacer ejercicio… Tiene cronómetro.</small></div>
     <div class="fld hk-"><label>Meta por día</label><div class="habgoal"><button type="button" class="btn sec sm" id="hgM">−</button><b id="hgV">${habGoal(h)}</b><button type="button" class="btn sec sm" id="hgP">+</button><input class="inp" id="hUnit" value="${esc(h.unit || '')}" placeholder="vasos, páginas, minutos…"></div><small class="hint">Con meta 1 se marca de un toque. Con más, cada toque suma uno.</small></div>
     <div class="fld"><label>Días</label><div class="habdays">${[0,1,2,3,4,5,6].map(i => `<button type="button" data-hdw="${i}" class="${!h.days.length || h.days.includes(i) ? 'on' : ''}">${DCORTO[i].slice(0, 1).toUpperCase()}</button>`).join('')}</div><small class="hint">Los días apagados son de descanso y no cuentan en contra.</small></div>`,
     foot: `${isNew ? '' : '<button class="btn sec" id="hDel"><i class="xdel"></i> Eliminar</button>'}<button class="btn" id="hSave">Guardar</button>`,
@@ -1437,19 +1426,23 @@ function openHabitForm(h) {
       const q = x => el.querySelector(x);
       el.querySelectorAll('[data-hi]').forEach(b => b.onclick = () => { h.icon = b.dataset.hi; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x === b)); });
       el.querySelectorAll('[data-hc]').forEach(b => b.onclick = () => { h.color = b.dataset.hc; el.querySelectorAll('[data-hc]').forEach(x => x.classList.toggle('on', x === b)); });
-      q('#hName').addEventListener('input', () => { const nm = q('#hName').value; if (isNew && !kind) { if (/agua/i.test(nm)) { el.querySelector('[data-hk="agua"]').click(); } else if (/^(leer|lectura)/i.test(nm)) { el.querySelector('[data-hk="lectura"]').click(); } } });
+      q('#hName').addEventListener('input', () => { const nm = q('#hName').value; if (isNew && !kind) { if (/agua/i.test(nm)) { el.querySelector('[data-hk="agua"]').click(); } else if (/^(leer|lectura)/i.test(nm)) { el.querySelector('[data-hk="lectura"]').click(); } else if (TIME_RE.test(nm)) { el.querySelector('[data-hk="tiempo"]').click(); } } });
       q('#hgM').onclick = () => { h.goal = Math.max(1, habGoal(h) - 1); q('#hgV').textContent = h.goal; };
       q('#hgP').onclick = () => { h.goal = Math.min(99, habGoal(h) + 1); q('#hgV').textContent = h.goal; };
       el.querySelectorAll('[data-hdw]').forEach(b => b.onclick = () => b.classList.toggle('on'));
-      let kind = habKind(h), bot = kind === 'agua' ? Math.max(1, +h.goal || 1) : 8;
-      const showK = () => { ['', 'agua', 'lectura'].forEach(k => el.querySelectorAll('.hk-' + k).forEach(x => x.style.display = k === kind ? '' : 'none')); el.querySelectorAll('[data-hk]').forEach(b => b.classList.toggle('on', b.dataset.hk === kind)); };
-      el.querySelectorAll('[data-hk]').forEach(b => b.onclick = () => { kind = b.dataset.hk; if (kind === 'agua' && h.icon === '😊') { h.icon = '💧'; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x.dataset.hi === '💧')); } if (kind === 'lectura' && h.icon === '😊') { h.icon = '📖'; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x.dataset.hi === '📖')); } showK(); });
-      const setB = n => { bot = Math.min(20, Math.max(1, n)); q('#hbV').textContent = bot; q('#hbOz').textContent = bot * 8 + ' oz'; };
-      q('#hbM').onclick = () => setB(bot - 1); q('#hbP').onclick = () => setB(bot + 1); showK();
+      let kind = habKind(h);
+      const showK = () => { ['', 'agua', 'lectura', 'tiempo'].forEach(k => el.querySelectorAll('.hk-' + k).forEach(x => x.style.display = k === kind ? '' : 'none')); el.querySelectorAll('[data-hk]').forEach(b => b.classList.toggle('on', b.dataset.hk === kind)); };
+      el.querySelectorAll('[data-hk]').forEach(b => b.onclick = () => { kind = b.dataset.hk; if (kind === 'agua' && h.icon === '😊') { h.icon = '💧'; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x.dataset.hi === '💧')); } if (kind === 'tiempo' && h.icon === '😊') { h.icon = '🧘'; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x.dataset.hi === '🧘')); } if (kind === 'lectura' && h.icon === '😊') { h.icon = '📖'; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x.dataset.hi === '📖')); } showK(); });
+      const oz = () => Math.max(1, Math.min(400, parseInt(q('#hbOz').value, 10) || 64)), mn = () => Math.max(1, Math.min(600, parseInt(q('#htV').value, 10) || 10));
+      q('#hbM').onclick = () => q('#hbOz').value = Math.max(1, oz() - 8); q('#hbP').onclick = () => q('#hbOz').value = oz() + 8;
+      el.querySelectorAll('[data-goz]').forEach(b => b.onclick = () => q('#hbOz').value = b.dataset.goz);
+      q('#htM').onclick = () => q('#htV').value = Math.max(1, mn() - 5); q('#htP').onclick = () => q('#htV').value = mn() + 5;
+      showK();
       q('#hSave').onclick = () => {
         h.name = q('#hName').value.trim(); if (!h.name) { toast('Escribe el nombre del hábito'); q('#hName').focus(); return; }
         h.unit = q('#hUnit').value.trim(); h.kind = kind; h.migW = 1;
-        if (kind === 'agua') { if (habKind(S.habits.find(x => x.id === h.id) || {}) !== 'agua') h.log = {}; h.goal = bot; h.unit = ''; }
+        if (kind === 'agua') { h.goalOz = oz(); h.goal = Math.ceil(h.goalOz / OZ); h.unit = ''; }
+        if (kind === 'tiempo') { h.goal = mn(); h.unit = ''; }
         if (kind === 'lectura') { h.unit = ''; }
         const on = [...el.querySelectorAll('[data-hdw].on')].map(b => +b.dataset.hdw); if (!on.length) { toast('Elige al menos un día'); return; }
         h.days = on.length === 7 ? [] : on;
@@ -1461,46 +1454,17 @@ function openHabitForm(h) {
     }});
 }
 
-function wireHabSug(root) { root.querySelectorAll('[data-sug]').forEach(b => b.onclick = () => { const x = HAB_SUG[+b.dataset.sug]; S.habits.push({id: uid(), icon: x[0], name: x[1], goal: x[2], unit: '', kind: x[3] === 'agua' || x[3] === 'lectura' ? x[3] : '', color: HL_PASTEL[S.habits.length % HL_PASTEL.length], days: [], log: {}, created: todayISO()}); save('habits'); toast(`${x[0]} ${x[1]} añadido`); renderView(); }); }
+function wireHabSug(root) { root.querySelectorAll('[data-sug]').forEach(b => b.onclick = () => { const x = HAB_SUG[+b.dataset.sug]; S.habits.push({id: uid(), icon: x[0], name: x[1], goal: x[2], unit: '', kind: ['agua', 'lectura', 'tiempo'].includes(x[3]) ? x[3] : '', goalOz: x[3] === 'agua' ? 64 : undefined, migW: 1, color: HL_PASTEL[S.habits.length % HL_PASTEL.length], days: [], log: {}, created: todayISO()}); save('habits'); toast(`${x[0]} ${x[1]} añadido`); renderView(); }); }
 
 // Convierte los hábitos de agua y lectura creados antes (vasos / páginas con meta)
 function migrateHabits() { let ch = false; (S.habits || []).forEach(h => {
   if (!h.kind && !h.migW && (/agua/i.test(h.name || '') || h.icon === '💧')) { h.kind = 'agua'; h.migW = 1; h.goal = h.unit === 'vasos' ? Math.max(1, +h.goal || 8) : 8; if (h.unit === 'vasos') { const l = {}; Object.keys(h.log || {}).forEach(d => l[d] = h.log[d] * OZ); h.log = l; } h.unit = ''; ch = true; return; }
+  if (!h.kind && !h.migW && TIME_RE.test(h.name || '')) { h.kind = 'tiempo'; h.migW = 1; const def = /camin|ejerc|correr/i.test(h.name) ? 30 : 10; const l = {}; Object.keys(h.log || {}).forEach(d => l[d] = h.log[d] >= (+h.goal || 1) ? def : 0); h.log = l; h.goal = def; h.unit = ''; ch = true; return; }
   if (!h.kind && !h.migW && /^(leer|lectura)/i.test(h.name || '')) { h.kind = 'lectura'; h.migW = 1; h.goal = 1; h.unit = ''; ch = true; return; }
   if (!h.kind && h.name === 'Tomar agua' && h.unit === 'vasos') { h.kind = 'agua'; const l = {}; Object.keys(h.log || {}).forEach(d => l[d] = h.log[d] * OZ); h.log = l; h.goal = Math.max(1, +h.goal || 8); h.unit = ''; ch = true; }
   if (!h.kind && h.name === 'Leer' && h.unit === 'páginas') { h.kind = 'lectura'; h.goal = 1; h.unit = ''; ch = true; }
 }); if (ch) save('habits'); }
 
-/* ===== Pantalla de agua (botella grande) ===== */
-function bigBottle(oz) {
-  const lvl = oz === 0 ? 0 : (oz % OZ === 0 ? 1 : (oz % OZ) / OZ), y = 262 - 214 * lvl;
-  return `<svg class="bigbot" viewBox="0 0 200 280" aria-hidden="true"><defs>
-    <clipPath id="bbClip"><path d="M72 40h56v22c26 10 40 26 40 52v128a24 24 0 0 1-24 24H56a24 24 0 0 1-24-24V114c0-26 14-42 40-52z"/></clipPath>
-    <linearGradient id="bbW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3fa2ff"/><stop offset="1" stop-color="#1565ff"/></linearGradient></defs>
-    <rect x="66" y="8" width="68" height="30" rx="8" fill="#2f7de1"/><rect x="66" y="22" width="68" height="4" fill="#5aa8ff"/>
-    <g clip-path="url(#bbClip)"><rect width="200" height="280" fill="#e6efff"/>
-      <g class="bbwater" style="transform:translateY(${y}px)"><path class="wv2" fill="#8cc4ff" d="M-200 10 q25 -12 50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 V300 H-200z"/><path class="wv1" fill="url(#bbW)" d="M-200 14 q25 10 50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 V300 H-200z"/>
-        <circle class="bub b1" cx="80" cy="120" r="4" fill="#fff" opacity=".35"/><circle class="bub b2" cx="120" cy="160" r="3" fill="#fff" opacity=".35"/><circle class="bub b3" cx="100" cy="200" r="5" fill="#fff" opacity=".3"/></g>
-      ${[1,2,3,4,5,6,7].map(i => `<g><line x1="36" x2="50" y1="${262 - 26.75 * i}" y2="${262 - 26.75 * i}" stroke="#fff" stroke-opacity=".8" stroke-width="2"/><text x="54" y="${266 - 26.75 * i}" font-size="11" fill="#fff" fill-opacity=".85">${i}</text></g>`).join('')}</g>
-    <path d="M72 40h56v22c26 10 40 26 40 52v128a24 24 0 0 1-24 24H56a24 24 0 0 1-24-24V114c0-26 14-42 40-52z" fill="none" stroke="#9cc6ff" stroke-width="3"/>
-    <path d="M48 120v110" stroke="#fff" stroke-opacity=".55" stroke-width="6" stroke-linecap="round"/></svg>`;
-}
-function openWater(h, d) {
-  const draw = el => {
-    const c = habCount(h, d), g = habGoal(h), gb = g / OZ, nb = Math.floor(c / OZ), cur = c === 0 ? 0 : (c % OZ || OZ);
-    const nr = (h.reminders || []).filter(r => r.on !== false).length;
-    el.querySelector('#wBody').innerHTML = `
-      <div class="wtop"><span>${d === todayISO() ? 'Hoy' : cap(fmtLong(d))}</span><b>${c} oz</b><span>de ${g} oz</span></div>
-      <div class="wbot">${bigBottle(c)}<div class="wnum"><b>${cur}</b><span>oz</span></div></div>
-      <div class="wbottles">${[...Array(Math.max(gb, nb))].map((_, i) => `<span class="${i < nb ? 'on' : ''} ${i === nb - 1 && cur === OZ ? 'pop' : ''}">${bottleSVG({id: 'w' + i, goal: 99}, i < nb ? OZ : 0)}</span>`).join('')}</div>
-      <div class="wmsg">${c >= g ? '🎉 ¡Meta del día cumplida!' : `${nb} de ${gb} botellas · faltan ${g - c} oz`}</div>
-      <div class="wacts"><button class="wsmall" id="wMinus" ${c ? '' : 'disabled'} aria-label="Quitar 1 onza">−1</button><button class="wdrink" id="wDrink">+ BEBER <small>1 oz</small></button><button class="wsmall" id="wRem" aria-label="Recordatorios">⏰${nr ? `<i>${nr}</i>` : ''}</button></div>`;
-    el.querySelector('#wDrink').onclick = () => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } habTap.direct = true; habTap(h, d); habTap.direct = false; draw(el); };
-    el.querySelector('#wMinus').onclick = () => { habUndo(h, d); draw(el); };
-    el.querySelector('#wRem').onclick = () => openWaterReminders(h);
-  };
-  openSheet({title: `💧 ${esc(h.name)}`, cls: 'watersheet', body: '<div id="wBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
-}
 /* ===== Recordatorios de agua (editables) ===== */
 const WATER_REM_DEF = [['08:00', 'Agua al despertar'], ['10:00', 'Media mañana'], ['12:00', 'Con el almuerzo'], ['15:00', 'Media tarde'], ['18:00', 'Antes de la cena'], ['20:00', 'Último vaso del día']];
 function openWaterReminders(h) {
@@ -1548,4 +1512,144 @@ function waterReminderList(days = 3) {
     }
   });
   return out.filter(x => !(x.d === todayISO() && habDone(x.h, x.d)) && x.at > now - 6 * 3600000);
+}
+
+const TIME_RE = /^(meditar|caminar|orar|hacer ejercicio|ejercicio|correr|estirar|yoga|respirar)/i;
+/* ===== Agua: botella que se sube deslizando ===== */
+function bigBottle(oz) {
+  const lvl = Math.max(0, Math.min(1, oz / OZ)), y = 262 - 214 * lvl;
+  return `<svg class="bigbot" viewBox="0 0 200 280" aria-hidden="true"><defs>
+    <clipPath id="bbClip"><path d="M72 40h56v22c26 10 40 26 40 52v128a24 24 0 0 1-24 24H56a24 24 0 0 1-24-24V114c0-26 14-42 40-52z"/></clipPath>
+    <linearGradient id="bbW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3fa2ff"/><stop offset="1" stop-color="#1565ff"/></linearGradient></defs>
+    <rect x="66" y="8" width="68" height="30" rx="8" fill="#2f7de1"/><rect x="66" y="22" width="68" height="4" fill="#5aa8ff"/>
+    <g clip-path="url(#bbClip)"><rect width="200" height="280" fill="#e6efff"/>
+      <g class="bbwater" style="transform:translateY(${y}px)"><path class="wv2" fill="#8cc4ff" d="M-200 10 q25 -12 50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 V300 H-200z"/><path class="wv1" fill="url(#bbW)" d="M-200 14 q25 10 50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 V300 H-200z"/>
+        <circle class="bub b1" cx="80" cy="120" r="4" fill="#fff" opacity=".35"/><circle class="bub b2" cx="120" cy="160" r="3" fill="#fff" opacity=".35"/><circle class="bub b3" cx="100" cy="200" r="5" fill="#fff" opacity=".3"/></g>
+      ${[1,2,3,4,5,6,7].map(i => `<g><line x1="36" x2="50" y1="${262 - 26.75 * i}" y2="${262 - 26.75 * i}" stroke="#fff" stroke-opacity=".8" stroke-width="2"/><text x="54" y="${266 - 26.75 * i}" font-size="11" fill="#fff" fill-opacity=".85">${i}</text></g>`).join('')}</g>
+    <path d="M72 40h56v22c26 10 40 26 40 52v128a24 24 0 0 1-24 24H56a24 24 0 0 1-24-24V114c0-26 14-42 40-52z" fill="none" stroke="#9cc6ff" stroke-width="3"/>
+    <path d="M48 120v110" stroke="#fff" stroke-opacity=".55" stroke-width="6" stroke-linecap="round"/></svg>`;
+}
+function openWater(h, d) {
+  let just = false;
+  const draw = el => {
+    const c = habCount(h, d), g = habGoal(h), gb = habBottles(h), nb = Math.floor(c / OZ);
+    const cur = just ? OZ : c % OZ, base = c - cur;
+    const nr = (h.reminders || []).filter(r => r.on !== false).length;
+    const hy = oz => 262 - 214 * (oz / OZ);
+    el.querySelector('#wBody').innerHTML = `
+      <div class="wtop"><span>${d === todayISO() ? 'Hoy' : cap(fmtLong(d))}</span><b>${c} oz</b><button class="wgoal" id="wGoal">de ${g} oz ✎</button></div>
+      <div class="wnum"><b id="wN">${cur}</b><span>oz</span></div><div class="wbot" id="wBot">${bigBottle(cur)}
+        <div class="whandle" id="wH" style="top:${hy(cur)}px" role="slider" aria-label="Onzas en la botella" aria-valuemin="0" aria-valuemax="${OZ}" aria-valuenow="${cur}" tabindex="0"><svg viewBox="0 0 24 24"><path d="M12 5l6 6H6zM12 19l-6-6h12z" fill="#fff"/></svg></div></div>
+      <div class="wtip">Desliza el botón verde para subir o bajar el agua</div>
+      <div class="wbottles">${[...Array(Math.max(gb, nb))].map((_, i) => `<span class="${i < nb ? 'on' : ''} ${just && i === nb - 1 ? 'pop' : ''}">${bottleSVG({id: 'w' + i, goal: 99}, i < nb ? OZ : 0)}</span>`).join('')}</div>
+      <div class="wmsg">${c >= g ? '🎉 ¡Meta del día cumplida!' : `${nb} de ${gb} botellas · faltan ${g - c} oz`}</div>
+      <div class="wacts"><button class="wsmall" id="wMinus" ${c ? '' : 'disabled'} aria-label="Quitar 1 onza">−1</button><button class="wdrink" id="wDrink">+ BEBER <small>1 oz</small></button><button class="wsmall" id="wRem" aria-label="Recordatorios">⏰${nr ? `<i>${nr}</i>` : ''}</button></div>`;
+    const commit = total => {
+      const before = habCount(h, d); h.log = h.log || {}; if (total > 0) h.log[d] = total; else delete h.log[d]; save('habits');
+      const filled = total > before && Math.floor(total / OZ) > Math.floor(before / OZ);
+      if (filled) { just = true; toast(`💧 ¡Botella ${Math.floor(total / OZ)} llena!`); if (total >= g && before < g) setTimeout(() => toast('🎉 ¡Meta de agua cumplida!'), 400); if (navigator.vibrate) try { navigator.vibrate(25); } catch (e) {} draw(el); setTimeout(() => { just = false; if (el.isConnected) draw(el); }, 1300); }
+      else { just = false; draw(el); }
+    };
+    // deslizar
+    const bot = el.querySelector('#wBot'), H = el.querySelector('#wH'), N = el.querySelector('#wN'), W = bot.querySelector('.bbwater');
+    let drag = false, val = cur;
+    const at = e => { const r = bot.getBoundingClientRect(), y = (e.clientY - r.top) * (280 / r.height); return Math.max(0, Math.min(OZ, Math.round((262 - y) / 214 * OZ))); };
+    const show = v => { val = v; N.textContent = v; H.style.top = hy(v) + 'px'; W.style.transform = `translateY(${hy(v)}px)`; H.setAttribute('aria-valuenow', v); };
+    bot.addEventListener('pointerdown', e => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } drag = true; bot.setPointerCapture(e.pointerId); bot.classList.add('drag'); show(at(e)); e.preventDefault(); });
+    bot.addEventListener('pointermove', e => { if (drag) { const v = at(e); if (v !== val && navigator.vibrate) try { navigator.vibrate(5); } catch (x) {} show(v); } });
+    const up = () => { if (!drag) return; drag = false; bot.classList.remove('drag'); if (val !== cur) commit(base + val); };
+    bot.addEventListener('pointerup', up); bot.addEventListener('pointercancel', up);
+    H.onkeydown = e => { if (e.key === 'ArrowUp') commit(base + Math.min(OZ, cur + 1)); if (e.key === 'ArrowDown') commit(base + Math.max(0, cur - 1)); };
+    el.querySelector('#wDrink').onclick = () => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } commit(habCount(h, d) + 1); };
+    el.querySelector('#wMinus').onclick = () => { just = false; commit(Math.max(0, habCount(h, d) - 1)); };
+    el.querySelector('#wRem').onclick = () => openWaterReminders(h);
+    el.querySelector('#wGoal').onclick = () => openWaterGoal(h, () => draw(el));
+  };
+  openSheet({title: `💧 ${esc(h.name)}`, cls: 'watersheet', body: '<div id="wBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
+}
+function openWaterGoal(h, done) {
+  const s = openSheet({title: '🎯 Meta de agua', body: `<div class="fld"><label>¿Cuántas onzas quieres tomar al día?</label><div class="habgoal"><button type="button" class="btn sec" id="gM">−</button><input class="inp rdnum" id="gV" type="number" inputmode="numeric" min="1" max="400" value="${habGoal(h)}"><button type="button" class="btn sec" id="gP">+</button><span class="hint">oz</span></div>
+    <div class="rdquick">${[32, 48, 64, 80, 100].map(n => `<button type="button" data-goz="${n}">${n}</button>`).join('')}</div><small class="hint" id="gB"></small></div>`,
+    foot: '<button class="btn" id="gS">Guardar meta</button>',
+    onMount: el => {
+      const q = x => el.querySelector(x), v = () => Math.max(1, Math.min(400, parseInt(q('#gV').value, 10) || 64));
+      const hint = () => q('#gB').textContent = `Son ${Math.ceil(v() / OZ)} botellas de 8 oz.`; hint();
+      q('#gV').oninput = hint; q('#gM').onclick = () => { q('#gV').value = Math.max(1, v() - 8); hint(); }; q('#gP').onclick = () => { q('#gV').value = v() + 8; hint(); };
+      el.querySelectorAll('[data-goz]').forEach(b => b.onclick = () => { q('#gV').value = b.dataset.goz; hint(); });
+      q('#gS').onclick = () => { h.goalOz = v(); h.goal = Math.ceil(h.goalOz / OZ); save('habits'); s.close(); toast(`🎯 Meta: ${h.goalOz} oz al día`); done && done(); };
+    }});
+}
+/* ===== Lectura: un libro con páginas, marcador y notas ===== */
+function openBook(h, d) {
+  h.notes = h.notes || []; let keepFn = null;
+  const draw = el => {
+    const c = habCount(h, d), tot = +h.bookPages || 0, bm = +h.bookmark || 0, pct = tot && bm ? Math.min(100, Math.round(bm / tot * 100)) : 0;
+    el.querySelector('#bkBody').innerHTML = `
+      <div class="book">
+        <div class="bpage left">
+          <div id="bkRib">${bm ? `<div class="ribbon" title="Marcador"><span>${bm}</span></div>` : ''}</div>
+          <input class="bktitle" id="bkT" value="${esc(h.book || '')}" placeholder="Título del libro" maxlength="60">
+          <div class="bkline"><span>Me quedé en la página</span></div>
+          <div class="bkmark"><button class="bkb" id="bmM" aria-label="Página anterior">‹</button><input class="bknum" id="bkB" type="number" inputmode="numeric" min="0" value="${bm || ''}" placeholder="—"><button class="bkb" id="bmP" aria-label="Página siguiente">›</button></div>
+          <div class="bkline"><span>de</span><input class="bktot" id="bkTot" type="number" inputmode="numeric" min="0" value="${tot || ''}" placeholder="¿?"><span>páginas</span></div>
+          <div id="bkPr">${tot ? `<div class="bkprog"><i style="width:${pct}%"></i></div><div class="bkpct">${pct >= 100 ? '🎉 ¡Terminado!' : pct + '% del libro'}</div>` : ''}</div>
+        </div>
+        <div class="bpage right">
+          <div class="bkline"><span>${d === todayISO() ? 'Hoy leí' : 'Ese día leí'}</span></div>
+          <div class="bktoday"><b id="bkC">${c}</b><span>páginas</span></div>
+          <div class="bkq">${[1, 5, 10, 20].map(n => `<button data-bq="${n}">+${n}</button>`).join('')}</div>
+          <button class="bkminus" id="bkM" ${c ? '' : 'disabled'}>−1</button>
+          <div class="bkall">Total leído: <b>${habPages(h)}</b></div>
+        </div>
+      </div>
+      <div class="bknotes"><div class="bknh"><b>📝 Notas del libro</b><span>${h.notes.length}</span></div>
+        <div class="bknadd"><input class="inp bknp" id="bnP" type="number" inputmode="numeric" placeholder="Pág." value="${bm || ''}"><input class="inp" id="bnT" placeholder="Escribe una idea, frase o pensamiento…" maxlength="300"><button class="btn" id="bnA" aria-label="Añadir nota">+</button></div>
+        ${h.notes.slice().reverse().map(n => `<div class="bknote"><span class="bkpg">${n.page ? 'pág. ' + n.page : '—'}</span><p>${esc(n.text)}</p><button class="wrdel" data-bnd="${n.id}" aria-label="Eliminar nota"><i class="xdel"></i></button></div>`).join('') || '<div class="hint" style="padding:6px 2px">Aún no hay notas. Guarda aquí lo que te gustó del libro.</div>'}
+      </div>
+      <div class="bkfoot"><button class="btn ghost" id="bkNew">📚 Empezar otro libro</button>${(h.shelf || []).length ? `<button class="btn ghost" id="bkShelf">Mis libros (${h.shelf.length})</button>` : ''}</div>`;
+    const q = x => el.querySelector(x);
+    const keep = () => { if (!q('#bkT')) return; h.book = q('#bkT').value.trim(); const b = parseInt(q('#bkB').value, 10); h.bookmark = b > 0 ? b : null; const t = parseInt(q('#bkTot').value, 10); h.bookPages = t > 0 ? t : null; save('habits'); };
+    keepFn = keep;
+    const addPages = n => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } keep(); const before = habCount(h, d); h.log = h.log || {}; const v = Math.max(0, before + n); if (v) h.log[d] = v; else delete h.log[d]; if (h.bookmark || n > 0) h.bookmark = Math.max(1, (h.bookmark || 0) + n); save('habits'); if (!before && v) toast(`📖 ¡${v} páginas! Sigue así`); draw(el); };
+    el.querySelectorAll('[data-bq]').forEach(b => b.onclick = () => addPages(+b.dataset.bq));
+    q('#bkM').onclick = () => addPages(-1);
+    q('#bmM').onclick = () => { keep(); h.bookmark = Math.max(1, (h.bookmark || 1) - 1); save('habits'); draw(el); };
+    q('#bmP').onclick = () => { keep(); h.bookmark = (h.bookmark || 0) + 1; save('habits'); draw(el); };
+    const bits = () => { const tot = +h.bookPages || 0, bm = +h.bookmark || 0, pct = tot && bm ? Math.min(100, Math.round(bm / tot * 100)) : 0;
+      q('#bkRib').innerHTML = bm ? `<div class="ribbon" title="Marcador"><span>${bm}</span></div>` : '';
+      q('#bkPr').innerHTML = tot ? `<div class="bkprog"><i style="width:${pct}%"></i></div><div class="bkpct">${pct >= 100 ? '🎉 ¡Terminado!' : pct + '% del libro'}</div>` : ''; };
+    ['#bkT', '#bkB', '#bkTot'].forEach(x => q(x).addEventListener('input', () => { keep(); bits(); }));
+    q('#bnA').onclick = () => { const t = q('#bnT').value.trim(); if (!t) { q('#bnT').focus(); return; } keep(); h.notes.push({id: uid(), page: parseInt(q('#bnP').value, 10) || null, text: t, date: todayISO()}); save('habits'); toast('📝 Nota guardada'); draw(el); };
+    q('#bnT').onkeydown = e => { if (e.key === 'Enter') q('#bnA').click(); };
+    el.querySelectorAll('[data-bnd]').forEach(b => b.onclick = async () => { if (await ask('¿Eliminar esta nota?', {yes: 'Eliminar'})) { h.notes = h.notes.filter(n => n.id !== b.dataset.bnd); save('habits'); draw(el); } });
+    q('#bkNew').onclick = async () => { keep(); if (!(await ask(`¿Empezar otro libro? “${esc(h.book || 'Este libro')}” y sus notas se guardan en “Mis libros”.`, {yes: 'Empezar otro'}))) return;
+      h.shelf = h.shelf || []; if (h.book || h.notes.length) h.shelf.push({id: uid(), book: h.book || 'Sin título', pages: h.bookPages, bookmark: h.bookmark, notes: h.notes, ended: todayISO()});
+      h.book = ''; h.bookmark = null; h.bookPages = null; h.notes = []; save('habits'); draw(el); setTimeout(() => { const t = q('#bkT'); t && t.focus(); }, 100); };
+    const sh = q('#bkShelf'); if (sh) sh.onclick = () => openSheet({title: '📚 Mis libros', body: h.shelf.slice().reverse().map(b => `<div class="card shelfbk"><b>📕 ${esc(b.book)}</b><small>${b.bookmark ? `Llegaste a la pág. ${b.bookmark}${b.pages ? ' de ' + b.pages : ''} · ` : ''}${fmtShort(b.ended)}</small>${(b.notes || []).map(n => `<div class="bknote"><span class="bkpg">${n.page ? 'pág. ' + n.page : '—'}</span><p>${esc(n.text)}</p></div>`).join('')}</div>`).join('')});
+  };
+  openSheet({title: `${h.icon} ${esc(h.name)}`, cls: 'booksheet', body: '<div id="bkBody"></div>', onMount: draw, onClose: () => { keepFn && keepFn(); if (UI.view === 'habitos') renderView(); }});
+}
+/* ===== Tiempo: aro con cronómetro (meditar, caminar, orar…) ===== */
+function openTimer(h, d) {
+  let tick = null;
+  const draw = el => {
+    const c = habCount(h, d), g = habGoal(h), run = UI.habTimer && UI.habTimer.id === h.id;
+    const extra = run ? (Date.now() - UI.habTimer.start) / 60000 : 0, shown = c + extra, p = Math.min(1, shown / g), R = 92, L = 2 * Math.PI * R;
+    const secs = run ? Math.floor((Date.now() - UI.habTimer.start) / 1000) : 0;
+    el.querySelector('#tmBody').innerHTML = `
+      <div class="tmring ${run ? 'run' : ''}"><svg viewBox="0 0 220 220"><circle cx="110" cy="110" r="${R}" fill="none" stroke="${hexA(h.color, .2)}" stroke-width="16"/><circle cx="110" cy="110" r="${R}" fill="none" stroke="${h.color}" stroke-width="16" stroke-linecap="round" stroke-dasharray="${L}" stroke-dashoffset="${L * (1 - p)}" transform="rotate(-90 110 110)" style="transition:stroke-dashoffset .5s"/></svg>
+        <div class="tmin"><span class="tmic">${h.icon}</span><b>${Math.floor(shown)}</b><span>de ${g} min</span>${run ? `<em>⏱ ${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}</em>` : ''}</div></div>
+      <div class="wmsg">${shown >= g ? '🎉 ¡Meta del día cumplida!' : `Faltan ${Math.ceil(g - shown)} min`}</div>
+      <div class="bkq tmq"><button data-tq="-5">−5</button><button data-tq="5">+5</button><button data-tq="10">+10</button><button data-tq="15">+15</button></div>
+      <div class="wacts"><button class="wdrink tmgo" id="tmGo" style="--g1:${h.color}">${run ? '⏸ PARAR' : '▶ EMPEZAR'}</button></div>`;
+    const q = x => el.querySelector(x);
+    el.querySelectorAll('[data-tq]').forEach(b => b.onclick = () => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } const before = habCount(h, d), v = Math.max(0, before + +b.dataset.tq); h.log = h.log || {}; if (v) h.log[d] = v; else delete h.log[d]; save('habits'); if (v >= g && before < g) toast(`${h.icon} ¡${h.name} listo!`); draw(el); });
+    q('#tmGo').onclick = () => {
+      if (d > todayISO()) { toast('Ese día todavía no llega'); return; }
+      if (run) { const m = Math.round((Date.now() - UI.habTimer.start) / 60000); UI.habTimer = null; const before = habCount(h, d); if (m > 0) { h.log = h.log || {}; h.log[d] = before + m; save('habits'); toast(`${h.icon} +${m} min`); if (before + m >= g && before < g) setTimeout(() => toast(`🎉 ¡${h.name} listo!`), 400); } else toast('Menos de un minuto: no se anotó'); }
+      else UI.habTimer = {id: h.id, start: Date.now(), d};
+      draw(el);
+    };
+  };
+  openSheet({title: `${h.icon} ${esc(h.name)}`, cls: 'timersheet', body: '<div id="tmBody"></div>', onMount: el => { draw(el); tick = setInterval(() => { if (!el.isConnected) { clearInterval(tick); return; } if (UI.habTimer && UI.habTimer.id === h.id) draw(el); }, 1000); }, onClose: () => { clearInterval(tick); if (UI.view === 'habitos') renderView(); }});
 }
