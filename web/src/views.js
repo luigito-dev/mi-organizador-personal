@@ -28,7 +28,6 @@ function shell() {
     <aside class="side"><div class="brand">${LOGO}<span>Mi Organizador<br>Personal</span></div><nav class="nav" id="nav">${SECTIONS.map(([k, n, i]) => `<button data-go="${k}">${ic(i)}${n}</button>`).join('')}</nav><div class="store storeLbl"></div></aside>
     <main class="main"><header class="top"><h1 id="vt"></h1><button class="iconbtn lsbtn hidden" id="lsBtn" aria-label="Hoy y mis listas"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="4" height="4" rx="1"/><path d="M4.5 7l1 1 1.5-2"/><rect x="3.5" y="14" width="4" height="4" rx="1"/><path d="M11 7h9M11 16h9"/></svg><span class="lsbadge" id="lsBadge"></span></button><button class="iconbtn sopen" id="sOpen" aria-label="Buscar">${ic('search')}</button><div class="search" id="sbox">${ic('search', 'si')}<input id="q" type="search" placeholder="Buscar…" autocomplete="off" aria-label="Buscar"><button class="sx hidden" id="qx" aria-label="Borrar">✕</button><div class="results hidden" id="res"></div></div></header>
     <section class="view" id="view"></section></main>
-    <button class="pinedge" id="pinEdge" aria-label="Abrir fijados"></button>
     <nav class="bottom" id="bnav">${[['dia', 'Mi Día', 'dia'], ['calendario', 'Calendario', 'cal'], ['tareas', 'Tareas', 'tareas'], ['notas', 'Notas', 'notas'], ['mas', 'Más', 'mas']].map(([k, n, i]) => `<button data-go="${k}">${ic(i)}${n}</button>`).join('')}</nav>
     <button class="fab" id="fab" aria-label="Añadir">+</button><div id="mini"></div><div class="toasts" id="toasts"></div></div>`;
   document.addEventListener('click', e => {
@@ -47,7 +46,6 @@ function shell() {
   };
   const q = $('#q');
   $('#lsBtn').onclick = openListsPopup;
-  $('#pinEdge').onclick = openListsPopup;
   $('#sOpen').onclick = () => { const t = $('.top'); t.classList.toggle('srch'); if (t.classList.contains('srch')) q.focus(); else { q.value = ''; UI.q = ''; $('#res').classList.add('hidden'); renderView(); } };
   q.addEventListener('input', () => { UI.q = q.value; $('#qx').classList.toggle('hidden', !UI.q); if (UI.view === 'tareas' || UI.view === 'notas') renderView(); else globalResults(); });
   q.addEventListener('focus', () => { if (UI.q && UI.view !== 'tareas' && UI.view !== 'notas') globalResults(); });
@@ -885,7 +883,7 @@ function dayLists(box) {
   if (!box) return;
   const t = todayISO(), lists = S.lists.filter(l => !l.hideOnDay);
   if (!UI.popTab || (UI.popTab !== 'hoy' && UI.popTab !== 'cal' && !/^(reto|hab):/.test(String(UI.popTab)) && !lists.some(l => l.id === UI.popTab))) UI.popTab = 'hoy';
-  const tabs = `<div class="qtabs hscroll">${pins().hoy === false ? '' : `<button class="qtab ${UI.popTab === 'hoy' ? 'on' : ''}" data-qt="hoy" style="--lc:var(--blue)">☀️ Hoy</button>`}${lists.map(l => { const n = l.items.filter(i => !i.done).length; return `<button class="qtab ${UI.popTab === l.id ? 'on' : ''}" data-qt="${l.id}" style="--lc:${l.color}">${l.icon}<span class="tl"> ${esc(l.name)}</span>${n ? ` <span class="cnt">${n}</span>` : ''}</button>`; }).join('')}${retoHabits().map(h => `<button class="qtab ${UI.popTab === 'reto:' + h.id ? 'on' : ''}" data-qt="reto:${h.id}" style="--lc:${h.challenge.color || '#d99400'}">🏆<span class="tl"> Reto</span></button>`).join('')}${pinHabits().map(h => `<button class="qtab ${UI.popTab === 'hab:' + h.id ? 'on' : ''}" data-qt="hab:${h.id}" style="--lc:${h.color}">${h.icon}<span class="tl"> ${esc(h.name.split(' ').slice(0, 2).join(' '))}</span></button>`).join('')}${pins().cal ? `<button class="qtab ${UI.popTab === 'cal' ? 'on' : ''}" data-qt="cal" style="--lc:var(--teal,#0f9d8f)">📅<span class="tl"> Calendario</span></button>` : ''}<button class="qtab qpin" data-qpins aria-label="Escoger qué fijar">📌</button></div>`;
+  const tabs = `<div class="qtabs hscroll">${pins().hoy === false ? '' : `<button class="qtab ${UI.popTab === 'hoy' ? 'on' : ''}" data-qt="hoy" style="--lc:var(--blue)">☀️ Hoy</button>`}${lists.map(l => { const n = l.items.filter(i => !i.done).length; return `<button class="qtab ${UI.popTab === l.id ? 'on' : ''}" data-qt="${l.id}" style="--lc:${l.color}">${l.icon}<span class="tl"> ${esc(l.name)}</span>${n ? ` <span class="cnt">${n}</span>` : ''}</button>`; }).join('')}${retoHabits().map(h => `<button class="qtab ${UI.popTab === 'reto:' + h.id ? 'on' : ''}" data-qt="reto:${h.id}" style="--lc:${h.challenge.color || '#d99400'}">🏆<span class="tl"> Reto</span></button>`).join('')}${pinHabits().map(h => `<button class="qtab ${UI.popTab === 'hab:' + h.id ? 'on' : ''}" data-qt="hab:${h.id}" style="--lc:${h.color}">${h.icon}<span class="tl"> ${esc(h.name.split(' ').slice(0, 2).join(' '))}</span></button>`).join('')}${pins().cal ? `<button class="qtab ${UI.popTab === 'cal' ? 'on' : ''}" data-qt="cal" style="--lc:var(--teal,#0f9d8f)">📅<span class="tl"> Calendario</span></button>` : ''}</div>`;
   if (UI.popTab === 'hoy' && pins().hoy === false) { const first = [...lists.map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(pins().cal ? ['cal'] : [])][0]; if (first) UI.popTab = first; }
   const wireTabs = () => { box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; dayLists(box); listBadge(); }); box.querySelectorAll('[data-qpins]').forEach(b => b.onclick = () => openPinManager(() => dayLists(box))); };
   if (String(UI.popTab).startsWith('hab:')) { const h = S.habits.find(x => 'hab:' + x.id === UI.popTab); if (h) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="pinhost" id="pinHost"></div>`; pinHabit(h, box.querySelector('#pinHost'), () => dayLists(box)); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
@@ -983,6 +981,7 @@ function vDia2(v) {
   v.innerHTML = `${heroHTML()}
     <div class="card daycard">
       <div class="dstrip hscroll" id="dstrip">${strip.map(x => { const it = sortedDay(x, {all: true}); const hol = holidaysOn(x).length; return `<button class="dpill ${x === d ? 'on' : ''} ${x === t ? 'today' : ''} ${hol ? 'holi' : ''}" data-dd="${x}"><span class="dw">${x === t ? 'Hoy' : DCORTO[dow(x)]}</span><span class="dn">${parseISO(x).getDate()}</span>${daySticker(x) ? `<span class="dstk">${daySticker(x)}</span>` : `<span class="ddots">${it.slice(0, 3).map(i => `<i style="background:${colorOf(i.k, i.x)}"></i>`).join('')}${hol ? '<i style="background:var(--red)"></i>' : ''}</span>`}</button>`; }).join('')}<button class="dpill more" id="dMore"><span class="dw">Otra</span><span class="dn">📅</span><span class="ddots"></span></button></div>
+      <div class="pinbar hscroll" id="pinbar">${pinChips()}</div>
       <div class="dhead"><div><b>${dayName}</b><span class="muted"> · ${parseISO(d).getDate()} de ${MESES[parseISO(d).getMonth()]}</span>${ho.map(h => ` <span class="tag" style="background:var(--holi);color:var(--holiText)">🎉 ${esc(h.name)}</span>`).join('')}</div>
         <div class="muted small">${[nPend ? `${nPend} por hacer` : '', nDone ? `${nDone} hecha${nDone === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ')}</div></div>
       <div class="qadd daddbar"><input id="qIn" placeholder="Añadir a ${isToday ? 'hoy' : dayName.toLowerCase()}… (ej. dentista a las 3 pm)" maxlength="140" autocomplete="off"><button class="btn" id="qAdd" aria-label="Añadir">+</button></div>
@@ -997,6 +996,7 @@ function vDia2(v) {
   const fm = $('#freeMsg', v);
   if (fm) { clearTimeout(UI.freeTimer); UI.freeTimer = setTimeout(() => { const m = $('#freeMsg'); if (m) { m.classList.add('fade'); setTimeout(() => m.remove(), 600); } }, Math.max(0, 35000 - (Date.now() - UI.freeShown[d]))); }
   v.querySelectorAll('[data-dd]').forEach(b => b.onclick = () => { UI.daySel = b.dataset.dd; renderView(); });
+  wirePinBar(v);
   const sel = v.querySelector('.dpill.on'); if (sel && sel.scrollIntoView) { const strip = $('#dstrip', v); strip.scrollLeft = Math.max(0, sel.offsetLeft - 60); }
   $('#dMore', v).onclick = () => { const i = document.createElement('input'); i.type = 'date'; i.min = t; i.style.cssText = 'position:fixed;opacity:0;left:50%;top:50%'; document.body.appendChild(i); i.onchange = () => { if (i.value) { UI.daySel = i.value; renderView(); } i.remove(); }; i.onblur = () => setTimeout(() => i.remove(), 500); try { i.showPicker(); } catch (e) { i.click(); } };
   const at = $('#allToday', v); if (at) at.onclick = () => { S.tasks.filter(isLate).forEach(x => x.date = t); save('tasks'); renderView(); toast('Atrasadas movidas a hoy'); };
@@ -1892,11 +1892,11 @@ function openChallengeForm(h, done) {
   let freq = c.freq || 'semana', style = c.style === 'variado' ? 'variado' : 'igual', color = c.color || '#d99400', span = c.span || 12, view = c.ready ? 'circulos' : c.view || 'circulos', tab = c.vals && !c.ready ? 'crear' : 'listos';
   const s = openSheet({title: '🏆 Reto de ahorro', body: `
     <div class="chcolrow"><span>Color</span><div class="chcols hscroll">${CH_COLORS.map(x => `<button type="button" data-chcol="${x}" class="${(c.color || '#d99400') === x ? 'on' : ''}" style="--sw:${x}" aria-label="Color"></button>`).join('')}</div></div>${c.vals ? '<button type="button" class="btn ghost sm chcolsave" id="chColSave">Aplicar color a mi reto actual</button>' : ''}
-    <div class="seg chtabs"><button type="button" data-ctab="listos" class="${tab === 'listos' ? 'on' : ''}">🏆 Retos listos</button><button type="button" data-ctab="crear" class="${tab === 'crear' ? 'on' : ''}">✏️ Crear el mío</button></div>
+    ${c.ready ? '' : `<div class="seg chtabs"><button type="button" data-ctab="listos" class="${tab === 'listos' ? 'on' : ''}">🏆 Retos listos</button><button type="button" data-ctab="crear" class="${tab === 'crear' ? 'on' : ''}">✏️ Crear el mío</button></div>`}
     <div data-tp="listos">${c.ready ? `<div class="chnote">🔒 Tu reto actual, <b>${esc(c.name)}</b>, es un reto listo: sus cantidades no se cambian. Puedes cambiarle el color o escoger otro reto.</div>` : ''}    <div class="chready"><div class="hint" style="margin:0 2px 4px">Toca uno para empezar. Sus cantidades ya vienen puestas.</div>${CH_READY.map((r, i) => { const t = r.vals().reduce((a, b) => a + b, 0); return `<button type="button" class="chrd" data-crd="${i}"><span class="chrdi ${r.view}">${r.view === 'sobres' ? ENV_SVG : r.view === 'circulos' ? '<b></b><b></b><b></b>' : '<i></i><i></i>'}</span><span class="chrdt"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span><span class="chrdm">${money(t)}</span></button>`; }).join('')}</div></div>
     <div class="chown" data-tp="crear">
       <div class="chstep"><span>1</span><label>¿Cuánto quieres ahorrar?</label></div>
-      <input class="inp rdnum chbig" id="chA" readonly inputmode="none" data-wheel data-min="10" data-max="50000" data-step="10" data-unit="$" data-title="¿Cuánto quieres ahorrar?" value="${c.amount || 1000}">
+      <input class="inp rdnum chbig" id="chA" readonly inputmode="none" data-wheel data-min="10" data-max="50000" data-step="10" data-unit="$" data-title="¿Cuánto quieres ahorrar?" value="${!c.ready && c.amount ? c.amount : 1000}">
       <div class="chstep"><span>2</span><label>¿En cuánto tiempo?</label></div>
       <div class="chchips">${CH_SPANS.map(([m, n]) => `<button type="button" data-csp="${m}" class="${span === m ? 'on' : ''}">${n}</button>`).join('')}</div>
       <div class="chstep"><span>3</span><label>¿Cada cuánto ahorras?</label></div>
@@ -1928,14 +1928,14 @@ function openChallengeForm(h, done) {
       el.querySelectorAll('[data-crd]').forEach(b => b.onclick = async () => {
         const r = CH_READY[+b.dataset.crd], vals = r.vals(), t = Math.round(vals.reduce((a, x) => a + x, 0) * 100) / 100;
         if (h.challenge && Object.keys(h.challenge.marked || {}).length && !(await ask(`¿Cambiar tu reto actual por “${esc(r.name)}”? Empieza de nuevo sin casillas marcadas.`, {yes: 'Cambiar'}))) return;
-        h.challenge = {ready: 1, name: r.name, title: r.title || money(t), sub: r.sub, amount: t, style: r.style || 'lista', vals, marked: {}, start: todayISO(), freq: r.freq, view: r.view, color, indep: 1, indep2: 1};
+        h.challenge = {ready: 1, cols: r.cols, name: r.name, title: r.title || money(t), sub: r.sub, amount: t, style: r.style || 'lista', vals, marked: {}, start: todayISO(), freq: r.freq, view: r.view, color, indep: 1, indep2: 1};
         save('habits'); s.close(); toast(`🏆 ${r.name}`); done && done(); openChallengeTable(h, todayISO(), done);
       });
       q('#chA').addEventListener('change', upd); upd(); showTab();
       q('#chS').onclick = () => {
         const n = N(), t = A(); if (!t) { toast('Pon una cantidad'); return; }
         const F = CH_FREQ[freq], sp = (CH_SPANS.find(x => x[0] === span) || [0, span + ' meses'])[1];
-        h.challenge = {span, name: `${money(t)} en ${sp}`, title: money(t), sub: `${sp} · cada ${F[1]}`, amount: t, style, vals: vals(), marked: {}, start: todayISO(), freq, view, color, indep: 1, indep2: 1};
+        h.challenge = {span, fixR: 1, name: `${money(t)} en ${sp}`, title: money(t), sub: `${sp} · cada ${F[1]}`, amount: t, style, vals: vals(), marked: {}, start: todayISO(), freq, view, color, indep: 1, indep2: 1};
         save('habits'); s.close(); toast('🏆 Reto creado'); done && done(); openChallengeTable(h, todayISO(), done);
       };
       const del = q('#chDel'); if (del) del.onclick = async () => { if (await ask('¿Quitar el reto y sus casillas marcadas? Tu ahorro regular no cambia.', {yes: 'Quitar'})) { h.challenge = null; save('habits'); s.close(); done && done(); } };
@@ -1943,7 +1943,8 @@ function openChallengeForm(h, done) {
 }
 function chDate(ch, i) { if (ch.freq === 'mes') { const x = parseISO(ch.start || todayISO()); x.setMonth(x.getMonth() + i); return iso(x); } return addDays(ch.start || todayISO(), i * (ch.freq === 'semana' ? 7 : 1)); }
 function chCur(ch) { let k; if (ch.freq === 'mes') { const a = parseISO(ch.start || todayISO()), b = new Date(); k = (b.getFullYear() - a.getFullYear()) * 12 + b.getMonth() - a.getMonth() - (b.getDate() < a.getDate() ? 1 : 0); } else k = Math.floor(dayDiff(ch.start || todayISO(), todayISO()) / (ch.freq === 'semana' ? 7 : 1)); return Math.max(0, Math.min(ch.vals.length - 1, k)); }
-function chMigrate(h) { const ch = h.challenge; if (ch && !ch.indep2) { ch.indep2 = 1; if (+h.saveGoal === +ch.amount && !h.saveFor) { h.saveGoal = null; h.saveBy = null; } save('habits'); } if (!ch || ch.indep) return; ch.indep = 1; ch.freq = ch.freq || 'dia'; if ((h.moves || []).some(m => m.cell != null)) { h.moves = h.moves.filter(m => m.cell == null); recalcSave(h); } save('habits'); }
+function chMigrate(h) { const ch = h.challenge;
+  if (ch && !ch.ready && !ch.fixR && !Object.keys(ch.marked || {}).length) { ch.fixR = 1; const r = CH_READY.find(r => Math.round(r.vals().reduce((a, b) => a + b, 0)) === Math.round(ch.amount) && r.view === ch.view); if (r) { const v = r.vals(); Object.assign(ch, {ready: 1, name: r.name, title: r.title || money(ch.amount), sub: r.sub, vals: v, freq: r.freq, cols: r.cols, style: 'lista'}); } save('habits'); } if (ch && !ch.indep2) { ch.indep2 = 1; if (+h.saveGoal === +ch.amount && !h.saveFor) { h.saveGoal = null; h.saveBy = null; } save('habits'); } if (!ch || ch.indep) return; ch.indep = 1; ch.freq = ch.freq || 'dia'; if ((h.moves || []).some(m => m.cell != null)) { h.moves = h.moves.filter(m => m.cell == null); recalcSave(h); } save('habits'); }
 function challengeBox(box, h, tabs, onChange) {
   const ch = h.challenge; chMigrate(h);
   const N = ch.vals.length, n = Object.keys(ch.marked || {}).length, sv = chSaved(ch), cur = chCur(ch), per = ch.freq === 'semana' ? 'Semana' : ch.freq === 'mes' ? 'Mes' : 'Día';
@@ -1952,7 +1953,7 @@ function challengeBox(box, h, tabs, onChange) {
     <button class="qhead chedit" data-ched style="--lc:${col}" aria-label="Editar el reto"><span class="qtitle">RETO ${esc(money(ch.amount))}</span><span class="qcount">${n}/${N}</span><span class="chpen">✎</span></button>
     <div class="chsub"><b>${money(sv)}</b> ahorrado de ${money(ch.amount)} · ${ch.sub ? esc(ch.sub) : `${ch.style === 'igual' ? 'fijo' : 'variado'} ${ch.freq === 'semana' ? 'por semana' : ch.freq === 'mes' ? 'por mes' : 'por día'}`}</div>
     <div class="habbar chbar"><i style="width:${sv / ch.amount * 100}%"></i></div>
-    ${ch.view === 'circulos' || ch.view === 'sobres' ? `<div class="qrows chrows chcirc"><div class="chposter"><b>${esc(ch.title || money(ch.amount))}</b><i>Reto de ahorro</i><small>${esc(ch.sub || ch.name.replace(money(ch.amount) + ' en ', ''))}</small></div><div class="chdots ${ch.view === 'sobres' ? 'env' : ''}">${ch.vals.map((v, i) => ch.view === 'sobres' ? `<button class="chenv ${ch.marked[i] ? 'on' : ''}" data-chc="${i}" title="Sobre ${i + 1}">${envSVG(!ch.marked[i], money(v).replace('.00', ''))}${ch.marked[i] ? '' : `<span>${money(v).replace('.00', '')}</span>`}</button>` : `<button class="chdot ${ch.marked[i] ? 'on' : ''} ${i === cur && !ch.marked[i] ? 'cur' : ''}" data-chc="${i}" title="${per} ${i + 1} · ${fmtShort(chDate(ch, i))}">${money(v).replace('.00', '')}</button>`).join('')}<span class="chdeq">= ${esc(money(ch.amount))}</span></div><div class="chtip">Toca ${ch.view === 'sobres' ? 'un sobre' : 'un círculo'} cada ${ch.freq === 'semana' ? 'semana' : ch.freq === 'mes' ? 'mes' : 'día'}, ahorra esa cantidad y se colorea.</div></div>` : `<div class="qrows chrows">${ch.vals.map((v, i) => { const on = !!ch.marked[i], dt = chDate(ch, i); return `<div class="qrow ${on ? 'done' : ''} ${i === cur && !on ? 'cur' : ''} ${!on && i < cur ? 'late' : ''}" data-chc="${i}" role="button" tabindex="0"><span class="qbox"></span><span class="qtx"><span class="hl" style="--hlbg:${i === cur ? 'rgba(255,207,63,.55)' : 'transparent'}">${per} ${i + 1}</span> <span class="qtime">${i === cur ? (ch.freq === 'semana' ? 'esta semana' : ch.freq === 'mes' ? 'este mes' : 'hoy') + ' · ' : ''}${fmtShort(dt)}</span></span><b class="chamt">${money(v)}</b></div>`; }).join('')}</div>`}
+    ${ch.view === 'circulos' || ch.view === 'sobres' ? `<div class="qrows chrows chcirc"><div class="chposter"><b>${esc(ch.title || money(ch.amount))}</b><i>Reto de ahorro</i><small>${esc(ch.sub || ch.name.replace(money(ch.amount) + ' en ', ''))}</small></div><div class="chdots ${ch.view === 'sobres' ? 'env' : ''} ${ch.cols ? 'cols' : ''}" style="${ch.cols ? `--cols:${ch.cols}` : ''}">${ch.vals.map((v, i) => ch.view === 'sobres' ? `<button class="chenv ${ch.marked[i] ? 'on' : ''}" data-chc="${i}" title="Sobre ${i + 1}">${envSVG(!ch.marked[i], money(v).replace('.00', ''))}${ch.marked[i] ? '' : `<span>${money(v).replace('.00', '')}</span>`}</button>` : `<button class="chdot ${ch.marked[i] ? 'on' : ''} ${i === cur && !ch.marked[i] ? 'cur' : ''}" data-chc="${i}" title="${per} ${i + 1} · ${fmtShort(chDate(ch, i))}">${money(v).replace('.00', '')}</button>`).join('')}<span class="chdeq">= ${esc(money(ch.amount))}</span></div><div class="chtip">Toca ${ch.view === 'sobres' ? 'un sobre' : 'un círculo'} cada ${ch.freq === 'semana' ? 'semana' : ch.freq === 'mes' ? 'mes' : 'día'}, ahorra esa cantidad y se colorea.</div></div>` : `<div class="qrows chrows">${ch.vals.map((v, i) => { const on = !!ch.marked[i], dt = chDate(ch, i); return `<div class="qrow ${on ? 'done' : ''} ${i === cur && !on ? 'cur' : ''} ${!on && i < cur ? 'late' : ''}" data-chc="${i}" role="button" tabindex="0"><span class="qbox"></span><span class="qtx"><span class="hl" style="--hlbg:${i === cur ? 'rgba(255,207,63,.55)' : 'transparent'}">${per} ${i + 1}</span> <span class="qtime">${i === cur ? (ch.freq === 'semana' ? 'esta semana' : ch.freq === 'mes' ? 'este mes' : 'hoy') + ' · ' : ''}${fmtShort(dt)}</span></span><b class="chamt">${money(v)}</b></div>`; }).join('')}</div>`}
     <div class="row qfoot"><button class="btn ghost sm" id="chEd">Cambiar reto</button><span class="sp"></span>${n === N ? '<b style="color:#1e7a36">🎉 ¡Reto completado!</b>' : `<span class="qtime">Faltan ${money(ch.amount - sv)}</span>`}</div>`;
   box.querySelectorAll('[data-ched]').forEach(b => b.onclick = e => { e.stopPropagation(); box.querySelector('#chEd').click(); });
   box.querySelectorAll('[data-chv]').forEach(b => b.onclick = () => { ch.view = b.dataset.chv; save('habits'); box._scrolled = 0; challengeBox(box, h, tabs, onChange); });
@@ -2049,13 +2050,13 @@ const retoHabits = () => (S.habits || []).filter(h => h.challenge && h.challenge
 const ENV_SVG = '<svg class="envi" viewBox="0 0 40 28" aria-hidden="true"><rect x="1.5" y="1.5" width="37" height="25" rx="3" fill="var(--envf,none)" stroke="currentColor" stroke-width="2.4"/><path d="M2.5 3l17.5 13 17.5-13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg>';
 const rng = (a, b, f = x => x) => Array.from({length: b - a + 1}, (_, i) => f(a + i));
 const CH_READY = [
-  {name: 'Reto de los 100 sobres', sub: '$1 al $100 · un sobre al día', freq: 'dia', view: 'sobres', vals: () => rng(1, 100)},
-  {name: 'Reto de los 50 sobres', sub: '$1 al $50 · un sobre al día', freq: 'dia', view: 'sobres', vals: () => rng(1, 50)},
-  {name: 'Reto de 52 semanas', sub: '$1 la 1.ª semana… $52 la última', freq: 'semana', view: 'circulos', vals: () => rng(1, 52)},
-  {name: '$1,000 en un año', title: '$1,000', sub: '$20 cada semana · 50 semanas', freq: 'semana', view: 'circulos', vals: () => Array(50).fill(20)},
-  {name: '$800 en 36 días', title: '$800 en 36 días', sub: 'De $10 a $40 cada día', freq: 'dia', view: 'circulos', vals: () => [20, 10, 15, 20, 25, 20, 25, 10, 25, 15, 20, 30, 20, 10, 30, 15, 20, 25, 40, 15, 10, 40, 25, 30, 20, 10, 15, 30, 30, 10, 30, 40, 25, 20, 40, 15]},
-  {name: '$1,000 en 30 días', title: '$1,000 en 30 días', sub: 'Cantidades variadas cada día', freq: 'dia', view: 'circulos', vals: () => chValues(1000, 30, 'variado')},
-  {name: '$500 en 100 días', title: '$500', sub: 'Cantidades variadas · 100 días', freq: 'dia', view: 'circulos', vals: () => chValues(500, 100, 'variado')},
+  {cols: 10, name: 'Reto de los 100 sobres', sub: '$1 al $100 · un sobre al día', freq: 'dia', view: 'sobres', vals: () => rng(1, 100)},
+  {cols: 10, name: 'Reto de los 50 sobres', sub: '$1 al $50 · un sobre al día', freq: 'dia', view: 'sobres', vals: () => rng(1, 50)},
+  {cols: 7, name: 'Reto de 52 semanas', sub: '$1 la 1.ª semana… $52 la última', freq: 'semana', view: 'circulos', vals: () => rng(1, 52)},
+  {cols: 7, name: '$1,000 en un año', title: '$1,000', sub: '$20 cada semana · 50 semanas', freq: 'semana', view: 'circulos', vals: () => Array(50).fill(20)},
+  {cols: 7, name: '$800 en 36 días', title: '$800 en 36 días', sub: 'De $10 a $40 cada día', freq: 'dia', view: 'circulos', vals: () => [20, 10, 15, 20, 25, 20, 25, 10, 25, 15, 20, 30, 20, 10, 30, 15, 20, 25, 40, 15, 10, 40, 25, 30, 20, 10, 15, 30, 30, 10, 30, 40, 25, 20, 40, 15]},
+  {cols: 7, name: '$1,000 en 30 días', title: '$1,000 en 30 días', sub: 'Cantidades variadas cada día', freq: 'dia', view: 'circulos', vals: () => chValues(1000, 30, 'variado')},
+  {cols: 7, name: '$500 en 100 días', title: '$500', sub: 'Cantidades variadas · 100 días', freq: 'dia', view: 'circulos', vals: () => chValues(500, 100, 'variado')},
   {name: '$1,200 en 12 meses', title: '$1,200', sub: '$100 cada mes', freq: 'mes', view: 'circulos', vals: () => Array(12).fill(100)},
   {name: '$5,000 en un año', title: '$5,000', sub: 'Variado cada semana · 52 semanas', freq: 'semana', view: 'lista', vals: () => chValues(5000, 52, 'variado')}
 ];
@@ -2133,3 +2134,17 @@ function openPinManager(done) {
   document.addEventListener('touchmove', e => { if (sx == null) return; const t = e.touches[0], dx = sx - t.clientX, dy = Math.abs(t.clientY - sy); if (dy > 40) { sx = null; return; } if (dx > 55 && Date.now() - st < 800) { sx = null; openListsPopup(); } }, {passive: true});
   document.addEventListener('touchend', () => { sx = null; }, {passive: true});
 })();
+
+/* Fila de fijados debajo de los días en Mi Día */
+function pinChips() {
+  const t = todayISO(), P = pins(), out = [];
+  if (P.cal) out.push(['cal', '📅', 'Calendario', '']);
+  S.lists.filter(l => !l.hideOnDay).forEach(l => { const n = l.items.filter(i => !i.done).length; out.push([l.id, l.icon, l.name, n ? n : '']); });
+  retoHabits().forEach(h => { const ch = h.challenge; out.push(['reto:' + h.id, '🏆', 'Reto', `${Object.keys(ch.marked || {}).length}/${ch.vals.length}`]); });
+  pinHabits().forEach(h => { const k = habKind(h), c = habCount(h, t); out.push(['hab:' + h.id, h.icon, h.name.split(' ').slice(0, 2).join(' '), habDone(h, t) ? '✓' : k === 'agua' ? `${c} oz` : isTimeKind(h) ? `${c} min` : '']); });
+  return out.map(([k, ic, n, st]) => `<button class="pinchip" data-pin="${k}">${ic} <span>${esc(n)}</span>${st !== '' ? `<b>${st}</b>` : ''}</button>`).join('') + '<button class="pinchip add" data-pinmgr aria-label="Escoger qué fijar">📌 Fijar</button>';
+}
+function wirePinBar(v) {
+  v.querySelectorAll('[data-pin]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.pin; openListsPopup(); });
+  v.querySelectorAll('[data-pinmgr]').forEach(b => b.onclick = () => openPinManager(() => renderView()));
+}

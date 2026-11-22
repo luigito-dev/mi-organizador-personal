@@ -1232,3 +1232,16 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 
 .qtabs .qtab:not(.on) .tl{display:none}
 .qtabs .qtab{transition:all .15s}
+
+.pinbar{display:flex;gap:6px;margin:10px 0 2px;overflow-x:auto;scrollbar-width:none;padding:2px}
+.pinchip{flex:none;display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:999px;background:var(--soft);font-size:13.5px;font-weight:600;white-space:nowrap}
+.pinchip b{background:var(--card);border-radius:999px;padding:0 7px;font-size:12px;color:var(--blue)}
+.pinchip.add{background:transparent;border:1.5px dashed var(--line);color:var(--muted)}
+.chdots.cols{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:6px 3px;justify-items:center}
+.chdots.cols .chdot{width:100%;max-width:52px;height:auto;aspect-ratio:1;font-size:clamp(10px,3vw,13.5px)}
+.chdots.cols.env{gap:4px 2px}
+.chdots.cols .chenv{width:100%}
+.chdots.cols .chenv .envi{width:100%;max-width:40px;height:auto}
+.chdots.cols .chenv span{font-size:clamp(9px,2.6vw,12px)}
+.chdots.cols .chdeq{grid-column:span 4;justify-content:center}
+.chedit .qtitle{font-size:clamp(24px,7.5vw,34px);max-width:none}
