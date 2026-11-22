@@ -24,7 +24,7 @@ with sync_playwright() as p:
     y8=box['y']+(262-214)*box['height']/280-5
     pg.mouse.move(x,y5); pg.mouse.down(); pg.mouse.move(x,y8,steps=8); pg.mouse.up(); pg.wait_for_timeout(300)
     ok(f'[{lab}] llenar botella deslizando', pg.evaluate("habCount(S.habits[0],todayISO())")==8 and pg.locator('.wbottles span.on').count()==1)
-    pg.wait_for_timeout(1500); ok(f'[{lab}] botella llena se queda llena', pg.locator('#wN').inner_text()=='8')
+    pg.wait_for_timeout(1500); ok(f'[{lab}] pasa sola a la botella siguiente', pg.locator('#wN').inner_text()=='0')
     tap('#wDrink'); pg.wait_for_timeout(150); ok(f'[{lab}] + BEBER sigue', pg.evaluate("habCount(S.habits[0],todayISO())")==9)
     tap('#wGoal'); pg.wait_for_timeout(300); wheel('#gV',50); tap('#gS'); pg.wait_for_timeout(300)
     ok(f'[{lab}] meta editable 50 oz', pg.evaluate("habGoal(S.habits[0])")==50 and '50 oz' in pg.locator('#wGoal').inner_text() and pg.locator('.wbottles span').count()==7)

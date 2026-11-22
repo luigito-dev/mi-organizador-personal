@@ -1550,7 +1550,7 @@ function openWater(h, d) {
   let just = false, empty = false;
   const draw = el => {
     const c = habCount(h, d), g = habGoal(h), gb = habBottles(h), nb = Math.floor(c / OZ);
-    const cur = empty ? 0 : c > 0 && c % OZ === 0 ? OZ : c % OZ, base = c - cur; // la botella llena se queda llena hasta que bebas más
+    const cur = just ? OZ : c % OZ, base = c - cur; // al llenar 8 oz se ve llena un momento y pasa sola a la botella siguiente
     const nr = (h.reminders || []).filter(r => r.on !== false).length;
     const hy = oz => 262 - 214 * (oz / OZ);
     el.querySelector('#wBody').innerHTML = `
@@ -1567,7 +1567,8 @@ function openWater(h, d) {
       const filled = total > before && Math.floor(total / OZ) > Math.floor(before / OZ);
       just = filled; empty = emptyNext; emptyNext = false;
       if (filled) { toast(`💧 ¡Botella ${Math.floor(total / OZ)} llena!`); if (total >= g && before < g) setTimeout(() => toast('🎉 ¡Meta de agua cumplida!'), 400); if (navigator.vibrate) try { navigator.vibrate(25); } catch (e) {} }
-      draw(el); just = false;
+      draw(el);
+      if (filled) setTimeout(() => { just = false; if (el.isConnected) draw(el); }, 1200); else just = false;
     };
     // deslizar
     const bot = el.querySelector('#wBot'), H = el.querySelector('#wH'), N = el.querySelector('#wN'), W = bot.querySelector('.bbwater');
