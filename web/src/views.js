@@ -174,7 +174,7 @@ function vCal(v) {
   const view = S.settings.calView || 'month', d = UI.calDate;
   v.innerHTML = `<div class="cal-wrap"><div class="cal-side"><div class="card mini" id="mini1"></div><div class="card" style="margin-top:12px"><h3>Mis áreas</h3><div class="areas-list" id="aList"></div></div></div>
     <div><div class="calbar"><button class="iconbtn" id="cPrev" aria-label="Anterior">‹</button><button class="iconbtn" id="cNext" aria-label="Siguiente">›</button><button class="btn sec sm" id="cToday">Hoy</button><h2>${calTitle(view, d)}</h2><span class="sp"></span>
-      <div class="seg">${[['month', 'Mes'], ['week', 'Semana'], ['day', 'Día']].map(([k, n]) => `<button data-cv="${k}" class="${view === k ? 'on' : ''}">${n}</button>`).join('')}</div>${view === 'month' ? '<button class="iconbtn" id="calBg" aria-label="Fondo del calendario" title="Fondo del calendario">🎨</button>' : ''}</div>
+      <div class="seg">${[['month', 'Mes'], ['week', 'Semana'], ['day', 'Día']].map(([k, n]) => `<button data-cv="${k}" class="${view === k ? 'on' : ''}">${n}</button>`).join('')}</div>${view === 'month' ? '<button class="iconbtn" id="calBg" aria-label="Fondo del calendario" title="Fondo del calendario"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="9.5" r="1.8"/><path d="M21 16l-5-5-8 9"/></svg></button>' : ''}</div>
       <div id="calBody"></div><div id="calExtra"></div></div></div>`;
   // Minicalendario
   const mc = monthCells(d), md = parseISO(d);
@@ -1115,6 +1115,8 @@ const svgBg = (body, bg) => 'data:image/svg+xml;utf8,' + encodeURIComponent(`<sv
 
 /* Fondos de temporada, uno por mes (se ven según el mes que estás mirando) */
 const SEASON_BGS = (() => {
+  const turkey = (x, y) => `<g transform="translate(${x} ${y})">${['#ffb48a', '#ffd08a', '#f7a07a', '#ffc6a0', '#f9b97c', '#ffd8a8', '#f7a07a'].map((c, i) => `<ellipse cx="0" cy="-40" rx="13" ry="46" fill="${c}" transform="rotate(${-75 + i * 25} 0 0)"/>`).join('')}<ellipse cx="0" cy="4" rx="30" ry="28" fill="#d9b08c"/><circle cx="0" cy="-28" r="15" fill="#e2bc98"/><circle cx="-5" cy="-31" r="2.4" fill="#5b4a3a"/><circle cx="5" cy="-31" r="2.4" fill="#5b4a3a"/><path d="M-4-25h8l-4 7z" fill="#ffcf6a"/><path d="M2-20c3 4 2 10-2 12" stroke="#f28b8b" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M-10 30v10M10 30v10" stroke="#e0b070" stroke-width="4" stroke-linecap="round"/></g>`;
+  const pie = (x, y) => `<g transform="translate(${x} ${y})"><ellipse cx="0" cy="8" rx="42" ry="10" fill="#efe2cf"/><path d="M-38 0h76l-6 10h-64z" fill="#e7b984"/><ellipse cx="0" cy="0" rx="38" ry="9" fill="#f3a86a"/><ellipse cx="8" cy="-3" rx="9" ry="4" fill="#fff6e8"/></g>`;
   const star = (x, y, r, c) => `<path d="M${x} ${y - r}l${r * .29} ${r * .6} ${r * .66} .1-${r * .48} ${r * .46} .12 ${r * .66}-${r * .59}-${r * .31}-${r * .59} ${r * .31} .12-${r * .66}-${r * .48}-${r * .46} ${r * .66}-.1z" fill="${c}"/>`;
   const heart = (x, y, s, c) => `<path transform="translate(${x} ${y}) scale(${s})" d="M0 6C-6-4-18 2-12 12L0 24 12 12C18 2 6-4 0 6z" fill="${c}"/>`;
   const flower = (x, y, c, r = 9) => [0, 72, 144, 216, 288].map(a => `<ellipse cx="${x}" cy="${y - r}" rx="${r * .6}" ry="${r}" fill="${c}" transform="rotate(${a} ${x} ${y})"/>`).join('') + `<circle cx="${x}" cy="${y}" r="${r * .55}" fill="#ffe18a"/>`;
@@ -1143,7 +1145,7 @@ const SEASON_BGS = (() => {
     ['Agosto · Sol', g(`${sun(200, 90, 40, '#ffd79a')}${[0, 45, 90, 135, 180, 225, 270, 315].map(a => `<path d="M${200 + Math.cos(a * Math.PI / 180) * 52} ${90 + Math.sin(a * Math.PI / 180) * 52}L${200 + Math.cos(a * Math.PI / 180) * 70} ${90 + Math.sin(a * Math.PI / 180) * 70}" stroke="#ffd79a" stroke-width="6" stroke-linecap="round"/>`).join('')}${palm(40)}${palm(320)}<path d="M0 285h400v15H0z" fill="#f4e3c2"/>`, '#fffbf3')],
     ['Septiembre · Brisa', g(`<path d="M20 80h160a30 30 0 1 0-30-30M20 120h230a30 30 0 1 1-30 30M60 160h90" stroke="#c4d8ee" stroke-width="6" fill="none" stroke-linecap="round"/>${fallLeaf(280, 70, 20, '#ffd08a')}${fallLeaf(330, 130, -30, '#ffb98a')}${fallLeaf(240, 200, 60, '#f7d89c')}${leaf(80, 250, -20, '#cfe6c1')}`, '#f8fbfd')],
     ['Octubre · Otoño', g(`${pumpkin(90, 265, 1.3)}${pumpkin(160, 275, .9)}${pumpkin(320, 268, 1.1)}${fallLeaf(60, 60, 10, '#ffc08a')}${fallLeaf(200, 40, -40, '#ffd08a')}${fallLeaf(330, 90, 30, '#f7b07a')}${fallLeaf(260, 160, 70, '#ffd8a0')}`, '#fffaf4')],
-    ['Noviembre · Otoño y coquí', g(`${fallLeaf(50, 50, 10, '#ffc08a')}${fallLeaf(150, 90, -30, '#ffd08a')}${fallLeaf(300, 40, 40, '#f7b07a')}${fallLeaf(350, 140, -10, '#ffd8a0')}${fallLeaf(220, 170, 60, '#f7c58a')}${leaf(270, 255, -10, '#c4e3b6')}${leaf(300, 270, 20, '#b4dba6')}${coqui(300, 238)}<path d="M0 285h400v15H0z" fill="#e9f3df"/>`, '#fffaf5')],
+    ['Noviembre · Acción de Gracias', g(`${fallLeaf(40, 50, 10, '#ffc08a')}${fallLeaf(140, 30, -30, '#ffd08a')}${fallLeaf(220, 80, 40, '#f7b07a')}${fallLeaf(360, 40, -10, '#ffd8a0')}${fallLeaf(80, 150, 60, '#f7c58a')}${turkey(310, 240)}${pie(110, 270)}${pumpkin(200, 275, .75)}<path d="M0 285h400v15H0z" fill="#f3e6d3"/>`, '#fffaf4')],
     ['Diciembre · Navidad', g(`${tree(310)}${gift(60, 262, '#ffb3c4')}${gift(105, 270, '#a9d3ff')}${gift(150, 262, '#ffd88a')}${[[40, 40], [120, 70], [200, 30], [260, 90], [360, 50]].map(([x, y]) => star(x, y, 6, '#ffe39a')).join('')}`, '#f8fbff')]
   ];
 })();
@@ -1190,7 +1192,7 @@ function openCalBg() {
       <button class="bgopt ${cur === 'none' ? 'on' : ''}" data-bg="none"><span class="bgprev" style="background:var(--card)"></span><span>Sin fondo</span></button>
       ${Object.entries(CAL_BGS).map(([k, [n, url]]) => `<button class="bgopt ${cur === k ? 'on' : ''}" data-bg="${k}"><span class="bgprev" style="background-image:url('${url}')"></span><span>${n}</span></button>`).join('')}
       <label class="bgopt ${cur === 'custom' ? 'on' : ''}" style="cursor:pointer"><span class="bgprev bgup" style="${UI.bgUrl ? `background-image:url(${UI.bgUrl})` : ''}">${UI.bgUrl ? '' : '📷'}</span><span>${UI.bgUrl ? 'Mi foto · cambiar' : 'Subir mi foto'}</span><input type="file" id="bgFile" accept="image/*" hidden></label>
-    </div><p class="xs muted" style="margin:10px 0 0">“Según el mes” cambia el dibujo cada mes: Reyes, San Valentín, primavera, lluvias, playa, verano, otoño, coquí, Navidad…</p>`,
+    </div><p class="xs muted" style="margin:10px 0 0">“Según el mes” cambia el dibujo cada mes: Reyes, San Valentín, primavera, lluvias, playa, verano, otoño, Acción de Gracias, Navidad…</p>`,
     onMount: el => {
       el.querySelectorAll('[data-bg]').forEach(b => b.onclick = () => { S.settings.calBg = b.dataset.bg; save('meta'); s.close(); renderView(); });
       el.querySelector('#bgFile').onchange = async e => {
