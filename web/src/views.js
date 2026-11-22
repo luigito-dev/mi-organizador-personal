@@ -159,7 +159,7 @@ function calTitle(view, d) {
   const dd = parseISO(d);
   if (view === 'month') return cap(MESES[dd.getMonth()]) + ' ' + dd.getFullYear();
   if (view === 'day') return fmtLong(d) + ' ' + dd.getFullYear();
-  const w = weekDays8(d); const a = parseISO(w[0]), b = parseISO(w[7]);
+  const w = weekDays8(d); const a = parseISO(w[0]), b = parseISO(w[w.length - 1]);
   return a.getMonth() === b.getMonth() ? `${a.getDate()} – ${b.getDate()} de ${MESES[b.getMonth()]} ${b.getFullYear()}` : `${a.getDate()} ${MESES[a.getMonth()].slice(0, 3)} – ${b.getDate()} ${MESES[b.getMonth()].slice(0, 3)} ${b.getFullYear()}`;
 }
 function monthCells(d) {
@@ -599,7 +599,7 @@ function openSounds() {
   const c = fcfg(); const running = isRunning() && !F.paused && F.phase !== 'short' && F.phase !== 'long';
   const s = openSheet({title: 'Sonido de ambiente', body: `<div class="sgrid" id="sg"></div>
       <div class="fld row"><span>🔈</span><input type="range" id="sVol" min="0" max="1" step="0.05" value="${c.vol}" style="flex:1;accent-color:var(--blue)" aria-label="Volumen"><span>🔊</span></div>
-      <label class="btn sec full" style="cursor:pointer;margin-top:4px">⬆ Importar mi sonido<input type="file" id="sImpS" accept="audio/*" hidden></label>
+      <label class="btn sec full" style="cursor:pointer;margin-top:4px">⬆ Importar mi sonido<input type="file" id="sImpS" accept="audio/*" class="fileover"></label>
       <p class="xs muted" style="margin:10px 0 0">Toca un sonido para escucharlo. Suena mientras corre el reloj y se pausa en los descansos.</p>`,
     foot: `<button class="btn" data-close>Listo</button>`,
     onClose: () => { if (!running) Ambient.play('none'); else soundFor(); renderView(); },
@@ -687,7 +687,7 @@ function vConfig(v) {
     <div class="set-row"><div class="lbl">Tutorial</div><button class="btn sec sm" id="sTut">Volver a ver el tutorial</button></div></div>
     <div class="card" style="margin-top:14px"><h3>Tus datos</h3>
     <div class="set-row" id="rowData"><div class="lbl">Dónde se guardan<small class="storeLbl"></small><small>${Store.mode === 'cloud' ? 'Tus datos están en tu cuenta de Claude: los ves desde cualquier dispositivo donde abras esta app con tu cuenta. Además, se guarda una copia en este navegador.' : 'Tus datos están en este navegador. Si borras los datos del navegador o cambias de dispositivo, no estarán. Haz copias de seguridad.'}</small></div></div>
-    <div class="set-row"><div class="lbl">Copia de seguridad<small>Guarda todo en un archivo, o recupéralo desde un archivo.</small></div><button class="btn sec sm" id="sExp">⬇ Exportar</button><label class="btn sec sm" style="cursor:pointer">⬆ Importar<input type="file" id="sImp" accept=".json,application/json" hidden></label></div>
+    <div class="set-row"><div class="lbl">Copia de seguridad<small>Guarda todo en un archivo, o recupéralo desde un archivo.</small></div><button class="btn sec sm" id="sExp">⬇ Exportar</button><label class="btn sec sm" style="cursor:pointer">⬆ Importar<input type="file" id="sImp" accept=".json,application/json" class="fileover"></label></div>
     <div class="set-row"><div class="lbl">Borrar todos los datos<small>Elimina todo y deja la app como nueva.</small></div><button class="btn danger sm" id="sDel">Borrar todo</button></div></div>
     <p class="xs muted" style="text-align:center;margin-top:16px">Mi Organizador Personal · versión ${window.NATIVE ? NATIVE.version : '1.0'}</p>`;
   v.querySelectorAll('[data-th]').forEach(b => b.onclick = () => { st.theme = b.dataset.th; save('meta'); applyTheme(); renderView(); });
@@ -970,7 +970,7 @@ function vDia2(v) {
   if (!nowPlaced && pendItems.length) tl += `<div class="nowmark"><span>AHORA · ${fmtTime(fromMin(now))}</span></div>`;
   v.innerHTML = `${heroHTML()}
     <div class="card daycard">
-      <div class="dstrip hscroll" id="dstrip">${strip.map(x => { const it = sortedDay(x, {all: true}); const hol = holidaysOn(x).length; return `<button class="dpill ${x === d ? 'on' : ''} ${x === t ? 'today' : ''} ${hol ? 'holi' : ''}" data-dd="${x}"><span class="dw">${x === t ? 'Hoy' : DCORTO[dow(x)]}</span><span class="dn">${parseISO(x).getDate()}</span><span class="ddots">${it.slice(0, 3).map(i => `<i style="background:${colorOf(i.k, i.x)}"></i>`).join('')}${hol ? '<i style="background:var(--red)"></i>' : ''}</span></button>`; }).join('')}<button class="dpill more" id="dMore"><span class="dw">Otra</span><span class="dn">📅</span><span class="ddots"></span></button></div>
+      <div class="dstrip hscroll" id="dstrip">${strip.map(x => { const it = sortedDay(x, {all: true}); const hol = holidaysOn(x).length; return `<button class="dpill ${x === d ? 'on' : ''} ${x === t ? 'today' : ''} ${hol ? 'holi' : ''}" data-dd="${x}"><span class="dw">${x === t ? 'Hoy' : DCORTO[dow(x)]}</span><span class="dn">${parseISO(x).getDate()}</span>${daySticker(x) ? `<span class="dstk">${daySticker(x)}</span>` : `<span class="ddots">${it.slice(0, 3).map(i => `<i style="background:${colorOf(i.k, i.x)}"></i>`).join('')}${hol ? '<i style="background:var(--red)"></i>' : ''}</span>`}</button>`; }).join('')}<button class="dpill more" id="dMore"><span class="dw">Otra</span><span class="dn">📅</span><span class="ddots"></span></button></div>
       <div class="dhead"><div><b>${dayName}</b><span class="muted"> · ${parseISO(d).getDate()} de ${MESES[parseISO(d).getMonth()]}</span>${ho.map(h => ` <span class="tag" style="background:var(--holi);color:var(--holiText)">🎉 ${esc(h.name)}</span>`).join('')}</div>
         <div class="muted small">${[nPend ? `${nPend} por hacer` : '', nDone ? `${nDone} hecha${nDone === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ')}</div></div>
       <div class="qadd daddbar"><input id="qIn" placeholder="Añadir a ${isToday ? 'hoy' : dayName.toLowerCase()}… (ej. dentista a las 3 pm)" maxlength="140" autocomplete="off"><button class="btn" id="qAdd" aria-label="Añadir">+</button></div>
@@ -1106,9 +1106,13 @@ function hexA(c, a) { const m = String(c).trim().match(/^#?([0-9a-f]{6})$/i); if
 function itemHl(i) { let h = 0; for (const ch of String(i.id || i.t)) h = (h * 31 + ch.charCodeAt(0)) | 0; return HL_PASTEL[Math.abs(h) % HL_PASTEL.length]; }
 
 /* ===== Stickers del día y fondo del calendario ===== */
+const EMOJI_RE = /(\p{Extended_Pictographic}(\uFE0F|\u200D\p{Extended_Pictographic})*)/u;
+const titleEmoji = t => { const m = String(t || '').match(EMOJI_RE); return m ? m[0] : ''; };
 function daySticker(d) {
   const e = S.events.find(x => x.date === d && x.sticker && areaVisible(x.areaId)) || S.tasks.find(x => x.date === d && x.sticker && areaVisible(x.areaId));
   if (e) return e.sticker;
+  const te = S.events.find(x => x.date === d && titleEmoji(x.title) && areaVisible(x.areaId)) || S.tasks.find(x => x.date === d && titleEmoji(x.title) && areaVisible(x.areaId));
+  if (te) return titleEmoji(te.title);
   return S.events.some(x => x.date === d && x.evType === 'celebracion' && areaVisible(x.areaId)) ? '🎂' : '';
 }
 const svgBg = (body, bg) => 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMax slice"><rect width="400" height="300" fill="${bg}"/>${body}</svg>`);
@@ -1191,7 +1195,7 @@ function openCalBg() {
       <button class="bgopt ${cur === 'auto' ? 'on' : ''}" data-bg="auto"><span class="bgprev" style="background-image:url('${SEASON_BGS[mm][1]}')"></span><span>Según el mes ✨</span></button>
       <button class="bgopt ${cur === 'none' ? 'on' : ''}" data-bg="none"><span class="bgprev" style="background:var(--card)"></span><span>Sin fondo</span></button>
       ${Object.entries(CAL_BGS).map(([k, [n, url]]) => `<button class="bgopt ${cur === k ? 'on' : ''}" data-bg="${k}"><span class="bgprev" style="background-image:url('${url}')"></span><span>${n}</span></button>`).join('')}
-      <label class="bgopt ${cur === 'custom' ? 'on' : ''}" style="cursor:pointer"><span class="bgprev bgup" style="${UI.bgUrl ? `background-image:url(${UI.bgUrl})` : ''}">${UI.bgUrl ? '' : '📷'}</span><span>${UI.bgUrl ? 'Mi foto · cambiar' : 'Subir mi foto'}</span><input type="file" id="bgFile" accept="image/*" hidden></label>
+      <label class="bgopt ${cur === 'custom' ? 'on' : ''}" style="cursor:pointer"><span class="bgprev bgup" style="${UI.bgUrl ? `background-image:url(${UI.bgUrl})` : ''}">${UI.bgUrl ? '' : '📷'}</span><span>${UI.bgUrl ? 'Mi foto · cambiar' : 'Subir mi foto'}</span><input type="file" id="bgFile" accept="image/*" class="fileover"></label>
     </div><p class="xs muted" style="margin:10px 0 0">“Según el mes” cambia el dibujo cada mes: Reyes, San Valentín, primavera, lluvias, playa, verano, otoño, Acción de Gracias, Navidad…</p>`,
     onMount: el => {
       el.querySelectorAll('[data-bg]').forEach(b => b.onclick = () => { S.settings.calBg = b.dataset.bg; save('meta'); s.close(); renderView(); });

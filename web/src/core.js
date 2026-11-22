@@ -30,7 +30,7 @@ const fmtHourLabel = h => S.settings.hour24 ? pad(h) + ':00' : ((h % 12 || 12) +
 function weekStartOf(s) { const d = parseISO(s); const ws = S.settings.weekStart; const diff = (d.getDay() - ws + 7) % 7; d.setDate(d.getDate() - diff); return iso(d); }
 const weekDays = s => { const st = weekStartOf(s); return [0,1,2,3,4,5,6].map(i => addDays(st, i)); };
 // Vista Semana y planificador: de domingo a domingo (8 días)
-const weekDays8 = s => { const st = weekStartOf(s); return [0,1,2,3,4,5,6,7].map(i => addDays(st, i)); };
+const weekDays8 = s => weekDays(s); // la semana es de domingo a sábado (un solo domingo)
 const nowMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
 
 /* ========== Datos por defecto ========== */
