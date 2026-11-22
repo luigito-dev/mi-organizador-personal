@@ -956,3 +956,26 @@ td.hname span,.hmonth .hname span{margin-right:5px}
 .tmq button{background:var(--soft);color:var(--text)}
 .tmgo{background:linear-gradient(90deg,var(--g1),#1d5cff)}
 .bktitle{width:calc(100% - 44px);font-size:16px;text-overflow:ellipsis}
+.wgoalrow{display:flex;justify-content:center;margin-top:6px}
+.wgoal{display:inline-flex;align-items:center;gap:6px;background:#e3efff;color:#1d4fa8;border-radius:999px;padding:7px 14px;font-size:14px}
+.wgoal span,.acgoal span{background:#fff;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700;color:var(--blue)}
+[data-theme=dark] .wgoal{background:#1e3358;color:#cfe0ff}
+.acmode{display:flex;width:max-content;margin:0 auto 6px}
+.acmode button{padding:8px 16px}
+.accard{background:var(--soft);border-radius:18px;padding:12px;margin:0 0 12px}
+.acrow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:600}
+.acdist{display:flex;align-items:center;gap:6px}
+.acdist input{width:74px;text-align:center;font-size:20px;font-weight:800;border:1.5px solid var(--line);border-radius:10px;padding:5px;background:var(--card);color:var(--text)}
+.acdist button{width:34px;height:34px;border-radius:50%;background:var(--card);font-size:18px;font-weight:700;box-shadow:var(--shadow)}
+.acq{margin:10px 0 8px!important;max-width:none!important}
+.acq button{background:var(--card)!important}
+.acstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;background:var(--card);border-radius:14px;padding:10px 4px 6px}
+.acstats b{display:block;font-size:20px}
+.acstats div:first-child b{color:#ff6b3d}
+.acstats span{font-size:11.5px;color:var(--muted)}
+.acw{grid-column:1/-1;font-size:11.5px;color:var(--blue);padding:6px 0 0}
+.acgoal{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin:10px auto 0;padding:9px 12px;border-radius:999px;background:#e3efff;color:#1d4fa8;font-size:14px;flex-wrap:wrap}
+[data-theme=dark] .acgoal{background:#1e3358;color:#cfe0ff}
+.timersheet > .sh-body > #tmBody > .acgoal{width:auto;max-width:300px;margin:0 auto 14px}
+.calpill{display:inline-flex;align-self:flex-start;margin-top:4px;font-size:12px;font-weight:700;background:#ffe8dc;color:#c2410c;padding:2px 8px;border-radius:6px}
+[data-theme=dark] .calpill{background:#4a2616;color:#ffb38a}

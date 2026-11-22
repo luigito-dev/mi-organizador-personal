@@ -9,7 +9,7 @@ with sync_playwright() as p:
     pg.goto('file:///home/claude/org/index.html'); pg.wait_for_timeout(300)
     pg.evaluate("""S.settings.tutorialSeen=true;sheets.slice().forEach(s=>s.close());S.habits=[{"color":"#4a90ff","created":"2026-11-01","days":[],"goal":1,"icon":"💧","id":"w1","kind":"","log":{},"name":"Tomar agua","unit":""},{"color":"#ffb627","created":"2026-11-01","days":[],"goal":1,"icon":"🚶","id":"c1","log":{[todayISO()]:1},"name":"Caminar","unit":""},{"color":"#4cc46b","created":"2026-11-01","days":[],"goal":1,"icon":"🧘","id":"m1","log":{},"name":"Meditar","unit":""},{"color":"#4a90ff","created":"2026-11-01","days":[],"goal":1,"icon":"📖","id":"r1","kind":"lectura","log":{[todayISO()]:3},"name":"Leer","unit":""}];go('habitos')""")
     pg.wait_for_timeout(300)
-    ok(f'[{lab}] caminar pasa a tiempo y sigue hecho', pg.evaluate("habKind(S.habits[1])")=='tiempo' and pg.evaluate("habDone(S.habits[1],todayISO())"))
+    ok(f'[{lab}] caminar pasa a tiempo y sigue hecho', pg.evaluate("habKind(S.habits[1])")=='actividad' and pg.evaluate("habDone(S.habits[1],todayISO())"))
     pg.locator('[data-hab="w1"]').click(); pg.wait_for_timeout(400)
     box=pg.locator('#wBot').bounding_box()
     # deslizar hasta 5 oz
@@ -25,7 +25,7 @@ with sync_playwright() as p:
     pg.wait_for_timeout(1500); ok(f'[{lab}] empieza botella nueva', pg.locator('#wN').inner_text()=='0')
     tap('#wDrink'); pg.wait_for_timeout(150); ok(f'[{lab}] + BEBER sigue', pg.evaluate("habCount(S.habits[0],todayISO())")==9)
     tap('#wGoal'); pg.wait_for_timeout(300); pg.fill('#gV','50'); tap('#gS'); pg.wait_for_timeout(300)
-    ok(f'[{lab}] meta editable 50 oz', pg.evaluate("habGoal(S.habits[0])")==50 and 'de 50 oz' in pg.locator('#wGoal').inner_text() and pg.locator('.wbottles span').count()==7)
+    ok(f'[{lab}] meta editable 50 oz', pg.evaluate("habGoal(S.habits[0])")==50 and '50 oz' in pg.locator('#wGoal').inner_text() and pg.locator('.wbottles span').count()==7)
     pg.evaluate("sheets.slice().forEach(s=>s.close())"); pg.wait_for_timeout(300)
     pg.locator('[data-hab="r1"]').click(); pg.wait_for_timeout(400)
     ok(f'[{lab}] lectura abre un libro', pg.locator('.book .bpage').count()==2)
