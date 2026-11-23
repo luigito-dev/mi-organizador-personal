@@ -1897,7 +1897,7 @@ function openChallengeForm(h, done) {
   const s = openSheet({title: '🏆 Reto de ahorro', body: `
     <div class="chcolrow"><span>Color</span><div class="chcols hscroll">${CH_COLORS.map(x => `<button type="button" data-chcol="${x}" class="${(c.color || '#d99400') === x ? 'on' : ''}" style="--sw:${x}" aria-label="Color"></button>`).join('')}</div></div>${c.vals ? '<button type="button" class="btn ghost sm chcolsave" id="chColSave">Aplicar color a mi reto actual</button>' : ''}
     ${c.ready ? '' : `<div class="seg chtabs"><button type="button" data-ctab="listos" class="${tab === 'listos' ? 'on' : ''}">🏆 Retos listos</button><button type="button" data-ctab="crear" class="${tab === 'crear' ? 'on' : ''}">✏️ Crear el mío</button></div>`}
-    <div data-tp="listos">${c.ready ? `<div class="chnote">🔒 Tu reto actual, <b>${esc(c.name)}</b>, es un reto listo: sus cantidades no se cambian. Puedes cambiarle el color o escoger otro reto.</div>` : ''}    <div class="chready"><div class="hint" style="margin:0 2px 4px">Toca uno para empezar. Sus cantidades ya vienen puestas.</div>${CH_READY.map((r, i) => { const t = r.vals().reduce((a, b) => a + b, 0); return `<button type="button" class="chrd" data-crd="${i}"><span class="chrdi ${r.view}">${r.view === 'sobres' ? ENV_SVG : r.view === 'circulos' ? '<b></b><b></b><b></b>' : '<i></i><i></i>'}</span><span class="chrdt"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span><span class="chrdm">${money(t)}</span></button>`; }).join('')}</div></div>
+    <div data-tp="listos">${c.ready ? `<div class="chnote">🔒 Tu reto actual, <b>${esc(c.name)}</b>, es un reto listo: sus cantidades no se cambian. Puedes cambiarle el color o escoger otro reto.</div>` : ''}    <div class="chready"><div class="hint" style="margin:0 2px 4px">Toca uno para empezar. Sus cantidades ya vienen puestas.</div>${CH_READY.map((r, i) => { const t = r.vals().reduce((a, b) => a + b, 0); return `<button type="button" class="chrd" data-crd="${i}"><span class="chrdi ${r.view}">${r.view === 'sobres' ? ENV_SVG : r.view === 'circulos' ? '<b></b><b></b><b></b>' : '<i></i><i></i>'}</span><span class="chrdt"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span><span class="chrdm">${money(t)}</span></button>`; }).join('')}<button type="button" class="chrd chrdown" data-ctab-go="crear"><span class="chrdi">✏️</span><span class="chrdt"><b>Crear el mío</b><small>Escoge la cantidad, el plazo y cómo marcar</small></span><span class="chrdm">›</span></button></div></div>
     <div class="chown" data-tp="crear">
       <div class="chstep"><span>1</span><label>¿Cuánto quieres ahorrar?</label></div>
       <input class="inp rdnum chbig" id="chA" readonly inputmode="none" data-wheel data-min="10" data-max="50000" data-step="10" data-unit="$" data-title="¿Cuánto quieres ahorrar?" value="${!c.ready && c.amount ? c.amount : 1000}">
@@ -1916,6 +1916,7 @@ function openChallengeForm(h, done) {
       const q = x => el.querySelector(x);
       const showTab = () => { el.querySelectorAll('[data-tp]').forEach(x => x.style.display = x.dataset.tp === tab ? '' : 'none'); el.querySelectorAll('[data-ctab]').forEach(b => b.classList.toggle('on', b.dataset.ctab === tab)); q('#chS').style.display = tab === 'crear' ? '' : 'none'; };
       el.querySelectorAll('[data-ctab]').forEach(b => b.onclick = () => { tab = b.dataset.ctab; showTab(); });
+      el.querySelectorAll('[data-ctab-go]').forEach(b => b.onclick = () => { tab = b.dataset.ctabGo; showTab(); });
       const A = () => parseFloat(q('#chA').value) || 0;
       const N = () => spanCount(span, freq), vals = () => style === 'igual' ? chValues(A(), N(), 'igual') : chValues(A(), N(), 'variado');
       const upd = () => {
@@ -2061,8 +2062,7 @@ const CH_READY = [
   {cols: 7, name: '$800 en 36 días', title: '$800 en 36 días', sub: 'De $10 a $40 cada día', freq: 'dia', view: 'circulos', vals: () => [20, 10, 15, 20, 25, 20, 25, 10, 25, 15, 20, 30, 20, 10, 30, 15, 20, 25, 40, 15, 10, 40, 25, 30, 20, 10, 15, 30, 30, 10, 30, 40, 25, 20, 40, 15]},
   {cols: 7, name: '$1,000 en 30 días', title: '$1,000 en 30 días', sub: 'Cantidades variadas cada día', freq: 'dia', view: 'circulos', vals: () => chValues(1000, 30, 'variado')},
   {cols: 7, name: '$500 en 100 días', title: '$500', sub: 'Cantidades variadas · 100 días', freq: 'dia', view: 'circulos', vals: () => chValues(500, 100, 'variado')},
-  {name: '$1,200 en 12 meses', title: '$1,200', sub: '$100 cada mes', freq: 'mes', view: 'circulos', vals: () => Array(12).fill(100)},
-  {name: '$5,000 en un año', title: '$5,000', sub: 'Variado cada semana · 52 semanas', freq: 'semana', view: 'lista', vals: () => chValues(5000, 52, 'variado')}
+  {name: '$1,200 en 12 meses', title: '$1,200', sub: '$100 cada mes', freq: 'mes', view: 'circulos', vals: () => Array(12).fill(100)}
 ];
 
 const CH_COLORS = ['#d99400', '#f5b301', '#f08a24', '#e5383b', '#b91c1c', '#c2185b', '#ec4899', '#f472b6', '#a855f7', '#6d28d9', '#4f46e5', '#2f7de1', '#0ea5e9', '#0891b2', '#0f9d8f', '#14b8a6', '#2e9d5b', '#65a30d', '#795548', '#475569', '#111827'];// Sobre abierto (sin marcar) o cerrado con la cantidad escrita dentro

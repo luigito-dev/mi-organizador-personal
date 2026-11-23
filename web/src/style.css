@@ -1281,3 +1281,4 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .pinbox .plate,.pinbox .fdplate{width:160px;height:160px}
 .pinbox .sky{max-height:130px}
 .pinbox .whandle{display:none}
+.chrdown{border:1.5px dashed var(--line,#d6dbe3);background:transparent;box-shadow:none}.chrdown .chrdi{font-size:18px}

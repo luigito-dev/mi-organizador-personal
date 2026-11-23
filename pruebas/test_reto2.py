@@ -22,7 +22,7 @@ with sync_playwright() as p:
     ok(f'[{lab}] meta guardada', pg.evaluate("S.habits[0].saveGoal")==1234)
     # retos listos
     tap('#svCh'); pg.wait_for_timeout(400)
-    ok(f'[{lab}] retos listos', pg.locator('[data-crd]').count()==9 and 'centavos' not in pg.locator('.chready').inner_text())
+    ok(f'[{lab}] retos listos', pg.locator('[data-crd]').count()==8 and pg.locator('[data-ctab-go="crear"]').count()==1 and 'centavos' not in pg.locator('.chready').inner_text())
     ok(f'[{lab}] 100 sobres = $5,050', '$5,050' in pg.locator('[data-crd="0"]').inner_text())
     ok(f'[{lab}] 800 en 36 días = $800', '$800' in pg.locator('[data-crd="4"] .chrdm').inner_text())
     pg.screenshot(path=f'shots/{lab}-retos-listos.png')
@@ -35,7 +35,7 @@ with sync_playwright() as p:
     ok(f'[{lab}] reto aparte del pote', pg.evaluate("saveTotal(S.habits[0])")==37)
     pg.screenshot(path=f'shots/{lab}-sobres.png')
     pg.locator('.chedit').click(); pg.wait_for_timeout(400)
-    ok(f'[{lab}] tocar RETO abre editar', pg.locator('[data-crd]').count()==9 and pg.locator('.chown').is_hidden() and pg.locator('.chnote').is_visible())
+    ok(f'[{lab}] tocar RETO abre editar', pg.locator('[data-crd]').count()==8 and pg.locator('[data-ctab-go="crear"]').count()==1 and pg.locator('.chown').is_hidden() and pg.locator('.chnote').is_visible())
     ok(f'[{lab}] más colores', pg.locator('[data-chcol]').count()>=20)
     pg.locator('[data-chcol="#a855f7"]').click(); pg.locator('#chColSave').click(); pg.wait_for_timeout(500)
     ok(f'[{lab}] color del reto', pg.evaluate("S.habits[0].challenge.color")=='#a855f7' and pg.evaluate("Object.keys(S.habits[0].challenge.marked).length")==1)
