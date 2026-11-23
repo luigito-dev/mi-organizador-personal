@@ -1310,3 +1310,6 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .pickgrid.g{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .pickgrid .opt{padding:12px 8px;text-align:center}
 .pickgrid .opt.addnew{border:1.5px dashed var(--line);background:transparent;color:var(--blue);font-weight:700}
+.toggle2.sep{gap:12px}
+.toggle2.sep button{background:var(--card);border:1px solid var(--line);color:var(--muted)}
+.toggle2.sep button.on{border-color:var(--blue);color:var(--blue)}
