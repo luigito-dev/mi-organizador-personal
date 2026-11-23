@@ -1388,7 +1388,7 @@ const isTimeKind = h => ['tiempo', 'actividad', 'oracion'].includes(habKind(h));
 const habGoal = h => habKind(h) === 'lectura' ? 1 : habKind(h) === 'agua' ? (+h.goalOz > 0 ? +h.goalOz : Math.max(1, +h.goal || 1) * 8) : isTimeKind(h) ? Math.max(1, +h.goal || 10) : Math.max(1, +h.goal || 1);
 const habBottles = h => Math.ceil(habGoal(h) / OZ);
 const habCount = (h, d) => (h.log && h.log[d]) || 0;
-const habDone = (h, d) => (habKind(h) === 'ahorro' ? habCount(h, d) > 0 : habKind(h) === 'despertar' ? wakeOnTime(h, d) : habCount(h, d) >= habGoal(h)) || (habKind(h) === 'actividad' && +h.goalDist > 0 && actDist(h, d) >= +h.goalDist);
+const habDone = (h, d) => (habKind(h) === 'ahorro' ? habCount(h, d) > 0 : habKind(h) === 'despertar' ? wakeOnTime(h, d) : habCount(h, d) >= habGoal(h)) || (habKind(h) === 'actividad' && +h.goalDist > 0 && actDist(h, d) >= +h.goalDist) || (habKind(h) === 'actividad' && +h.goalSteps > 0 && actSteps(h, d) >= +h.goalSteps);
 const habDue = (h, d) => (!h.days || !h.days.length || h.days.includes(parseISO(d).getDay())) && (!h.created || d >= h.created);
 const habTotal = h => [...new Set([...Object.keys(h.log || {}), ...Object.keys(h.dist || {}), ...Object.keys(h.woke || {})])].filter(d => habDone(h, d)).length;
 function habStreak(h, upto) { let n = 0, d = upto; if (!habDone(h, d)) d = addDays(d, -1); for (let k = 0; k < 800; k++) { if (!habDue(h, d)) { if (h.created && d < h.created) break; d = addDays(d, -1); continue; } if (!habDone(h, d)) break; n++; d = addDays(d, -1); } return n; }
@@ -1454,7 +1454,7 @@ function vHabitos(v) {
       if (kd === 'actividad') { const run = UI.habTimer && UI.habTimer.id === h.id, ds = actDist(h, d), u = h.unitD || 'mi', cal = actCalories(h, d);
         return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${Math.min(1, Math.max(c / g, +h.goalDist ? ds / h.goalDist : 0)) * 100}%">${actMode(h, d) === 'correr' ? '🏃' : h.icon}${ok ? '<em>✓</em>' : ''}</span>
-        <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : run ? '⏱ Contando tiempo…' : `${c}/${g} min${+h.goalDist || ds ? ` · ${fmtD(ds)}${+h.goalDist ? '/' + fmtD(h.goalDist) : ''} ${u}` : ''}`}${st > 1 ? ` · 🔥 ${st}` : ''}</small>${cal ? `<span class="calpill">🔥 ~${cal} cal</span>` : ''}</span>
+        <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : run ? '⏱ Contando tiempo…' : `${c}/${g} min${+h.goalDist || ds ? ` · ${fmtD(ds)}${+h.goalDist ? '/' + fmtD(h.goalDist) : ''} ${u}` : ''}${+h.goalSteps || actSteps(h, d) ? ` · 👣 ${fmtPasos(actSteps(h, d))}${+h.goalSteps ? '/' + fmtPasos(h.goalSteps) : ''}` : ''}`}${st > 1 ? ` · 🔥 ${st}` : ''}</small>${cal ? `<span class="calpill">🔥 ~${cal} cal</span>` : ''}</span>
         <span class="habtot"><b>${c}</b><small>min hoy</small></span>
         <button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`; }
       if (kd === 'tiempo') { const run = UI.habTimer && UI.habTimer.id === h.id;
@@ -1782,8 +1782,9 @@ function openTimer(h, d, host) {
       <div class="bkq tmq"><button data-tq="-5">−5</button><button data-tq="5">+5</button><button data-tq="10">+10</button><button data-tq="15">+15</button></div>
       ${act ? `<div class="accard">
         <div class="acrow"><span>📏 Distancia hoy</span><div class="acdist"><button data-dq="-0.1">−</button><input id="acD" readonly inputmode="none" data-wheel data-min="0" data-max="60" data-dec="1" data-unit="${u}" data-title="Distancia de hoy" data-blank="1" value="${ds ? fmtD(ds) : ''}" placeholder="0"><span>${u}</span><button data-dq="0.1">+</button></div></div>
+        <div class="acrow"><span>👣 Pasos hoy</span><div class="acdist"><button data-pq="-500">−</button><input id="acP" readonly inputmode="none" data-wheel data-min="0" data-max="100000" data-title="Pasos de hoy" data-unit="pasos" data-blank="1" value="${actSteps(h, d) || ''}" placeholder="0"><span>pasos</span><button data-pq="500">+</button></div></div>
         <div class="acstats" id="acS"></div>
-        <button class="acgoal" id="acG">Meta: <b>${habGoal(h)} min</b>${+h.goalDist ? ` · <b>${fmtD(h.goalDist)} ${u}</b>` : ''} <span>Cambiar ✎</span></button>
+        <button class="acgoal" id="acG">Meta: <b>${habGoal(h)} min</b>${+h.goalDist ? ` · <b>${fmtD(h.goalDist)} ${u}</b>` : ''}${+h.goalSteps ? ` · <b>${fmtPasos(h.goalSteps)} pasos</b>` : ''} <span>Cambiar ✎</span></button>
       </div>` : `<button class="acgoal" id="acG">Meta: <b>${habGoal(h)} min</b> <span>Cambiar ✎</span></button>`}
       ${habKind(h) === 'oracion' ? prayerHTML(h) : ''}
       <div class="wacts"><button class="wdrink tmgo" id="tmGo" style="--g1:${h.color}">▶ EMPEZAR</button></div>`;
@@ -1802,6 +1803,9 @@ function openTimer(h, d, host) {
     if (act) {
       const setD = v => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } const was = habDone(h, d); h.dist = h.dist || {}; v = Math.max(0, Math.round(v * 100) / 100); if (v) h.dist[d] = v; else delete h.dist[d]; save('habits'); if (!was && habDone(h, d)) toast(`${h.icon} ¡Meta de distancia cumplida!`); };
       el.querySelectorAll('[data-dq]').forEach(b => b.onclick = () => { setD(actDist(h, d) + +b.dataset.dq); draw(el); });
+      const setP = v => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } const was = habDone(h, d); v = Math.max(0, Math.round(v)); h.steps = h.steps || {}; if (v) h.steps[d] = v; else delete h.steps[d]; save('habits'); if (!was && habDone(h, d)) toast(`${h.icon} ¡Meta de pasos cumplida!`); };
+      el.querySelectorAll('[data-pq]').forEach(b => b.onclick = () => { setP(actSteps(h, d) + +b.dataset.pq); draw(el); });
+      q('#acP').addEventListener('input', () => { setP(parseInt(q('#acP').value, 10) || 0); stats(el); ring(el); });
       q('#acD').addEventListener('input', () => { setD(parseFloat(q('#acD').value) || 0); stats(el); ring(el); });
       el.querySelectorAll('[data-am]').forEach(b => b.onclick = () => { h.modeLog = h.modeLog || {}; h.modeLog[d] = b.dataset.am; h.mode = b.dataset.am; save('habits'); draw(el); });
     }
@@ -1823,6 +1827,8 @@ function openActGoal(h, done) {
   const s = openSheet({title: '🎯 Mi meta diaria', body: `
     <div class="fld"><label>Tiempo (minutos)</label><div class="habgoal"><button type="button" class="btn sec" id="gaM">−</button><input class="inp rdnum" id="gaV" readonly inputmode="none" data-wheel data-min="1" data-max="300" data-title="Minutos por día" data-unit="min" value="${habGoal(h)}"><button type="button" class="btn sec" id="gaP">+</button><span class="hint">min</span></div>
       <div class="rdquick">${[10, 20, 30, 45, 60].map(n => `<button type="button" data-gm="${n}">${n}</button>`).join('')}</div></div>
+    ${act ? `<div class="fld"><label>Pasos</label><div class="habgoal"><input class="inp rdnum" id="gaP" readonly inputmode="none" data-wheel data-min="0" data-max="100000" data-title="Meta de pasos" data-unit="pasos" data-blank="1" value="${+h.goalSteps || ''}" placeholder="0"><span class="hint">pasos</span></div>
+<small class="hint">Déjalo en blanco si no quieres meta de pasos. Los pasos los anotas tú cada día.</small></div>` : ''}
     ${act ? `<div class="fld"><label>Distancia</label><div class="habgoal"><input class="inp rdnum" id="gaD" readonly inputmode="none" data-wheel data-min="0" data-max="60" data-dec="1" data-title="Meta de distancia" data-blank="1" value="${+h.goalDist || ''}" placeholder="0"><div class="seg"><button type="button" data-gu="mi" class="${u0 === 'mi' ? 'on' : ''}">millas</button><button type="button" data-gu="km" class="${u0 === 'km' ? 'on' : ''}">km</button></div></div>
 <small class="hint">Déjalo en blanco si solo quieres meta de tiempo. La meta se cumple al llegar al tiempo o a la distancia.</small></div>` : ''}`,
     foot: '<button class="btn" id="gaS">Guardar meta</button>',
@@ -1832,12 +1838,14 @@ function openActGoal(h, done) {
       el.querySelectorAll('[data-gm]').forEach(b => b.onclick = () => q('#gaV').value = b.dataset.gm);
       el.querySelectorAll('[data-gd]').forEach(b => b.onclick = () => q('#gaD').value = b.dataset.gd);
       el.querySelectorAll('[data-gu]').forEach(b => b.onclick = () => { u = b.dataset.gu; el.querySelectorAll('[data-gu]').forEach(x => x.classList.toggle('on', x === b)); });
-      q('#gaS').onclick = () => { h.goal = v(); if (act) { h.goalDist = Math.max(0, parseFloat(q('#gaD').value) || 0) || null; if (u !== u0) { const f = u === 'km' ? 1.609344 : 1 / 1.609344; h.dist = Object.fromEntries(Object.entries(h.dist || {}).map(([k, x]) => [k, Math.round(x * f * 100) / 100])); } h.unitD = u; } save('habits'); s.close(); toast('🎯 Meta guardada'); done && done(); };
+      q('#gaS').onclick = () => { h.goal = v(); if (act) { h.goalSteps = Math.max(0, parseInt(q('#gaP').value, 10) || 0) || null; h.goalDist = Math.max(0, parseFloat(q('#gaD').value) || 0) || null; if (u !== u0) { const f = u === 'km' ? 1.609344 : 1 / 1.609344; h.dist = Object.fromEntries(Object.entries(h.dist || {}).map(([k, x]) => [k, Math.round(x * f * 100) / 100])); } h.unitD = u; } save('habits'); s.close(); toast('🎯 Meta guardada'); done && done(); };
     }});
 }
 const ACT_RE = /^(caminar|correr|trotar|caminata|corrida)/i;
 const fmtD = x => { x = +x || 0; return Number.isInteger(x) ? String(x) : x.toFixed(2).replace(/0$/, ''); };
 const actDist = (h, d) => +((h.dist || {})[d]) || 0;
+const actSteps = (h, d) => +((h.steps || {})[d]) || 0;
+const fmtPasos = n => Math.round(n).toLocaleString('es-PR');
 const actMode = (h, d) => (h.modeLog || {})[d] || h.mode || (/correr|trotar|corrida/i.test(h.name || '') ? 'correr' : 'caminar');
 // Calorías aproximadas con valores MET (Compendio de Actividades Físicas): MET × peso (kg) × horas
 function actCalories(h, d) {
