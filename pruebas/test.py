@@ -66,7 +66,7 @@ def run(width, height, label, full=True):
         go('calendario'); pg.wait_for_timeout(300)
         ok(f'[{label}] tarea en calendario', pg.locator('.mcell.today >> text=Comprar medicina').count() >= 1 or pg.locator('#dp >> text=Comprar medicina').count() >= 1)
         sh('calmes')
-        go('tareas'); pg.wait_for_timeout(200)
+        go('tareas'); pg.wait_for_timeout(200); pg.click('[data-tm="tareas"]'); pg.wait_for_timeout(100)
         ok(f'[{label}] tarea en Tareas', pg.locator('#tList >> text=Comprar medicina').count() == 1)
         # 3 completar
         pg.locator('#tList .hlrow', has_text='Comprar medicina').locator('.hlbox').click(); pg.wait_for_timeout(200)
@@ -114,7 +114,7 @@ def run(width, height, label, full=True):
         pg.fill('#eTitle', 'Reunion banco'); pg.click('#eSave'); pg.wait_for_timeout(200)
         st = pg.evaluate('S'); e = [x for x in st['events'] if x['title'] == 'Reunion banco'][0]
         ok(f'[{label}] Dia inicio/fin puestos', e['start'] == '10:00' and e['end'] == '11:00', e)
-        go('tareas'); pg.wait_for_timeout(200)
+        go('tareas'); pg.wait_for_timeout(200); pg.click('[data-tm="tareas"]'); pg.wait_for_timeout(100)
         for tab in ['todo', 'late', 'done']:
             pg.click(f'[data-tt="{tab}"]'); pg.wait_for_timeout(100)
             assert pg.locator('#tList >> text=Clase de baile').count() == 0
@@ -230,7 +230,7 @@ def run(width, height, label, full=True):
         fillq(pg, 'xyz'); pg.wait_for_timeout(150)
         ok(f'[{label}] buscar en notas filtra', pg.locator('.nitem').count() == 0)
         pg.evaluate("document.querySelector('#qx').click()")
-        go('tareas'); pg.wait_for_timeout(150); pg.click('[data-tt="todo"]')
+        go('tareas'); pg.wait_for_timeout(150); pg.click('[data-tm="tareas"]'); pg.wait_for_timeout(100); pg.click('[data-tt="todo"]')
         fillq(pg, 'luz'); pg.wait_for_timeout(200)
         ok(f'[{label}] buscar en tareas', pg.locator('#tList .hlrow').count() == 1)
         pg.evaluate("document.querySelector('#qx').click()"); pg.wait_for_timeout(100)
@@ -238,7 +238,7 @@ def run(width, height, label, full=True):
         ok(f'[{label}] busqueda global', pg.locator('#res button', has_text='Clase de baile').count() >= 1)
         pg.evaluate("document.querySelector('#qx').click()")
         # filtros
-        go('tareas'); pg.wait_for_timeout(150); pg.click('#fBtn'); pg.wait_for_timeout(150); pg.click('[data-fp="Alta"]'); pg.click('#fOk'); pg.wait_for_timeout(150)
+        go('tareas'); pg.wait_for_timeout(150); pg.click('[data-tm="tareas"]'); pg.wait_for_timeout(100); pg.click('#fBtn'); pg.wait_for_timeout(150); pg.click('[data-fp="Alta"]'); pg.click('#fOk'); pg.wait_for_timeout(150)
         ok(f'[{label}] filtro activo como etiqueta', pg.locator('[data-rf="prio"]').count() == 1)
         pg.click('[data-rf="prio"]'); pg.wait_for_timeout(100)
         # 14 recargar

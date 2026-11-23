@@ -64,6 +64,7 @@ function shell() {
 }
 function go(v) {
   if (v === 'dia' && UI.view !== 'dia') { UI.motiv = nextMotiv(); UI.motivHidden = false; clearTimeout(motivTimer); motivTimer = null; }
+  if (v === 'tareas' && UI.view !== 'tareas') UI.taskHub = true;
   UI.view = v; if (v !== 'areas') UI.openArea = null; if (v !== 'tareas') UI.openList = null;
   UI.q = ''; $('#q').value = ''; $('#qx').classList.add('hidden'); $('#res').classList.add('hidden'); $('.top').classList.remove('srch');
   sheets.slice().forEach(s => s.close());
@@ -112,7 +113,7 @@ function globalResults() {
   box.querySelectorAll('[data-r]').forEach(b => b.onclick = () => {
     const [k, id] = b.dataset.r.split(':'); box.classList.add('hidden');
     if (k === 't') openTaskDetail(id); else if (k === 'e') openEventDetail(id); else if (k === 'n') openNote(id);
-    else if (k === 'r') openRoutineForm(S.routines.find(x => x.id === id)); else if (k === 'l') { go('tareas'); UI.taskMode = 'listas'; UI.openList = id; render(); } else if (k === 'a') { UI.openArea = id; UI.view = 'areas'; render(); }
+    else if (k === 'r') openRoutineForm(S.routines.find(x => x.id === id)); else if (k === 'l') { go('tareas'); UI.taskMode = 'listas'; UI.taskHub = false; UI.openList = id; render(); } else if (k === 'a') { UI.openArea = id; UI.view = 'areas'; render(); }
   });
 }
 
@@ -384,8 +385,14 @@ function vRutina(v) {
 
 /* ========== TAREAS ========== */
 function vTareas(v) {
-  v.innerHTML = `<div class="kindpick" style="max-width:420px;margin-bottom:12px"><button data-tm="tareas" class="kp ${UI.taskMode === 'tareas' ? 'on' : ''}"><span class="kpi">✅</span><span><b>Mis tareas</b><small>Pendientes, atrasadas y completadas</small></span></button><button data-tm="listas" class="kp ${UI.taskMode === 'listas' ? 'on' : ''}"><span class="kpi">📋</span><span><b>Mis listas</b><small>Compras y otras listas simples</small></span></button></div><div id="tmBody"></div>`;
-  v.querySelectorAll('[data-tm]').forEach(b => b.onclick = () => { UI.taskMode = b.dataset.tm; UI.openList = null; render(); });
+  // Menú de Tareas: cada espacio (Mis tareas / Mis listas) es una página propia
+  if (UI.taskHub) {
+    v.innerHTML = `<div class="kindpick" style="max-width:420px;margin-bottom:12px"><button data-tm="tareas" class="kp"><span class="kpi">✅</span><span><b>Mis tareas</b><small>Pendientes, atrasadas y completadas</small></span></button><button data-tm="listas" class="kp"><span class="kpi">📋</span><span><b>Mis listas</b><small>Compras y otras listas simples</small></span></button></div>`;
+    v.querySelectorAll('[data-tm]').forEach(b => b.onclick = () => { UI.taskMode = b.dataset.tm; UI.taskHub = false; UI.openList = null; render(); });
+    return;
+  }
+  v.innerHTML = `<button class="btn ghost sm" id="tmBack" style="margin-bottom:6px">‹ Tareas</button><div id="tmBody"></div>`;
+  $('#tmBack', v).onclick = () => { UI.taskHub = true; UI.openList = null; render(); };
   const body = $('#tmBody', v);
   if (UI.taskMode === 'listas') vListas(body); else vTareasList(body);
 }
@@ -866,7 +873,7 @@ function openListForm(list) {
       el.querySelector('#lS').onclick = () => {
         l.name = el.querySelector('#lN').value.trim(); if (!l.name) { toast('Escribe el nombre de la lista'); el.querySelector('#lN').focus(); return; }
         if (editing) { const o = listById(l.id); o.name = l.name; o.icon = l.icon; o.color = l.color; } else S.lists.push(l);
-        save('lists'); s.close(); UI.view = 'tareas'; UI.taskMode = 'listas'; UI.openList = l.id; render();
+        save('lists'); s.close(); UI.view = 'tareas'; UI.taskMode = 'listas'; UI.taskHub = false; UI.openList = l.id; render();
         if (!editing) setTimeout(() => { const a = $('#liAdd'); a && a.focus(); }, 60);
       };
       setTimeout(() => el.querySelector('#lN').focus(), 50);
@@ -952,9 +959,9 @@ function dayLists(box) {
   $('#dlBtn', box).onclick = add; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
   const q = id => $(id, box);
   if (q('#qGo')) q('#qGo').onclick = () => go('dia');
-  if (q('#qOpen')) q('#qOpen').onclick = () => { const id = UI.popTab; go('tareas'); UI.taskMode = 'listas'; UI.openList = id; render(); };
+  if (q('#qOpen')) q('#qOpen').onclick = () => { const id = UI.popTab; go('tareas'); UI.taskMode = 'listas'; UI.taskHub = false; UI.openList = id; render(); };
   if (q('#qUndo')) q('#qUndo').onclick = () => { S.lists.find(y => y.id === UI.popTab).items.forEach(i => i.done = false); save('lists'); redraw(); };
-  if (q('#qNewList')) q('#qNewList').onclick = () => { go('tareas'); UI.taskMode = 'listas'; render(); openListForm(); };
+  if (q('#qNewList')) q('#qNewList').onclick = () => { go('tareas'); UI.taskMode = 'listas'; UI.taskHub = false; render(); openListForm(); };
 }
 
 /* ========== MI DÍA (v2): tira de días + línea de tiempo con gestos ========== */

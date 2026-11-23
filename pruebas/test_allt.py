@@ -28,7 +28,7 @@ with sync_playwright() as p:
     pg.locator('#dp .hlrow', has_text='Correr').locator('.hltx').click(); pg.wait_for_timeout(300)
     ok(f'[{lab}] tocar abre detalle', pg.locator('.sheet h2', has_text='Tarea').count()==1); pg.keyboard.press('Escape')
     pg.locator('#dp .hladd').click(); pg.wait_for_timeout(300); ok(f'[{lab}] + abre formulario', pg.locator('#eTitle').count()==1); pg.keyboard.press('Escape')
-    pg.evaluate("go('tareas')"); pg.wait_for_timeout(300)
+    pg.evaluate("go('tareas')"); pg.wait_for_timeout(300); pg.click('[data-tm="tareas"]'); pg.wait_for_timeout(150)
     ok(f'[{lab}] Tareas agrupadas por fecha', pg.locator('#tList .hlday').count()==2)
     pg.locator('#tList .hladd').first.click(); pg.wait_for_timeout(300)
     ok(f'[{lab}] + en Tareas abre nueva tarea con esa fecha', pg.locator('#tTitle').count()==1); pg.keyboard.press('Escape')
