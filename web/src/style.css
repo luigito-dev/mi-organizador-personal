@@ -1280,3 +1280,4 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .pinbox .tmring{width:160px;height:160px}
 .pinbox .plate,.pinbox .fdplate{width:160px;height:160px}
 .pinbox .sky{max-height:130px}
+.pinbox .whandle{display:none}
