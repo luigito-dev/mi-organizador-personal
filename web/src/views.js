@@ -1899,6 +1899,7 @@ function openChallengeForm(h, done) {
     ${c.ready ? '' : `<div class="seg chtabs"><button type="button" data-ctab="listos" class="${tab === 'listos' ? 'on' : ''}">🏆 Retos listos</button><button type="button" data-ctab="crear" class="${tab === 'crear' ? 'on' : ''}">✏️ Crear el mío</button></div>`}
     <div data-tp="listos">${c.ready ? `<div class="chnote"><span class="chnote-k">Reto listo</span> Tu reto actual, <b>${esc(c.name)}</b>, es un reto listo: sus cantidades no se cambian. Puedes cambiarle el color o escoger otro reto.</div>` : ''}    <div class="chready"><div class="hint" style="margin:0 2px 4px">Toca uno para empezar. Sus cantidades ya vienen puestas.</div>${CH_READY.map((r, i) => { const t = r.vals().reduce((a, b) => a + b, 0); return `<button type="button" class="chrd" data-crd="${i}"><span class="chrdi ${r.view}">${r.view === 'sobres' ? ENV_SVG : r.view === 'circulos' ? '<b></b><b></b><b></b>' : '<i></i><i></i>'}</span><span class="chrdt"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span><span class="chrdm">${money(t)}</span></button>`; }).join('')}<button type="button" class="chrd chrdown" data-ctab-go="crear"><span class="chrdi">✏️</span><span class="chrdt"><b>Crear el mío</b><small>Escoge la cantidad, el plazo y cómo marcar</small></span><span class="chrdm">›</span></button></div></div>
     <div class="chown" data-tp="crear">
+      <div class="fld"><label>Nombre del reto <small class="muted">(opcional)</small></label><input class="inp" id="chN" maxlength="40" placeholder="Ej.: Viaje a Japón" value="${esc(!c.ready && c.userName || '')}"></div>
       <div class="chstep"><span>1</span><label>¿Cuánto quieres ahorrar?</label></div>
       <input class="inp rdnum chbig" id="chA" readonly inputmode="none" data-wheel data-min="10" data-max="50000" data-step="10" data-unit="$" data-title="¿Cuánto quieres ahorrar?" value="${!c.ready && c.amount ? c.amount : 1000}">
       <div class="chstep"><span>2</span><label>¿En cuánto tiempo?</label></div>
@@ -1940,7 +1941,8 @@ function openChallengeForm(h, done) {
       q('#chS').onclick = () => {
         const n = N(), t = A(); if (!t) { toast('Pon una cantidad'); return; }
         const F = CH_FREQ[freq], sp = (CH_SPANS.find(x => x[0] === span) || [0, span + ' meses'])[1];
-        h.challenge = {span, fixR: 1, name: `${money(t)} en ${sp}`, title: money(t), sub: `${sp} · cada ${F[1]}`, amount: t, style, vals: vals(), marked: {}, start: todayISO(), freq, view, color, indep: 1, indep2: 1};
+        const uN = (q('#chN').value || '').trim();
+        h.challenge = {span, fixR: 1, userName: uN || undefined, name: uN || `${money(t)} en ${sp}`, title: uN || money(t), sub: uN ? `${money(t)} en ${sp} · cada ${F[1]}` : `${sp} · cada ${F[1]}`, amount: t, style, vals: vals(), marked: {}, start: todayISO(), freq, view, color, indep: 1, indep2: 1};
         save('habits'); s.close(); toast('🏆 Reto creado'); done && done(); openChallengeTable(h, todayISO(), done);
       };
       const del = q('#chDel'); if (del) del.onclick = async () => { if (await ask('¿Quitar el reto y sus casillas marcadas? Tu ahorro regular no cambia.', {yes: 'Quitar'})) { h.challenge = null; save('habits'); s.close(); done && done(); } };
