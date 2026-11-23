@@ -157,10 +157,21 @@ function rangeDays(tab) {
 }
 let motivTimer = null;
 /* ========== CALENDARIO ========== */
+// Espacio propio de eventos dentro de Calendario
+function calEventos(body) {
+  const t = todayISO();
+  const list = S.events.filter(e => (e.date || '') >= t).sort((a, b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || ''))).slice(0, 80);
+  const groups = []; list.forEach(e => { const g = groups.find(x => x[0] === e.date); g ? g[1].push(e) : groups.push([e.date, [e]]); });
+  body.innerHTML = `<div class="evspace"><div class="row" style="margin-bottom:10px"><span class="sp"></span><button class="btn sm" id="evNew">+ Nuevo evento</button></div>
+    ${groups.length ? groups.map(([dd, its]) => `<div class="sec-title">${cap(fmtLong(dd))}</div>${its.map(e => itemHTML('ev', e, {date: false})).join('')}`).join('') : '<div class="card empty"><div class="big">🗓️</div>No tienes eventos próximos. Toca “+ Nuevo evento”.</div>'}</div>`;
+  body.querySelector('#evNew').onclick = () => openEventForm(null, {date: t});
+  body.querySelectorAll('[data-ev]').forEach(b => b.onclick = e => { e.stopPropagation(); openEventDetail(b.dataset.ev); });
+}
 function calTitle(view, d) {
   const dd = parseISO(d);
   if (view === 'month') return cap(MESES[dd.getMonth()]) + ' ' + dd.getFullYear();
   if (view === 'day') return fmtLong(d) + ' ' + dd.getFullYear();
+  if (view === 'eventos') return 'Mis eventos';
   if (view === 'forecast') { const e = parseISO(addDays(d, 13)); return `${dd.getDate()} ${MESES[dd.getMonth()].slice(0, 3)} – ${e.getDate()} ${MESES[e.getMonth()].slice(0, 3)} ${e.getFullYear()}`; }
   const w = weekDays8(d); const a = parseISO(w[0]), b = parseISO(w[w.length - 1]);
   return a.getMonth() === b.getMonth() ? `${a.getDate()} – ${b.getDate()} de ${MESES[b.getMonth()]} ${b.getFullYear()}` : `${a.getDate()} ${MESES[a.getMonth()].slice(0, 3)} – ${b.getDate()} ${MESES[b.getMonth()].slice(0, 3)} ${b.getFullYear()}`;
@@ -177,7 +188,7 @@ function vCal(v) {
   const view = S.settings.calView || 'month', d = UI.calDate;
   v.innerHTML = `<div class="cal-wrap"><div class="cal-side"><div class="card mini" id="mini1"></div><div class="card" style="margin-top:12px"><h3>Mis áreas</h3><div class="areas-list" id="aList"></div></div></div>
     <div><div class="calbar"><button class="iconbtn" id="cPrev" aria-label="Anterior">‹</button><button class="iconbtn" id="cNext" aria-label="Siguiente">›</button><button class="btn sec sm" id="cToday">Hoy</button><h2>${calTitle(view, d)}</h2><span class="sp"></span>
-      <div class="seg">${[['month', 'Mes'], ['week', 'Semana'], ['day', 'Día'], ['forecast', 'Próximos']].map(([k, n]) => `<button data-cv="${k}" class="${view === k ? 'on' : ''}">${n}</button>`).join('')}</div>${view === 'month' ? '<button class="iconbtn" id="calBg" aria-label="Fondo del calendario" title="Fondo del calendario"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="9.5" r="1.8"/><path d="M21 16l-5-5-8 9"/></svg></button>' : ''}</div>
+      <div class="seg">${[['month', 'Mes'], ['week', 'Semana'], ['day', 'Día'], ['forecast', 'Próximos'], ['eventos', 'Eventos']].map(([k, n]) => `<button data-cv="${k}" class="${view === k ? 'on' : ''}">${n}</button>`).join('')}</div>${view === 'month' ? '<button class="iconbtn" id="calBg" aria-label="Fondo del calendario" title="Fondo del calendario"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="9.5" r="1.8"/><path d="M21 16l-5-5-8 9"/></svg></button>' : ''}</div>
       <div id="calBody"></div><div id="calExtra"></div></div></div>`;
   // Minicalendario
   const mc = monthCells(d), md = parseISO(d);
@@ -197,6 +208,7 @@ function vCal(v) {
   if (view === 'month') { calMonth(body, d); extra.innerHTML = '<div class="daypanel card" id="dp"></div>'; dayPanel($('#dp', v), UI.selDate); }
   else if (view === 'week') { calWeek(body, d); planner(extra, d); }
   else if (view === 'forecast') calForecast(body, d);
+  else if (view === 'eventos') { calEventos(body); $('#cPrev', v).style.display = $('#cNext', v).style.display = $('#cToday', v).style.display = 'none'; }
   else { UI.selDate = d; calDay(body, d); extra.innerHTML = '<div class="daypanel card" id="dp"></div>'; dayPanel($('#dp', v), d); }
 }
 function pillHTML(i) {

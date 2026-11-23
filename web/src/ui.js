@@ -158,7 +158,7 @@ function openTaskForm(task, preset = {}) {
   const t = task ? JSON.parse(JSON.stringify(task)) : {id: uid(), title: preset.title || '', date: preset.date || todayISO(), time: preset.time || null, typeId: preset.typeId || 'pendiente', areaId: preset.areaId || null, priority: 'Media', details: '', steps: [], status: 'Pendiente', obs: '', reminder: null, createdAt: Date.now()};
   const dateMode = () => t.date === todayISO() ? 'hoy' : t.date === addDays(todayISO(), 1) ? 'man' : 'otra';
   const body = `
-    ${editing ? '' : `<div class="kindpick"><button type="button" class="kp" data-sw="ev"><span class="kpi">📅</span><span><b>Evento</b><small>Algo con fecha y hora</small></span></button><button type="button" class="kp on"><span class="kpi">✅</span><span><b>Tarea</b><small>Algo por hacer</small></span></button></div>`}
+
     <input class="inp title" id="tTitle" placeholder="¿Qué tienes que hacer?" value="${esc(t.title)}" maxlength="140">
     <div class="fld"><label>¿Para cuándo?</label><div class="opts" id="tWhen">
       <button type="button" class="opt" data-w="hoy">Hoy</button><button type="button" class="opt" data-w="man">Mañana</button><button type="button" class="opt" data-w="otra">Otra fecha</button>
@@ -265,7 +265,7 @@ function openEventForm(ev, preset = {}, mode) {
   const cls = mode === 'week' ? 'purple' : mode === 'day' ? 'bluehd' : '';
   const dd = parseISO(e.date);
   const body = `
-    ${editing ? '' : `<div class="kindpick"><button type="button" class="kp on"><span class="kpi">📅</span><span><b>Evento</b><small>Algo con fecha y hora</small></span></button><button type="button" class="kp" data-sw="tk"><span class="kpi">✅</span><span><b>Tarea</b><small>Algo por hacer</small></span></button></div>`}
+
     ${mode === 'month' ? `<div class="bigday"><div class="mo">${MESES[dd.getMonth()]}</div><div class="dn">${dd.getDate()}</div><div class="wd">${DIAS[dd.getDay()]}</div></div>` : ''}
     <input class="inp title" id="eTitle" placeholder="Nombre del evento" value="${esc(e.title)}" maxlength="140">
     ${mode === 'week' ? `<div class="fld"><label>¿Qué días de esta semana?</label><div class="opts" id="eDays">${wk.map(d => `<button type="button" class="opt" data-d="${d}">${DCORTO[dow(d)]} ${parseISO(d).getDate()}</button>`).join('')}</div></div>`

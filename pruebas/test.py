@@ -136,7 +136,7 @@ def run(width, height, label, full=True):
         ok(f'[{label}] rutina en el mes siguiente', (pg.locator('.pill.rt >> text=Gimnasio').count() if width > 820 else pg.locator('.cmdots i, .mlab.rt').count()) >= 4)
         pg.click('#cToday')
         # 6 reloj: horas giran, minutos de 5 en 5
-        pg.click('#fab'); pg.wait_for_timeout(200); pg.click('[data-sw]'); pg.wait_for_timeout(200)
+        pg.evaluate("openTaskForm(null,{date:todayISO()})"); pg.wait_for_timeout(200);
         pg.click('#tTimeBtn'); pg.wait_for_timeout(400)
         mins = pg.evaluate("Array.from(document.querySelectorAll('.wcol')[1].querySelectorAll('.wi')).slice(0,12).map(e=>e.textContent)")
         ok(f'[{label}] minutos de 5 en 5', mins == ['00','05','10','15','20','25','30','35','40','45','50','55'], mins)
@@ -157,8 +157,7 @@ def run(width, height, label, full=True):
         ok(f'[{label}] campanita naranja encendida', pg.locator('#tTimeRow .bellrow.on').count() == 1)
         pg.fill('#tTitle', 'Pagar la luz'); pg.click('#tSave'); pg.wait_for_timeout(200)
         # 8 tipo propio
-        pg.click('#fab'); pg.wait_for_timeout(200)
-        if pg.locator('[data-sw="tk"]').count(): pg.click('[data-sw="tk"]'); pg.wait_for_timeout(200)
+        pg.evaluate("openTaskForm(null,{date:todayISO()})"); pg.wait_for_timeout(200)
         pg.click('[data-newtype]'); pg.wait_for_timeout(200)
         pg.fill('#tyN', 'Mascota'); pg.click('[data-e="🐶"]'); pg.click('#tyS'); pg.wait_for_timeout(200)
         st = pg.evaluate('S'); cust = [x for x in st['types'] if x['name'] == 'Mascota']

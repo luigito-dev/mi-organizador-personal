@@ -1319,3 +1319,4 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .kp small{display:block;color:var(--muted);font-size:12px;font-weight:400;margin-top:2px}
 .kp.on{border-color:var(--blue);box-shadow:0 0 0 2px color-mix(in srgb,var(--blue) 22%,transparent)}
 .kpi{font-size:24px;line-height:1;width:34px;text-align:center}
+.evspace .item{margin-bottom:8px}
