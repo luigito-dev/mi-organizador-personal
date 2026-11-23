@@ -103,7 +103,7 @@
     handleAction(a) {
       whenReady(() => {
         if (a === 'nueva') { go('dia'); setTimeout(() => openTaskForm(), 150); }
-        else if (a === 'listas') { go('tareas'); UI.taskMode = 'listas'; UI.taskHub = false; render(); }
+        else if (a === 'listas') { go('listas'); render(); }
         else if (a === 'dia') go('dia');
       });
     },

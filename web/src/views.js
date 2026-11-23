@@ -4,6 +4,7 @@ const IC = {
   cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   areas: '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',
   rutina: '<path d="M4 12a8 8 0 0 1 14-5.3L20 9"/><path d="M20 4v5h-5"/><path d="M20 12a8 8 0 0 1-14 5.3L4 15"/><path d="M4 20v-5h5"/>',
+  listas: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>',
   tareas: '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
   enfoque: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/>',
   notas: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
@@ -17,7 +18,7 @@ const ic = (k, cls = 'ic') => `<svg class="${cls}" viewBox="0 0 24 24" fill="non
 const LOGO = `<svg width="34" height="34" viewBox="0 0 40 40"><rect x="4" y="7" width="32" height="29" rx="6" fill="#fff"/><rect x="4" y="7" width="32" height="9" rx="4" fill="#f08a24"/><rect x="4" y="12" width="32" height="4" fill="#f08a24"/><rect x="11" y="3" width="4" height="8" rx="2" fill="#fff" stroke="#174a96" stroke-width="1.5"/><rect x="25" y="3" width="4" height="8" rx="2" fill="#fff" stroke="#174a96" stroke-width="1.5"/><path d="M12.5 25.5l5 5 10-10" fill="none" stroke="#1f5fbf" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const SECTIONS = [
   ['dia', 'Mi Día', 'dia'], ['calendario', 'Calendario', 'cal'], ['areas', 'Áreas', 'areas'], ['rutina', 'Rutina semanal', 'rutina'],
-  ['tareas', 'Tareas', 'tareas'], ['habitos', 'Hábitos', 'habitos'], ['enfoque', 'Enfoque', 'enfoque'], ['notas', 'Mis notas', 'notas'], ['progreso', 'Progreso', 'progreso'], ['config', 'Configuración', 'config']
+  ['tareas', 'Tareas', 'tareas'], ['listas', 'Mis listas', 'listas'], ['habitos', 'Hábitos', 'habitos'], ['enfoque', 'Enfoque', 'enfoque'], ['notas', 'Mis notas', 'notas'], ['progreso', 'Progreso', 'progreso'], ['config', 'Configuración', 'config']
 ];
 const UI = {freeShown: {}, daySel: null, view: 'dia', q: '', calDate: todayISO(), selDate: todayISO(), sumTab: 'hoy', taskTab: 'todo', filters: {area: '', type: '', prio: '', sort: 'fecha'}, showHiddenNotes: false, sideTab: 'citas', taskMode: 'tareas', openList: null, openArea: null, areaType: '', motivHidden: false, motiv: '', qWhen: 'hoy', qDate: null};
 const isMobile = () => window.matchMedia('(max-width:820px)').matches;
@@ -28,8 +29,9 @@ function shell() {
     <aside class="side"><div class="brand">${LOGO}<span>Mi Organizador<br>Personal</span></div><nav class="nav" id="nav">${SECTIONS.map(([k, n, i]) => `<button data-go="${k}">${ic(i)}${n}</button>`).join('')}</nav><div class="store storeLbl"></div></aside>
     <main class="main"><header class="top"><h1 id="vt"></h1><button class="iconbtn lsbtn hidden" id="lsBtn" aria-label="Hoy y mis listas"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="4" height="4" rx="1"/><path d="M4.5 7l1 1 1.5-2"/><rect x="3.5" y="14" width="4" height="4" rx="1"/><path d="M11 7h9M11 16h9"/></svg><span class="lsbadge" id="lsBadge"></span></button><button class="iconbtn sopen" id="sOpen" aria-label="Buscar">${ic('search')}</button><div class="search" id="sbox">${ic('search', 'si')}<input id="q" type="search" placeholder="Buscar…" autocomplete="off" aria-label="Buscar"><button class="sx hidden" id="qx" aria-label="Borrar">✕</button><div class="results hidden" id="res"></div></div></header>
     <section class="view" id="view"></section></main>
-    <nav class="bottom" id="bnav">${[['dia', 'Mi Día', 'dia'], ['calendario', 'Calendario', 'cal'], ['tareas', 'Tareas', 'tareas'], ['notas', 'Notas', 'notas'], ['mas', 'Más', 'mas']].map(([k, n, i]) => `<button data-go="${k}">${ic(i)}${n}</button>`).join('')}</nav>
+    <nav class="bottom" id="bnav"></nav>
     <button class="fab" id="fab" aria-label="Añadir">+</button><div id="mini"></div><div class="toasts" id="toasts"></div></div>`;
+  buildBnav();
   document.addEventListener('click', e => {
     const g = e.target.closest('[data-go]'); if (!g) return;
     if (g.dataset.go === 'mas') { openMore(); return; }
@@ -41,7 +43,7 @@ function shell() {
     else if (UI.view === 'areas' && !UI.openArea) openAreaForm();
     else if (UI.view === 'rutina') openRoutineForm();
     else if (UI.view === 'habitos') openHabitForm();
-    else if (UI.view === 'tareas' && UI.taskMode === 'listas') { if (UI.openList && listById(UI.openList)) { const a = $('#liAdd'); a && a.focus(); } else openListForm(); }
+    else if (UI.view === 'listas') { if (UI.openList && listById(UI.openList)) { const a = $('#liAdd'); a && a.focus(); } else openListForm(); }
     else openTaskForm(null, {areaId: UI.view === 'areas' ? UI.openArea : null});
   };
   const q = $('#q');
@@ -64,29 +66,53 @@ function shell() {
 }
 function go(v) {
   if (v === 'dia' && UI.view !== 'dia') { UI.motiv = nextMotiv(); UI.motivHidden = false; clearTimeout(motivTimer); motivTimer = null; }
-  if (v === 'tareas' && UI.view !== 'tareas') UI.taskHub = true;
   UI.view = v; if (v !== 'areas') UI.openArea = null; if (v !== 'tareas') UI.openList = null;
   UI.q = ''; $('#q').value = ''; $('#qx').classList.add('hidden'); $('#res').classList.add('hidden'); $('.top').classList.remove('srch');
   sheets.slice().forEach(s => s.close());
   render(); window.scrollTo(0, 0);
 }
+function bottomItems() {
+  const b = (S.settings.navBar || []).filter(k => SECTIONS.some(x => x[0] === k));
+  return b.length ? b.slice(0, 4) : ['dia', 'calendario', 'tareas', 'listas'];
+}
+function buildBnav() {
+  const nav = $('#bnav'); if (!nav) return;
+  nav.innerHTML = bottomItems().map(k => { const sec = SECTIONS.find(x => x[0] === k); return `<button data-go="${k}">${ic(sec[2])}${sec[1]}</button>`; }).join('') + `<button data-go="mas">${ic('mas')}Más</button>`;
+}
+function openNavEditor() {
+  let sel = bottomItems().slice();
+  const s = openSheet({title: 'Barra inferior', body: `<p class="small muted" style="margin:0 0 12px">Elige hasta 4 secciones. Las demás quedan en Más.</p><div class="pickgrid g">${SECTIONS.map(([k, n]) => `<button type="button" class="opt ${sel.includes(k) ? 'on' : ''}" data-nv="${k}">${n}</button>`).join('')}</div>`,
+    foot: '<button class="btn ghost" id="nvReset">Restablecer</button><button class="btn" id="nvOk">Listo</button>',
+    onMount: el => {
+      el.querySelectorAll('[data-nv]').forEach(b => b.onclick = () => {
+        const k = b.dataset.nv;
+        if (sel.includes(k)) { if (sel.length > 1) sel = sel.filter(x => x !== k); }
+        else if (sel.length < 4) sel.push(k);
+        else { toast('Máximo 4 secciones en la barra'); return; }
+        el.querySelectorAll('[data-nv]').forEach(x => x.classList.toggle('on', sel.includes(x.dataset.nv)));
+      });
+      el.querySelector('#nvReset').onclick = () => { S.settings.navBar = null; save('meta'); s.close(); render(); };
+      el.querySelector('#nvOk').onclick = () => { S.settings.navBar = sel.slice(); save('meta'); s.close(); render(); };
+    }});
+}
 function openMore() {
-  const s = openSheet({title: 'Más', body: `<div class="more-grid">${SECTIONS.filter(x => !['dia', 'calendario', 'tareas', 'notas'].includes(x[0])).map(([k, n, i]) => `<button data-m="${k}">${ic(i)}${n}</button>`).join('')}</div><p class="xs muted storeLbl" style="text-align:center;margin-top:16px"></p>`,
-    onMount: el => { setStoreLabel(); el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { s.close(); go(b.dataset.m); }); }});
+  const s = openSheet({title: 'Más', body: `<div class="more-grid">${SECTIONS.filter(x => !bottomItems().includes(x[0])).map(([k, n, i]) => `<button data-m="${k}">${ic(i)}${n}</button>`).join('')}</div><button class="btn ghost sm" id="nvEdit" style="margin:14px auto 0;display:block">Cambiar barra inferior</button><p class="xs muted storeLbl" style="text-align:center;margin-top:16px"></p>`,
+    onMount: el => { setStoreLabel(); el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { s.close(); go(b.dataset.m); }); el.querySelector('#nvEdit').onclick = () => { s.close(); openNavEditor(); }; }});
 }
 function render() {
+  buildBnav();
   const sec = SECTIONS.find(x => x[0] === UI.view);
   $('#vt').textContent = sec ? sec[1] : '';
   $$('#nav [data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === UI.view));
-  $$('#bnav [data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === UI.view || (b.dataset.go === 'mas' && !['dia', 'calendario', 'tareas', 'notas'].includes(UI.view))));
+  $$('#bnav [data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === UI.view || (b.dataset.go === 'mas' && !bottomItems().includes(UI.view))));
   $('#sbox').classList.toggle('hidden', UI.view === 'enfoque'); $('#sOpen').classList.toggle('hidden', UI.view === 'enfoque');
-  $('#q').placeholder = UI.view === 'tareas' ? (UI.taskMode === 'listas' ? 'Buscar en listas…' : 'Buscar en tareas…') : UI.view === 'notas' ? 'Buscar en notas…' : 'Buscar en toda la app…';
+  $('#q').placeholder = UI.view === 'listas' ? 'Buscar en listas…' : UI.view === 'tareas' ? 'Buscar en tareas…' : UI.view === 'notas' ? 'Buscar en notas…' : 'Buscar en toda la app…';
   $('#fab').classList.toggle('hidden', ['enfoque', 'progreso', 'config'].includes(UI.view));
   renderView(); renderMini(); setStoreLabel(); listBadge();
 }
 function renderView() {
   const v = $('#view');
-  const fn = {dia: vDia2, calendario: vCal, areas: vAreas, rutina: vRutina, tareas: vTareas, habitos: vHabitos, enfoque: vEnfoque, notas: vNotas, progreso: vProgreso, config: vConfig}[UI.view];
+  const fn = {dia: vDia2, calendario: vCal, areas: vAreas, rutina: vRutina, tareas: vTareas, listas: vListasView, habitos: vHabitos, enfoque: vEnfoque, notas: vNotas, progreso: vProgreso, config: vConfig}[UI.view];
   v.innerHTML = ''; fn(v); listBadge();
 }
 
@@ -113,7 +139,7 @@ function globalResults() {
   box.querySelectorAll('[data-r]').forEach(b => b.onclick = () => {
     const [k, id] = b.dataset.r.split(':'); box.classList.add('hidden');
     if (k === 't') openTaskDetail(id); else if (k === 'e') openEventDetail(id); else if (k === 'n') openNote(id);
-    else if (k === 'r') openRoutineForm(S.routines.find(x => x.id === id)); else if (k === 'l') { go('tareas'); UI.taskMode = 'listas'; UI.taskHub = false; UI.openList = id; render(); } else if (k === 'a') { UI.openArea = id; UI.view = 'areas'; render(); }
+    else if (k === 'r') openRoutineForm(S.routines.find(x => x.id === id)); else if (k === 'l') { go('listas'); UI.openList = id; render(); } else if (k === 'a') { UI.openArea = id; UI.view = 'areas'; render(); }
   });
 }
 
@@ -424,16 +450,12 @@ function vRutina(v) {
 
 /* ========== TAREAS ========== */
 function vTareas(v) {
-  // Menú de Tareas: cada espacio (Mis tareas / Mis listas) es una página propia
-  if (UI.taskHub) {
-    v.innerHTML = `<div class="kindpick" style="max-width:420px;margin-bottom:12px"><button data-tm="tareas" class="kp"><span class="kpi">✅</span><span><b>Mis tareas</b><small>Pendientes, atrasadas y completadas</small></span></button><button data-tm="listas" class="kp"><span class="kpi">📋</span><span><b>Mis listas</b><small>Compras y otras listas simples</small></span></button></div>`;
-    v.querySelectorAll('[data-tm]').forEach(b => b.onclick = () => { UI.taskMode = b.dataset.tm; UI.taskHub = false; UI.openList = null; render(); });
-    return;
-  }
-  v.innerHTML = `<button class="btn ghost sm" id="tmBack" style="margin-bottom:6px">‹ Tareas</button><div id="tmBody"></div>`;
-  $('#tmBack', v).onclick = () => { UI.taskHub = true; UI.openList = null; render(); };
-  const body = $('#tmBody', v);
-  if (UI.taskMode === 'listas') vListas(body); else vTareasList(body);
+  UI.taskMode = 'tareas'; UI.taskHub = false;
+  vTareasList(v);
+}
+function vListasView(v) {
+  UI.taskMode = 'listas';
+  vListas(v);
 }
 function vTareasList(v) {
   const f = UI.filters, q = norm(UI.q.trim());
@@ -912,7 +934,7 @@ function openListForm(list) {
       el.querySelector('#lS').onclick = () => {
         l.name = el.querySelector('#lN').value.trim(); if (!l.name) { toast('Escribe el nombre de la lista'); el.querySelector('#lN').focus(); return; }
         if (editing) { const o = listById(l.id); o.name = l.name; o.icon = l.icon; o.color = l.color; } else S.lists.push(l);
-        save('lists'); s.close(); UI.view = 'tareas'; UI.taskMode = 'listas'; UI.taskHub = false; UI.openList = l.id; render();
+        save('lists'); s.close(); UI.view = 'listas'; UI.openList = l.id; render();
         if (!editing) setTimeout(() => { const a = $('#liAdd'); a && a.focus(); }, 60);
       };
       setTimeout(() => el.querySelector('#lN').focus(), 50);
@@ -998,9 +1020,9 @@ function dayLists(box) {
   $('#dlBtn', box).onclick = add; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
   const q = id => $(id, box);
   if (q('#qGo')) q('#qGo').onclick = () => go('dia');
-  if (q('#qOpen')) q('#qOpen').onclick = () => { const id = UI.popTab; go('tareas'); UI.taskMode = 'listas'; UI.taskHub = false; UI.openList = id; render(); };
+  if (q('#qOpen')) q('#qOpen').onclick = () => { const id = UI.popTab; go('listas'); UI.openList = id; render(); };
   if (q('#qUndo')) q('#qUndo').onclick = () => { S.lists.find(y => y.id === UI.popTab).items.forEach(i => i.done = false); save('lists'); redraw(); };
-  if (q('#qNewList')) q('#qNewList').onclick = () => { go('tareas'); UI.taskMode = 'listas'; UI.taskHub = false; render(); openListForm(); };
+  if (q('#qNewList')) q('#qNewList').onclick = () => { go('listas'); render(); openListForm(); };
 }
 
 /* ========== MI DÍA (v2): tira de días + línea de tiempo con gestos ========== */
