@@ -1296,3 +1296,9 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .fdt{flex:1;min-width:0;display:flex;flex-direction:column}.fdt small{color:var(--muted);font-size:12px}
 .nfimg{width:120px;height:120px;object-fit:cover;border-radius:12px;margin-top:8px}
 .nfres{background:var(--soft);border-radius:12px;padding:10px;margin:8px 0;font-size:14px}
+
+.toggle2.sep{background:none;padding:0;gap:10px}
+.toggle2.sep button{background:var(--soft);border-radius:14px;padding:11px;box-shadow:none}
+.toggle2.sep button.on{background:var(--card);color:var(--blue);box-shadow:var(--shadow);outline:2px solid var(--blue);outline-offset:-2px}
+.lpin{border-radius:999px;padding:6px 14px;font-weight:700;font-size:14px}
+.lpin.on{background:var(--blue);color:#fff;border-color:var(--blue)}

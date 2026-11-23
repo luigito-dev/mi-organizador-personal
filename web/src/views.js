@@ -331,7 +331,7 @@ function vAreaDetail(v, a) {
   const fT = UI.areaType ? tks.filter(t => t.typeId === UI.areaType) : tks;
   const pend = fT.filter(t => !isDone(t)).sort((x, y) => (x.date + (x.time || '')).localeCompare(y.date + (y.time || ''))), done = fT.filter(isDone);
   v.innerHTML = `<button class="btn ghost sm" id="back">‹ Todas las áreas</button>
-    <div class="card" style="border-top:6px solid ${a.color};margin-top:6px"><div class="row wrap"><h2 style="margin:0;font-size:20px">${esc(a.name)}</h2><span class="sp"></span><button class="btn sec sm" id="aEd">✎ Editar</button><button class="btn sec sm" id="aDel"><i class="xdel"></i> Eliminar</button></div>
+    <div class="card" style="border-top:6px solid ${a.color};margin-top:6px"><div class="row wrap"><h2 style="margin:0;font-size:20px">${esc(a.name)}</h2><span class="sp"></span><button class="btn sec sm" id="aEd">✎ Editar</button><button class="btn sec sm" id="aDel" aria-label="Eliminar área" title="Eliminar área"><i class="xdel"></i></button></div>
       <div class="small muted" style="margin-top:6px">${a.contact ? '👤 ' + esc(a.contact) + ' · ' : ''}${a.place ? '📍 ' + esc(a.place) : ''}</div>${a.obs ? `<div class="small" style="margin-top:6px;white-space:pre-wrap">${esc(a.obs)}</div>` : ''}
       <div class="row wrap" style="margin-top:12px"><button class="btn sm" id="adT">+ Tarea</button><button class="btn sm sec" id="adE">+ Evento</button><button class="btn sm sec" id="adR">+ Rutina</button><button class="btn sm sec" id="adN">+ Nota</button></div></div>
     <div class="sec-title">Actividades</div>
@@ -372,7 +372,7 @@ function vRutina(v) {
 
 /* ========== TAREAS ========== */
 function vTareas(v) {
-  v.innerHTML = `<div class="toggle2" style="max-width:420px;margin-bottom:12px"><button data-tm="tareas" class="${UI.taskMode === 'tareas' ? 'on' : ''}">✅ Mis tareas</button><button data-tm="listas" class="${UI.taskMode === 'listas' ? 'on' : ''}">📋 Mis listas</button></div><div id="tmBody"></div>`;
+  v.innerHTML = `<div class="toggle2 sep" style="max-width:420px;margin-bottom:12px"><button data-tm="tareas" class="${UI.taskMode === 'tareas' ? 'on' : ''}">✅ Mis tareas</button><button data-tm="listas" class="${UI.taskMode === 'listas' ? 'on' : ''}">📋 Mis listas</button></div><div id="tmBody"></div>`;
   v.querySelectorAll('[data-tm]').forEach(b => b.onclick = () => { UI.taskMode = b.dataset.tm; UI.openList = null; render(); });
   const body = $('#tmBody', v);
   if (UI.taskMode === 'listas') vListas(body); else vTareasList(body);
@@ -812,7 +812,7 @@ function vListaDetalle(v, l) {
   const nd = l.items.filter(i => i.done).length;
   const row = i => `<div class="item ${i.done ? 'done' : ''}" data-li="${i.id}"><button class="check ${i.done ? 'on' : ''}" data-lc="${i.id}" aria-label="${i.done ? 'Desmarcar' : 'Marcar'}">${i.done ? '✓' : ''}</button><div class="body"><div class="t" style="white-space:normal"><span class="hl" style="--hlbg:${hexA(itemHl(i), i.done ? .22 : .45)}">${esc(i.t)}</span></div></div><button class="btn ghost sm" data-ld="${i.id}" aria-label="Quitar de la lista" title="Quitar de la lista"><i class="xdel"></i></button></div>`;
   v.innerHTML = `<button class="btn ghost sm" id="lBack">‹ Todas las listas</button>
-    <div class="card" style="border-top:6px solid ${l.color};margin-top:6px"><div class="row wrap"><h2 style="margin:0;font-size:20px">${l.icon} ${esc(l.name)}</h2><span class="sp"></span><button class="btn sec sm" id="lPin" title="Acceso rápido desde el botón 📋">${l.hideOnDay ? '📌 Poner en acceso rápido' : '📌 En acceso rápido ✓'}</button><button class="btn sec sm" id="lEd">✎ Editar</button><button class="btn sec sm" id="lDel"><i class="xdel"></i> Eliminar lista</button></div>
+    <div class="card" style="border-top:6px solid ${l.color};margin-top:6px"><div class="row wrap"><h2 style="margin:0;font-size:20px">${l.icon} ${esc(l.name)}</h2><span class="sp"></span><button class="btn sm lpin ${l.hideOnDay ? 'sec' : 'on'}" id="lPin" aria-pressed="${l.hideOnDay ? 'false' : 'true'}">Acceso rápido</button><button class="btn sec sm" id="lEd">✎ Editar</button><button class="btn sec sm" id="lDel" aria-label="Eliminar lista" title="Eliminar lista"><i class="xdel"></i></button></div>
       <div class="small muted" style="margin-top:6px">${l.items.length ? `${l.items.length - nd} por hacer · ${nd} listo${nd === 1 ? '' : 's'}` : 'Lista vacía'}</div>
       <div class="goal" style="margin-top:12px"><input id="liAdd" placeholder="Añadir a la lista…" maxlength="300" autocomplete="off"><button class="btn" id="liBtn">Añadir</button></div>
       <div class="xs muted" style="margin-top:6px">Consejo: separa con comas para añadir varias cosas a la vez (leche, pan, huevos).</div></div>
@@ -1452,7 +1452,7 @@ function openHabitForm(h) {
       <small class="hint">Pon el tiempo, la distancia o las dos. Se cumple al llegar a cualquiera.</small></div>
     <div class="fld hk-"><label>Meta por día</label><div class="habgoal"><button type="button" class="btn sec sm" id="hgM">−</button><b id="hgV">${habGoal(h)}</b><button type="button" class="btn sec sm" id="hgP">+</button><input class="inp" id="hUnit" value="${esc(h.unit || '')}" placeholder="vasos, páginas, minutos…"></div><small class="hint">Con meta 1 se marca de un toque. Con más, cada toque suma uno.</small></div>
     <div class="fld"><label>Días</label><div class="habdays">${[0,1,2,3,4,5,6].map(i => `<button type="button" data-hdw="${i}" class="${!h.days.length || h.days.includes(i) ? 'on' : ''}">${DCORTO[i].slice(0, 1).toUpperCase()}</button>`).join('')}</div><small class="hint">Los días apagados son de descanso y no cuentan en contra.</small></div>`,
-    foot: `${isNew ? '' : '<button class="btn sec" id="hDel"><i class="xdel"></i> Eliminar</button>'}<button class="btn" id="hSave">Guardar</button>`,
+    foot: `${isNew ? '' : '<button class="btn sec" id="hDel" aria-label="Eliminar" title="Eliminar"><i class="xdel"></i></button>'}<button class="btn" id="hSave">Guardar</button>`,
     onMount: el => {
       const q = x => el.querySelector(x);
       el.querySelectorAll('[data-hi]').forEach(b => b.onclick = () => { h.icon = b.dataset.hi; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x === b)); });
@@ -1912,7 +1912,7 @@ function openChallengeForm(h, done) {
       <label class="wrsw chvar"><span><b>Cantidades variadas</b><small>Apagado: siempre la misma cantidad.</small></span><input type="checkbox" id="chV" ${style === 'variado' ? 'checked' : ''}><i></i></label>
     </div>
     ${c.vals ? '<small class="hint">Al cambiar cantidades, empieza de nuevo sin casillas marcadas.</small>' : ''}`,
-    foot: `${c.vals ? '<button class="btn sec" id="chDel"><i class="xdel"></i> Quitar reto</button>' : ''}<button class="btn" id="chS">Crear mi reto</button>`,
+    foot: `${c.vals ? '<button class="btn sec" id="chDel" aria-label="Quitar reto" title="Quitar reto"><i class="xdel"></i></button>' : ''}<button class="btn" id="chS">Crear mi reto</button>`,
     onMount: el => {
       const q = x => el.querySelector(x);
       const showTab = () => { el.querySelectorAll('[data-tp]').forEach(x => x.style.display = x.dataset.tp === tab ? '' : 'none'); el.querySelectorAll('[data-ctab]').forEach(b => b.classList.toggle('on', b.dataset.ctab === tab)); q('#chS').style.display = tab === 'crear' ? '' : 'none'; };
