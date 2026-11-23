@@ -372,7 +372,7 @@ function vRutina(v) {
 
 /* ========== TAREAS ========== */
 function vTareas(v) {
-  v.innerHTML = `<div class="toggle2 sep" style="max-width:420px;margin-bottom:12px"><button data-tm="tareas" class="${UI.taskMode === 'tareas' ? 'on' : ''}">✅ Mis tareas</button><button data-tm="listas" class="${UI.taskMode === 'listas' ? 'on' : ''}">📋 Mis listas</button></div><div id="tmBody"></div>`;
+  v.innerHTML = `<div class="kindpick" style="max-width:420px;margin-bottom:12px"><button data-tm="tareas" class="kp ${UI.taskMode === 'tareas' ? 'on' : ''}"><span class="kpi">✅</span><span><b>Mis tareas</b><small>Pendientes, atrasadas y completadas</small></span></button><button data-tm="listas" class="kp ${UI.taskMode === 'listas' ? 'on' : ''}"><span class="kpi">📋</span><span><b>Mis listas</b><small>Compras y otras listas simples</small></span></button></div><div id="tmBody"></div>`;
   v.querySelectorAll('[data-tm]').forEach(b => b.onclick = () => { UI.taskMode = b.dataset.tm; UI.openList = null; render(); });
   const body = $('#tmBody', v);
   if (UI.taskMode === 'listas') vListas(body); else vTareasList(body);

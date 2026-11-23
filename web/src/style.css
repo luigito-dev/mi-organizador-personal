@@ -1313,3 +1313,9 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .toggle2.sep{gap:12px}
 .toggle2.sep button{background:var(--card);border:1px solid var(--line);color:var(--muted)}
 .toggle2.sep button.on{border-color:var(--blue);color:var(--blue)}
+
+.kindpick{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.kp{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px;border-radius:16px;background:var(--card);border:1px solid var(--line);color:var(--text)}
+.kp small{display:block;color:var(--muted);font-size:12px;font-weight:400;margin-top:2px}
+.kp.on{border-color:var(--blue);box-shadow:0 0 0 2px color-mix(in srgb,var(--blue) 22%,transparent)}
+.kpi{font-size:24px;line-height:1;width:34px;text-align:center}
