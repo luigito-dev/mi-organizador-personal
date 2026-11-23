@@ -1403,6 +1403,9 @@ function bottleSVG(h, oz) {
     <g clip-path="url(#${id})"><rect x="0" y="0" width="40" height="60" fill="#eaf4ff"/><rect class="water" x="0" y="${58 - 40 * lvl}" width="40" height="60" fill="${full ? '#5ad1a0' : '#5aa8ff'}"/>${[1,2,3,4,5,6,7].map(i => `<line x1="7" x2="11" y1="${58 - 5 * i}" y2="${58 - 5 * i}" stroke="#fff" stroke-width="1"/>`).join('')}</g>
     <path d="M15 12h10v5c5 2 8 5 8 10v25a6 6 0 0 1-6 6H13a6 6 0 0 1-6-6V27c0-5 3-8 8-10z" fill="none" stroke="#5aa8ff" stroke-width="1.6"/></svg>`;
 }
+const isHabPinned = id => (pins().habs || []).includes(id);
+function toggleHabPin(id) { const P = pins(), was = isHabPinned(id); P.habs = (P.habs || []).filter(x => x !== id); if (!was) P.habs.push(id); save('meta'); toast(was ? 'Quitado de fijados' : 'Fijado en Mi Día'); }
+const habPinBtn = h => `<button type="button" class="hpinb ${isHabPinned(h.id) ? 'on' : ''}" data-hpin="${h.id}" aria-pressed="${isHabPinned(h.id)}" aria-label="${isHabPinned(h.id) ? 'Quitar de fijados' : 'Fijar en Mi Día'}" title="${isHabPinned(h.id) ? 'Quitar de fijados' : 'Fijar en Mi Día'}"></button>`;
 const habPages = h => Object.values(h.log || {}).reduce((a, b) => a + (+b || 0), 0);
 function habTap(h, d) {
   if (habKind(h) === 'lectura') return openBook(h, d);
@@ -1447,41 +1450,42 @@ function vHabitos(v) {
         <span class="habbot">${bottleSVG(h, c)}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : `<b class="ozn">${cur} de ${OZ} oz</b> · ${nb} de ${gb} botellas`}${(h.reminders || []).some(r => r.on !== false) && h.remOn !== false ? ' · ⏰' : ''}${st > 1 ? ` · 🔥 ${st}` : ''}</small><span class="botrow">${[...Array(Math.max(gb, nb))].map((_, i) => `<i class="${i < nb ? 'on' : ''}"></i>`).join('')}</span></span>
         <span class="habtot"><b>${c}</b><small>oz hoy</small></span>
-        <span class="habside"><button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button>${c ? `<button class="habminus" data-hmin="${h.id}" aria-label="Quitar 1 onza">−1</button>` : ''}</span></div>`; }
+        <span class="habside">${habPinBtn(h)}<button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button>${c ? `<button class="habminus" data-hmin="${h.id}" aria-label="Quitar 1 onza">−1</button>` : ''}</span></div>`; }
       if (['ahorro', 'despertar', 'comida', 'oracion'].includes(kd)) { const info = habRowInfo(h, d);
         return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${info.p * 100}%">${h.icon}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : info.sub}${st > 1 ? ` · 🔥 ${st}` : ''}</small>${info.pill ? `<span class="calpill ${info.pc || ''}">${info.pill}</span>` : ''}</span>
         <span class="habtot"><b>${info.big}</b><small>${info.bigl}</small></span>
-        <button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`; }
+        ${habPinBtn(h)}<button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`; }
       if (kd === 'actividad') { const run = UI.habTimer && UI.habTimer.id === h.id, ds = actDist(h, d), u = h.unitD || 'mi', cal = actCalories(h, d);
         return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${Math.min(1, Math.max(c / g, +h.goalDist ? ds / h.goalDist : 0)) * 100}%">${actMode(h, d) === 'correr' ? '🏃' : h.icon}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : run ? '⏱ Contando tiempo…' : `${c}/${g} min${+h.goalDist || ds ? ` · ${fmtD(ds)}${+h.goalDist ? '/' + fmtD(h.goalDist) : ''} ${u}` : ''}${+h.goalSteps || actSteps(h, d) ? ` · 👣 ${fmtPasos(actSteps(h, d))}${+h.goalSteps ? '/' + fmtPasos(h.goalSteps) : ''}` : ''}`}${st > 1 ? ` · 🔥 ${st}` : ''}</small>${cal ? `<span class="calpill">🔥 ~${cal} cal</span>` : ''}</span>
         <span class="habtot"><b>${c}</b><small>min hoy</small></span>
-        <button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`; }
+        ${habPinBtn(h)}<button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`; }
       if (kd === 'tiempo') { const run = UI.habTimer && UI.habTimer.id === h.id;
         return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${Math.min(1, c / g) * 100}%">${h.icon}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : run ? '⏱ Contando tiempo…' : `${c} de ${g} min`}${st > 1 ? ` · 🔥 ${st}` : ''}</small></span>
         <span class="habtot"><b>${c}</b><small>min hoy</small></span>
-        <button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`; }
+        ${habPinBtn(h)}<button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`; }
       if (kd === 'lectura') return `<div class="habrow read ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${ok ? 100 : 0}%">${h.icon}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : c ? `${c} páginas ${d === t ? 'hoy' : 'ese día'}` : 'Toca para anotar páginas'}${st > 1 ? ` · 🔥 ${st}` : ''}</small>${h.bookmark || h.book ? `<span class="bkpill">🔖 ${h.bookmark ? `pág. ${h.bookmark}` : ''}${h.book ? `${h.bookmark ? ' · ' : ''}${esc(h.book)}` : ''}</span>` : ''}</span>
         <span class="habtot"><b>${habPages(h)}</b><small>páginas leídas</small></span>
-        <button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`;
+        ${habPinBtn(h)}<button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`;
       return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${Math.min(1, c / g) * 100}%">${h.icon}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : g > 1 ? `${c}/${g} ${esc(h.unit || '')}` : ok ? '¡Hecho!' : 'Toca para marcar'}${st > 1 ? ` · 🔥 ${st} días seguidos` : ''}</small></span>
         <span class="habtot"><b>${habTotal(h)}</b><small>días en total</small></span>
-        <button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`;
+        ${habPinBtn(h)}<button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`;
     }).join('')}</div>
     ${d > t ? '<p class="hint">Este día todavía no llega: podrás marcarlo cuando sea el día.</p>' : ''}</div>
     ${HAB_SUG.some(x => !S.habits.some(h => h.name === x[1])) ? `<div class="habideas"><span>Ideas:</span>${HAB_SUG.map((x, i) => S.habits.some(h => h.name === x[1]) ? '' : `<button data-sug="${i}">${x[0]} ${x[1]}</button>`).join('')}</div>` : ''}`;
   body.querySelectorAll('[data-hd]').forEach(b => b.onclick = () => { UI.habDay = b.dataset.hd; renderView(); });
   wireHabSug(body);
   body.querySelectorAll('[data-hed]').forEach(b => b.onclick = e => { e.stopPropagation(); openHabitForm(S.habits.find(h => h.id === b.dataset.hed)); });
+  body.querySelectorAll('[data-hpin]').forEach(b => b.onclick = e => { e.stopPropagation(); toggleHabPin(b.dataset.hpin); renderView(); });
   body.querySelectorAll('[data-hmin]').forEach(b => b.onclick = e => { e.stopPropagation(); habUndo(S.habits.find(h => h.id === b.dataset.hmin), d); renderView(); });
   body.querySelectorAll('[data-hab]').forEach(r => r.onclick = () => { if (d > t) { toast('Ese día todavía no llega'); return; } const h = S.habits.find(x => x.id === r.dataset.hab); habTap(h, d); renderView(); });
 }
