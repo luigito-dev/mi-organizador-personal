@@ -1336,3 +1336,8 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .cdfeat{height:190px;border-radius:20px;display:flex;align-items:flex-end;padding:0}
 .cdfbody b{font-size:56px;font-weight:700;display:block}.cdfbody b small{font-size:20px;margin-left:4px;vertical-align:top}
 .cdfdate{display:block;font-size:12px;opacity:.85;margin-top:2px}
+
+.pinround{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:8px 14px;border:1.5px solid var(--line);background:var(--soft);color:var(--muted);font-weight:600;font-size:14px}
+.pinround .pdot{width:16px;height:16px;border-radius:50%;border:2px solid currentColor;display:inline-block;box-sizing:border-box}
+.pinround.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.pinround.on .pdot{background:#fff;border-color:#fff;box-shadow:inset 0 0 0 3px var(--blue)}
