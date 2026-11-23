@@ -158,7 +158,7 @@ function openTaskForm(task, preset = {}) {
   const t = task ? JSON.parse(JSON.stringify(task)) : {id: uid(), title: preset.title || '', date: preset.date || todayISO(), time: preset.time || null, typeId: preset.typeId || 'pendiente', areaId: preset.areaId || null, priority: 'Media', details: '', steps: [], status: 'Pendiente', obs: '', reminder: null, createdAt: Date.now()};
   const dateMode = () => t.date === todayISO() ? 'hoy' : t.date === addDays(todayISO(), 1) ? 'man' : 'otra';
   const body = `
-    ${editing ? '' : `<div class="toggle2"><button type="button" data-sw="ev">📅 Evento</button><button type="button" class="on">✅ Tarea</button></div>`}
+    ${editing ? '' : `<div class="toggle2 sep"><button type="button" data-sw="ev">📅 Evento</button><button type="button" class="on">✅ Tarea</button></div>`}
     <input class="inp title" id="tTitle" placeholder="¿Qué tienes que hacer?" value="${esc(t.title)}" maxlength="140">
     <div class="fld"><label>¿Para cuándo?</label><div class="opts" id="tWhen">
       <button type="button" class="opt" data-w="hoy">Hoy</button><button type="button" class="opt" data-w="man">Mañana</button><button type="button" class="opt" data-w="otra">Otra fecha</button>
@@ -265,7 +265,7 @@ function openEventForm(ev, preset = {}, mode) {
   const cls = mode === 'week' ? 'purple' : mode === 'day' ? 'bluehd' : '';
   const dd = parseISO(e.date);
   const body = `
-    ${editing ? '' : `<div class="toggle2"><button type="button" class="on">📅 Evento</button><button type="button" data-sw="tk">✅ Tarea</button></div>`}
+    ${editing ? '' : `<div class="toggle2 sep"><button type="button" class="on">📅 Evento</button><button type="button" data-sw="tk">✅ Tarea</button></div>`}
     ${mode === 'month' ? `<div class="bigday"><div class="mo">${MESES[dd.getMonth()]}</div><div class="dn">${dd.getDate()}</div><div class="wd">${DIAS[dd.getDay()]}</div></div>` : ''}
     <input class="inp title" id="eTitle" placeholder="Nombre del evento" value="${esc(e.title)}" maxlength="140">
     ${mode === 'week' ? `<div class="fld"><label>¿Qué días de esta semana?</label><div class="opts" id="eDays">${wk.map(d => `<button type="button" class="opt" data-d="${d}">${DCORTO[dow(d)]} ${parseISO(d).getDate()}</button>`).join('')}</div></div>`
@@ -292,8 +292,8 @@ function openEventForm(ev, preset = {}, mode) {
       };
       paintTimes();
       el.querySelector('#eAllRow').onclick = () => { e.allDay = !e.allDay; el.querySelector('#eAll').classList.toggle('on', e.allDay); paintTimes(); };
-      const pt = () => { const cur = EVENT_TYPES.find(t => t.id === e.evType) || EVENT_TYPES[0]; el.querySelector('#eTypes').innerHTML = `<button type="button" class="pickbtn" id="eTypeBtn"><span>${cur.icon} ${cur.name}</span><b>›</b></button>`; el.querySelector('#eTypeBtn').onclick = () => popPick('Tipo de evento', EVENT_TYPES.map(t => ({value: t.id, label: `${t.icon} ${t.name}`})), e.evType, v => { e.evType = v; if (e.evType === 'celebracion' && !e.sticker) { e.sticker = '🎂'; } pt(); paintSticker(); }); };
-      const paintSticker = () => { el.querySelector('#eStk').innerHTML = `<button type="button" class="pickbtn" id="eStkBtn"><span>${e.sticker || 'Ninguno'}</span><b>›</b></button>`; el.querySelector('#eStkBtn').onclick = () => popPick('Sticker en el calendario', [{value: '', label: 'Ninguno'}, ...STICKERS.map(x => ({value: x, label: x}))], e.sticker || '', v => { e.sticker = v || null; paintSticker(); }, true); };
+      const pt = () => { const cur = evType(e.evType); el.querySelector('#eTypes').innerHTML = `<button type="button" class="pickbtn" id="eTypeBtn"><span>${cur.icon} ${cur.name}</span><b>›</b></button>`; el.querySelector('#eTypeBtn').onclick = () => popPick('Tipo de evento', allEvTypes().map(t => ({value: t.id, label: `${t.icon} ${t.name}`})), e.evType, v => { e.evType = v; if (e.evType === 'celebracion' && !e.sticker) { e.sticker = '🎂'; } pt(); paintSticker(); }, false, () => addCustom('type', v => { e.evType = v; pt(); })); };
+      const paintSticker = () => { el.querySelector('#eStk').innerHTML = `<button type="button" class="pickbtn" id="eStkBtn"><span>${e.sticker || 'Ninguno'}</span><b>›</b></button>`; el.querySelector('#eStkBtn').onclick = () => popPick('Sticker en el calendario', [{value: '', label: 'Ninguno'}, ...allStickers().map(x => ({value: x, label: x}))], e.sticker || '', v => { e.sticker = v || null; paintSticker(); }, true, () => addCustom('sticker', v => { e.sticker = v; paintSticker(); })); };
       paintSticker();
       pt();
       const pa = () => { el.querySelector('#eAreas').innerHTML = areaButtons(e.areaId); el.querySelectorAll('[data-area]').forEach(b => b.onclick = () => { e.areaId = b.dataset.area || null; pa(); }); };
@@ -482,14 +482,37 @@ function openNote(id) {
 }
 
 // Selector de sticker: lo que eliges aquí aparece en el día del calendario
-function popPick(title, items, current, onPick, grid = false) {
-  const s = openSheet({title, float: true, cls: 'pickpop', body: `<div class="pickgrid ${grid ? 'g' : ''}">${items.map(it => `<button type="button" class="opt ${it.value === current ? 'on' : ''}" data-pv="${esc(it.value)}">${it.label}</button>`).join('')}</div>`});
-  s.el.querySelectorAll('[data-pv]').forEach(b => b.onclick = () => { s.close(); onPick(b.dataset.pv); });
+function popPick(title, items, current, onPick, grid = false, onNew = null) {
+  const tiles = items.map(it => `<button type="button" class="opt ${it.value === current ? 'on' : ''}" data-pv="${esc(it.value)}">${it.label}</button>`).join('') + (onNew ? '<button type="button" class="opt addnew" data-pv="__new">+ Nuevo</button>' : '');
+  const s = openSheet({title, float: true, cls: 'pickpop', body: `<div class="pickgrid ${grid ? 'g' : ''}">${tiles}</div>`});
+  s.el.querySelectorAll('[data-pv]').forEach(b => b.onclick = () => { s.close(); if (b.dataset.pv === '__new') onNew(); else onPick(b.dataset.pv); });
+}
+// Crear un tipo de evento o un sticker propio (se guarda en ajustes)
+function addCustom(kind, cb) {
+  const isType = kind === 'type', quick = isType ? ['📅', '🎯', '🏃', '🎓', '🏥', '⛪', '🍽️', '🎤', '📚', '🤝', '🎨', '🛠️'] : ['🎉', '🌟', '🌸', '🍀', '🎈', '🏆', '📌', '🔥', '🌈', '💡', '🥳', '🎓'];
+  let icon = quick[0];
+  const s = openSheet({title: isType ? 'Nuevo tipo de evento' : 'Nuevo sticker', cls: 'small', body: `
+    ${isType ? '<div class="fld"><label>Nombre</label><input class="inp" id="cuN" maxlength="24" placeholder="Ej.: Taller"></div>' : ''}
+    <div class="fld"><label>${isType ? 'Ícono' : 'Emoji'}</label><input class="inp" id="cuE" value="${icon}" maxlength="8" placeholder="Escribe o pega un emoji"></div>
+    <div class="emojis" id="cuQ">${quick.map(x => `<button type="button" class="opt" data-q="${x}">${x}</button>`).join('')}</div>`,
+    foot: '<button class="btn sec" data-close>Cancelar</button><button class="btn" id="cuS">Guardar</button>',
+    onMount: el => {
+      el.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { el.querySelector('#cuE').value = b.dataset.q; });
+      el.querySelector('#cuS').onclick = () => {
+        const em = (el.querySelector('#cuE').value || '').trim(); const nm = isType ? (el.querySelector('#cuN').value || '').trim() : '';
+        if (!em || (isType && !nm)) { toast(isType ? 'Pon un nombre y un ícono' : 'Escribe un emoji'); return; }
+        S.settings.evTypes = S.settings.evTypes || []; S.settings.stickers = S.settings.stickers || [];
+        let value = em;
+        if (isType) { value = 'c' + uid(); S.settings.evTypes.push({id: value, name: nm, icon: em}); }
+        else if (!S.settings.stickers.includes(em) && !STICKERS.includes(em)) S.settings.stickers.push(em);
+        save('meta'); s.close(); cb(value);
+      };
+    }});
 }
 function wireStickers(box, obj) {
   if (!box) return;
   const paint = () => {
-    box.innerHTML = `<button type="button" class="opt ${!obj.sticker ? 'on' : ''}" data-stk="">Ninguno</button>` + STICKERS.map(s => `<button type="button" class="opt stkb ${obj.sticker === s ? 'on' : ''}" data-stk="${s}">${s}</button>`).join('');
+    box.innerHTML = `<button type="button" class="opt ${!obj.sticker ? 'on' : ''}" data-stk="">Ninguno</button>` + allStickers().map(s => `<button type="button" class="opt stkb ${obj.sticker === s ? 'on' : ''}" data-stk="${s}">${s}</button>`).join('');
     box.querySelectorAll('[data-stk]').forEach(b => b.onclick = () => { obj.sticker = b.dataset.stk || null; paint(); });
   };
   paint();

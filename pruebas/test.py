@@ -45,8 +45,8 @@ def run(width, height, label, full=True):
         # elegir "15 min antes" tocando
         pg.locator('.wcol.wide .wi', has_text='15 min antes').first.click(); pg.wait_for_timeout(700)
         pg.click('#okR'); pg.wait_for_timeout(200)
-        lbl = pg.locator('#tTimeRow .bellrow .lbl').inner_text()
-        ok(f'[{label}] recordatorio elegido', '15 min' in lbl, lbl)
+        on = pg.locator('#tTimeRow .bellrow.on').count()
+        ok(f'[{label}] recordatorio elegido', on == 1, on)
         sh('taskform')
         pg.click('#tSave'); pg.wait_for_timeout(200)
         st = pg.evaluate('S')
@@ -87,7 +87,7 @@ def run(width, height, label, full=True):
         ok(f'[{label}] Mes -> Nuevo en el calendario', pg.locator('h2:has-text("Nuevo en el calendario")').count() == 1)
         ok(f'[{label}] Mes empieza todo el dia', pg.locator('#eAll.on').count() == 1)
         sh('evmes')
-        pg.fill('#eTitle', 'Cumple de Ana'); pg.click('[data-et="celebracion"]'); pg.click('#eSave'); pg.wait_for_timeout(200)
+        pg.fill('#eTitle', 'Cumple de Ana'); pg.click('#eTypeBtn'); pg.click('.pickpop [data-pv="celebracion"]'); pg.click('#eSave'); pg.wait_for_timeout(200)
         pg.click('[data-cv="week"]'); pg.wait_for_timeout(400)
         if width > 820:
             pg.locator('[data-slot$="|15"]').first.click()

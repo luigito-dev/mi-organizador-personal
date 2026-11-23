@@ -293,7 +293,9 @@ function save(...parts) { Store.save(parts.length ? parts : null); }
 /* ========== Búsquedas de datos ========== */
 const typeById = id => S.types.find(t => t.id === id) || S.types[0] || DEFAULT_TYPES[0];
 const areaById = id => S.areas.find(a => a.id === id);
-const evType = id => EVENT_TYPES.find(t => t.id === id) || EVENT_TYPES[0];
+const allEvTypes = () => [...EVENT_TYPES, ...((S.settings && S.settings.evTypes) || [])];
+const allStickers = () => [...STICKERS, ...((S.settings && S.settings.stickers) || [])];
+const evType = id => allEvTypes().find(t => t.id === id) || EVENT_TYPES[0];
 const isLate = t => t.status !== 'Completada' && !!t.date && t.date < todayISO();
 const isDone = t => t.status === 'Completada';
 const areaVisible = id => !id || !S.settings.hiddenAreas.includes(id);
