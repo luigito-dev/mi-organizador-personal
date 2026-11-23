@@ -1302,10 +1302,10 @@ function fcColor(i) { if (i.x.areaId && S.areas.some(a => a.id === i.x.areaId)) 
 /* ========== HÁBITOS ========== */
 const HAB_ICONS = ['😊','💧','🍳','🍌','☀️','😴','📖','📘','💪','🧘','🌈','🧹','💬','🤸','🧖','👁️','🌳','🚶','🏃','💵','⚖️','🌱','🍎','🥗','🙏','💊','🦷','🛏️','📵','🍦','🍷','🍭','🎮','📺','🎸','📷','✍️','🚴','🏊','🐶'];
 const HAB_SUG = [['💧', 'Tomar agua', 8, 'agua'], ['🚶', 'Caminar', 30, 'actividad'], ['📖', 'Leer', 1, 'lectura'], ['🧘', 'Meditar', 10, 'tiempo'], ['☀️', 'Levantarme temprano', 1, 'despertar'], ['🥗', 'Comer saludable', 5, 'comida'], ['💵', 'Ahorrar dinero', 1, 'ahorro'], ['🙏', 'Orar', 10, 'oracion']];
-const OZ = 8; // onzas por botella
+const OZ = 16; // onzas por botella
 const habKind = h => h.kind || (h.unit === 'agua' ? 'agua' : h.unit === 'lectura' ? 'lectura' : h.unit === 'tiempo' ? 'tiempo' : '');
 const isTimeKind = h => ['tiempo', 'actividad', 'oracion'].includes(habKind(h));
-const habGoal = h => habKind(h) === 'lectura' ? 1 : habKind(h) === 'agua' ? (+h.goalOz > 0 ? +h.goalOz : Math.max(1, +h.goal || 1) * OZ) : isTimeKind(h) ? Math.max(1, +h.goal || 10) : Math.max(1, +h.goal || 1);
+const habGoal = h => habKind(h) === 'lectura' ? 1 : habKind(h) === 'agua' ? (+h.goalOz > 0 ? +h.goalOz : Math.max(1, +h.goal || 1) * 8) : isTimeKind(h) ? Math.max(1, +h.goal || 10) : Math.max(1, +h.goal || 1);
 const habBottles = h => Math.ceil(habGoal(h) / OZ);
 const habCount = (h, d) => (h.log && h.log[d]) || 0;
 const habDone = (h, d) => (habKind(h) === 'ahorro' ? habCount(h, d) > 0 : habKind(h) === 'despertar' ? wakeOnTime(h, d) : habCount(h, d) >= habGoal(h)) || (habKind(h) === 'actividad' && +h.goalDist > 0 && actDist(h, d) >= +h.goalDist);
@@ -1345,7 +1345,7 @@ function vHabitos(v) {
   $('#hNew', v).onclick = () => openHabitForm();
   const body = $('#habBody', v);
   if (!S.habits.length) {
-    body.innerHTML = `<div class="card habempty"><div class="big">🌱</div><h3>Crea tus hábitos</h3><p>Marca cada día lo que haces y mira tu progreso. Toca uno para empezar:</p><div class="habsug">${HAB_SUG.map((x, i) => `<button data-sug="${i}"><span>${x[0]}</span>${x[1]}${x[3] === 'agua' ? ' <small>botella de 8 oz</small>' : x[3] === 'lectura' ? ' <small>con 🔖</small>' : x[3] === 'tiempo' || x[3] === 'actividad' || x[3] === 'oracion' ? ` <small>${x[2]} min</small>` : x[3] === 'despertar' ? ' <small>6:00 am</small>' : x[3] === 'comida' ? ' <small>5 porciones</small>' : x[3] === 'ahorro' ? ' <small>con meta</small>' : ''}</button>`).join('')}</div><button class="btn" id="hNew2">+ Crear mi propio hábito</button></div>`;
+    body.innerHTML = `<div class="card habempty"><div class="big">🌱</div><h3>Crea tus hábitos</h3><p>Marca cada día lo que haces y mira tu progreso. Toca uno para empezar:</p><div class="habsug">${HAB_SUG.map((x, i) => `<button data-sug="${i}"><span>${x[0]}</span>${x[1]}${x[3] === 'agua' ? ' <small>botella de 16 oz</small>' : x[3] === 'lectura' ? ' <small>con 🔖</small>' : x[3] === 'tiempo' || x[3] === 'actividad' || x[3] === 'oracion' ? ` <small>${x[2]} min</small>` : x[3] === 'despertar' ? ' <small>6:00 am</small>' : x[3] === 'comida' ? ' <small>5 porciones</small>' : x[3] === 'ahorro' ? ' <small>con meta</small>' : ''}</button>`).join('')}</div><button class="btn" id="hNew2">+ Crear mi propio hábito</button></div>`;
     wireHabSug(body);
     $('#hNew2', body).onclick = () => openHabitForm();
     return;
@@ -1506,10 +1506,10 @@ function migrateHabits() { let ch = false; (S.habits || []).forEach(h => {
     h.migO = 1;
   }
   if (!h.migA && ACT_RE.test(h.name || '') && (!h.kind || h.kind === 'tiempo')) { if (!h.kind) { const l = {}; Object.keys(h.log || {}).forEach(d => l[d] = h.log[d] >= (+h.goal || 1) ? 30 : 0); h.log = l; h.goal = 30; } h.kind = 'actividad'; h.migA = 1; h.migW = 1; h.unitD = h.unitD || 'mi'; h.unit = ''; ch = true; return; }
-  if (!h.kind && !h.migW && (/agua/i.test(h.name || '') || h.icon === '💧')) { h.kind = 'agua'; h.migW = 1; h.goal = h.unit === 'vasos' ? Math.max(1, +h.goal || 8) : 8; if (h.unit === 'vasos') { const l = {}; Object.keys(h.log || {}).forEach(d => l[d] = h.log[d] * OZ); h.log = l; } h.unit = ''; ch = true; return; }
+  if (!h.kind && !h.migW && (/agua/i.test(h.name || '') || h.icon === '💧')) { h.kind = 'agua'; h.migW = 1; h.goal = h.unit === 'vasos' ? Math.max(1, +h.goal || 8) : 8; if (h.unit === 'vasos') { const l = {}; Object.keys(h.log || {}).forEach(d => l[d] = h.log[d] * 8); h.log = l; } h.unit = ''; ch = true; return; }
   if (!h.kind && !h.migW && TIME_RE.test(h.name || '')) { h.kind = 'tiempo'; h.migW = 1; const def = /camin|ejerc|correr/i.test(h.name) ? 30 : 10; const l = {}; Object.keys(h.log || {}).forEach(d => l[d] = h.log[d] >= (+h.goal || 1) ? def : 0); h.log = l; h.goal = def; h.unit = ''; ch = true; return; }
   if (!h.kind && !h.migW && /^(leer|lectura)/i.test(h.name || '')) { h.kind = 'lectura'; h.migW = 1; h.goal = 1; h.unit = ''; ch = true; return; }
-  if (!h.kind && h.name === 'Tomar agua' && h.unit === 'vasos') { h.kind = 'agua'; const l = {}; Object.keys(h.log || {}).forEach(d => l[d] = h.log[d] * OZ); h.log = l; h.goal = Math.max(1, +h.goal || 8); h.unit = ''; ch = true; }
+  if (!h.kind && h.name === 'Tomar agua' && h.unit === 'vasos') { h.kind = 'agua'; const l = {}; Object.keys(h.log || {}).forEach(d => l[d] = h.log[d] * 8); h.log = l; h.goal = Math.max(1, +h.goal || 8); h.unit = ''; ch = true; }
   if (!h.kind && h.name === 'Leer' && h.unit === 'páginas') { h.kind = 'lectura'; h.goal = 1; h.unit = ''; ch = true; }
 }); if (ch) save('habits'); }
 
@@ -1583,7 +1583,7 @@ function openWater(h, d, host) {
   let just = false, empty = false;
   const draw = el => {
     const c = habCount(h, d), g = habGoal(h), gb = habBottles(h), nb = Math.floor(c / OZ);
-    const cur = just ? OZ : c % OZ, base = c - cur; // al llenar 8 oz se ve llena un momento y pasa sola a la botella siguiente
+    const cur = just ? OZ : c % OZ, base = c - cur; // al llenar una botella se ve llena un momento y pasa sola a la botella siguiente
     const nr = (h.reminders || []).filter(r => r.on !== false).length;
     const hy = oz => 262 - 214 * (oz / OZ);
     el.querySelector('#wBody').innerHTML = `
@@ -1626,7 +1626,7 @@ function openWaterGoal(h, done) {
     foot: '<button class="btn" id="gS">Guardar meta</button>',
     onMount: el => {
       const q = x => el.querySelector(x), v = () => Math.max(1, Math.min(400, parseInt(q('#gV').value, 10) || 64));
-      const hint = () => q('#gB').textContent = `Son ${Math.ceil(v() / OZ)} botellas de 8 oz.`; hint();
+      const hint = () => q('#gB').textContent = `Son ${Math.ceil(v() / OZ)} botellas de ${OZ} oz.`; hint();
       q('#gV').oninput = hint; q('#gM').onclick = () => { q('#gV').value = Math.max(1, v() - 8); hint(); }; q('#gP').onclick = () => { q('#gV').value = v() + 8; hint(); };
       el.querySelectorAll('[data-goz]').forEach(b => b.onclick = () => { q('#gV').value = b.dataset.goz; hint(); });
       q('#gS').onclick = () => { h.goalOz = v(); h.goal = Math.ceil(h.goalOz / OZ); save('habits'); s.close(); toast(`🎯 Meta: ${h.goalOz} oz al día`); done && done(); };
@@ -1772,7 +1772,7 @@ function actCalories(h, d) {
   return Math.round(met * kg * min / 60);
 }
 
-const HAB_KINDS = [['', '✓ Marcar', 'Un toque y listo.'], ['agua', '💧 Agua', 'Botella de 8 oz que se llena deslizando, con recordatorios.'], ['lectura', '📖 Lectura', 'Un libro con páginas, marcador 🔖 y notas.'], ['actividad', '🚶 Caminar/Correr', 'Tiempo, distancia y calorías aproximadas.'], ['tiempo', '⏱ Tiempo', 'Aro con cronómetro (meditar, estirar…).'], ['oracion', '🙏 Oración', 'Cronómetro y tu lista de peticiones y respuestas.'], ['ahorro', '💵 Ahorro', 'Alcancía que se llena hasta tu meta de dinero.'], ['despertar', '☀️ Despertar', 'Hora meta, “¡Me levanté!” y aviso para acostarte.'], ['comida', '🥗 Comer sano', 'Plato con frutas y vegetales, y cómo comiste.']];
+const HAB_KINDS = [['', '✓ Marcar', 'Un toque y listo.'], ['agua', '💧 Agua', 'Botella de 16 oz que se llena deslizando, con recordatorios.'], ['lectura', '📖 Lectura', 'Un libro con páginas, marcador 🔖 y notas.'], ['actividad', '🚶 Caminar/Correr', 'Tiempo, distancia y calorías aproximadas.'], ['tiempo', '⏱ Tiempo', 'Aro con cronómetro (meditar, estirar…).'], ['oracion', '🙏 Oración', 'Cronómetro y tu lista de peticiones y respuestas.'], ['ahorro', '💵 Ahorro', 'Alcancía que se llena hasta tu meta de dinero.'], ['despertar', '☀️ Despertar', 'Hora meta, “¡Me levanté!” y aviso para acostarte.'], ['comida', '🥗 Comer sano', 'Plato con frutas y vegetales, y cómo comiste.']];
 const money = n => { n = +n || 0; const s = Math.abs(n).toFixed(2).replace(/\.00$/, ''); return (n < 0 ? '−$' : '$') + s.replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
 const saveTotal = h => (h.moves || []).reduce((a, m) => a + (+m.amt || 0), 0);
 const toMinT = t => { const [a, b] = String(t || '0:0').split(':').map(Number); return a * 60 + b; };
@@ -1895,11 +1895,11 @@ function openChallengeForm(h, done) {
   const c = h.challenge || {};
   let freq = c.freq || 'semana', style = c.style === 'variado' ? 'variado' : 'igual', color = c.color || '#d99400', span = c.span || 12, view = c.ready ? 'circulos' : c.view || 'circulos', tab = c.vals && !c.ready ? 'crear' : 'listos';
   const s = openSheet({title: '🏆 Reto de ahorro', body: `
-    <div class="chcolrow"><span>Color</span><div class="chcols hscroll">${CH_COLORS.map(x => `<button type="button" data-chcol="${x}" class="${(c.color || '#d99400') === x ? 'on' : ''}" style="--sw:${x}" aria-label="Color"></button>`).join('')}</div></div>${c.vals ? '<button type="button" class="btn ghost sm chcolsave" id="chColSave">Aplicar color a mi reto actual</button>' : ''}
+    <div class="fld chnamef"><label>Nombre del reto <small class="muted">(opcional)</small></label><input class="inp" id="chNL" maxlength="40" placeholder="Ej.: Viaje a Japón" value="${esc(c.userName || '')}"></div>
+    <div class="chcolrow"><span>Color</span><div class="chcols hscroll">${CH_COLORS.map(x => `<button type="button" data-chcol="${x}" class="${(c.color || '#d99400') === x ? 'on' : ''}" style="--sw:${x}" aria-label="Color"></button>`).join('')}</div></div>${c.vals ? '<button type="button" class="btn ghost sm chcolsave" id="chColSave">Aplicar nombre y color a mi reto actual</button>' : ''}
     ${c.ready ? '' : `<div class="seg chtabs"><button type="button" data-ctab="listos" class="${tab === 'listos' ? 'on' : ''}">🏆 Retos listos</button><button type="button" data-ctab="crear" class="${tab === 'crear' ? 'on' : ''}">✏️ Crear el mío</button></div>`}
-    <div data-tp="listos">${c.ready ? `<div class="chnote"><span class="chnote-k">Reto listo</span> Tu reto actual, <b>${esc(c.name)}</b>, es un reto listo: sus cantidades no se cambian. Puedes cambiarle el color o escoger otro reto.</div>` : ''}    <div class="chready"><div class="hint" style="margin:0 2px 4px">Toca uno para empezar. Sus cantidades ya vienen puestas.</div>${CH_READY.map((r, i) => { const t = r.vals().reduce((a, b) => a + b, 0); return `<button type="button" class="chrd" data-crd="${i}"><span class="chrdi ${r.view}">${r.view === 'sobres' ? ENV_SVG : r.view === 'circulos' ? '<b></b><b></b><b></b>' : '<i></i><i></i>'}</span><span class="chrdt"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span><span class="chrdm">${money(t)}</span></button>`; }).join('')}<button type="button" class="chrd chrdown" data-ctab-go="crear"><span class="chrdi">✏️</span><span class="chrdt"><b>Crear el mío</b><small>Escoge la cantidad, el plazo y cómo marcar</small></span><span class="chrdm">›</span></button></div></div>
+    <div data-tp="listos">${c.ready ? `<div class="chnote"><span class="chnote-k">Reto listo</span> <b>${esc(c.name)}</b></div>` : ''}    <div class="chready">${CH_READY.map((r, i) => { const t = r.vals().reduce((a, b) => a + b, 0); return `<button type="button" class="chrd" data-crd="${i}"><span class="chrdi ${r.view}">${r.view === 'sobres' ? ENV_SVG : r.view === 'circulos' ? '<b></b><b></b><b></b>' : '<i></i><i></i>'}</span><span class="chrdt"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span><span class="chrdm">${money(t)}</span></button>`; }).join('')}<button type="button" class="chrd chrdown" data-ctab-go="crear"><span class="chrdi">✏️</span><span class="chrdt"><b>Crear el mío</b><small>Escoge la cantidad, el plazo y cómo marcar</small></span><span class="chrdm">›</span></button></div></div>
     <div class="chown" data-tp="crear">
-      <div class="fld"><label>Nombre del reto <small class="muted">(opcional)</small></label><input class="inp" id="chN" maxlength="40" placeholder="Ej.: Viaje a Japón" value="${esc(!c.ready && c.userName || '')}"></div>
       <div class="chstep"><span>1</span><label>¿Cuánto quieres ahorrar?</label></div>
       <input class="inp rdnum chbig" id="chA" readonly inputmode="none" data-wheel data-min="10" data-max="50000" data-step="10" data-unit="$" data-title="¿Cuánto quieres ahorrar?" value="${!c.ready && c.amount ? c.amount : 1000}">
       <div class="chstep"><span>2</span><label>¿En cuánto tiempo?</label></div>
@@ -1909,9 +1909,9 @@ function openChallengeForm(h, done) {
       <div class="chres" id="chRes"></div>
       <div class="chstep"><span>4</span><label>¿Cómo lo quieres marcar?</label></div>
       <div class="seg chvseg">${[['sobres', ENV_SVG, 'Sobres'], ['circulos', '<i class="dot"></i>', 'Círculos'], ['lista', '<i class="bar"></i>', 'Lista']].map(([k, ic2, n]) => `<button type="button" data-cvw="${k}" class="${view === k ? 'on' : ''}"><span class="cvi ${k}">${ic2}</span>${n}</button>`).join('')}</div>
-      <label class="wrsw chvar"><span><b>🎲 Cantidades variadas</b><small>Apagado: siempre la misma cantidad.</small></span><input type="checkbox" id="chV" ${style === 'variado' ? 'checked' : ''}><i></i></label>
+      <label class="wrsw chvar"><span><b>Cantidades variadas</b><small>Apagado: siempre la misma cantidad.</small></span><input type="checkbox" id="chV" ${style === 'variado' ? 'checked' : ''}><i></i></label>
     </div>
-    <small class="hint">El reto va aparte de tu ahorro regular. ${c.vals ? 'Al cambiarlo, empieza de nuevo sin casillas marcadas.' : ''}</small>`,
+    ${c.vals ? '<small class="hint">Al cambiar cantidades, empieza de nuevo sin casillas marcadas.</small>' : ''}`,
     foot: `${c.vals ? '<button class="btn sec" id="chDel"><i class="xdel"></i> Quitar reto</button>' : ''}<button class="btn" id="chS">Crear mi reto</button>`,
     onMount: el => {
       const q = x => el.querySelector(x);
@@ -1930,19 +1930,19 @@ function openChallengeForm(h, done) {
       el.querySelectorAll('[data-cvw]').forEach(b => b.onclick = () => { view = b.dataset.cvw; el.querySelectorAll('[data-cvw]').forEach(x => x.classList.toggle('on', x === b)); });
       q('#chV').onchange = () => { style = q('#chV').checked ? 'variado' : 'igual'; upd(); };
       el.querySelectorAll('[data-chcol]').forEach(b => b.onclick = () => { color = b.dataset.chcol; el.querySelectorAll('[data-chcol]').forEach(x => x.classList.toggle('on', x === b)); });
-      const cs = q('#chColSave'); if (cs) cs.onclick = () => { h.challenge.color = color; save('habits'); s.close(); toast('🎨 Color cambiado'); done && done(); openChallengeTable(h, todayISO(), done); };
+      const cs = q('#chColSave'); if (cs) cs.onclick = () => { const uN = (q('#chNL').value || '').trim(), ch = h.challenge; ch.autoTitle = ch.autoTitle || ch.title; ch.color = color; ch.userName = uN || undefined; ch.title = uN || ch.autoTitle; save('habits'); s.close(); toast('🎨 Color cambiado'); done && done(); openChallengeTable(h, todayISO(), done); };
       el.querySelectorAll('[data-crd]').forEach(b => b.onclick = async () => {
-        const r = CH_READY[+b.dataset.crd], vals = r.vals(), t = Math.round(vals.reduce((a, x) => a + x, 0) * 100) / 100;
+        const r = CH_READY[+b.dataset.crd], vals = r.vals(), t = Math.round(vals.reduce((a, x) => a + x, 0) * 100) / 100, uN = (q('#chNL').value || '').trim();
         if (h.challenge && Object.keys(h.challenge.marked || {}).length && !(await ask(`¿Cambiar tu reto actual por “${esc(r.name)}”? Empieza de nuevo sin casillas marcadas.`, {yes: 'Cambiar'}))) return;
-        h.challenge = {ready: 1, cols: r.cols, name: r.name, title: r.title || money(t), sub: r.sub, amount: t, style: r.style || 'lista', vals, marked: {}, start: todayISO(), freq: r.freq, view: r.view, color, indep: 1, indep2: 1};
+        h.challenge = {ready: 1, cols: r.cols, name: r.name, autoTitle: r.title || money(t), userName: uN || undefined, title: uN || r.title || money(t), sub: r.sub, amount: t, style: r.style || 'lista', vals, marked: {}, start: todayISO(), freq: r.freq, view: r.view, color, indep: 1, indep2: 1};
         save('habits'); s.close(); toast(`🏆 ${r.name}`); done && done(); openChallengeTable(h, todayISO(), done);
       });
       q('#chA').addEventListener('change', upd); upd(); showTab();
       q('#chS').onclick = () => {
         const n = N(), t = A(); if (!t) { toast('Pon una cantidad'); return; }
         const F = CH_FREQ[freq], sp = (CH_SPANS.find(x => x[0] === span) || [0, span + ' meses'])[1];
-        const uN = (q('#chN').value || '').trim();
-        h.challenge = {span, fixR: 1, userName: uN || undefined, name: uN || `${money(t)} en ${sp}`, title: uN || money(t), sub: uN ? `${money(t)} en ${sp} · cada ${F[1]}` : `${sp} · cada ${F[1]}`, amount: t, style, vals: vals(), marked: {}, start: todayISO(), freq, view, color, indep: 1, indep2: 1};
+        const uN = (q('#chNL').value || '').trim();
+        h.challenge = {span, fixR: 1, userName: uN || undefined, name: uN || `${money(t)} en ${sp}`, autoTitle: money(t), title: uN || money(t), sub: uN ? `${money(t)} en ${sp} · cada ${F[1]}` : `${sp} · cada ${F[1]}`, amount: t, style, vals: vals(), marked: {}, start: todayISO(), freq, view, color, indep: 1, indep2: 1};
         save('habits'); s.close(); toast('🏆 Reto creado'); done && done(); openChallengeTable(h, todayISO(), done);
       };
       const del = q('#chDel'); if (del) del.onclick = async () => { if (await ask('¿Quitar el reto y sus casillas marcadas? Tu ahorro regular no cambia.', {yes: 'Quitar'})) { h.challenge = null; save('habits'); s.close(); done && done(); } };
@@ -2119,7 +2119,7 @@ function pinCalendar(box) {
 function openPinManager(done) {
   const P = pins(), retos = (S.habits || []).filter(h => h.challenge && h.challenge.vals);
   const row = (key, icon, name, on, sub = '') => `<label class="wrsw pinrow"><span><b>${icon} ${esc(name)}</b>${sub ? `<small>${sub}</small>` : ''}</span><input type="checkbox" data-pk="${key}" ${on ? 'checked' : ''}><i></i></label>`;
-  const s = openSheet({title: '📌 Fijar en el acceso rápido', body: `<p class="hint" style="margin-top:0">Lo que fijes sale en la ventana flotante. Ábrela con el botón de arriba o deslizando desde el borde derecho de la pantalla.</p>
+  const s = openSheet({title: 'Fijar en el acceso rápido', body: `<p class="hint" style="margin-top:0">
     <div class="pingrp"><b>Básicos</b>${row('hoy', '☀️', 'Hoy', P.hoy !== false, 'Tareas de hoy')}${row('cal', '📅', 'Calendario', !!P.cal, 'Mes y cosas del día')}</div>
     ${S.lists.length ? `<div class="pingrp"><b>Listas</b>${S.lists.map(l => row('list:' + l.id, l.icon, l.name, !l.hideOnDay)).join('')}</div>` : ''}
     ${(S.habits || []).length ? `<div class="pingrp"><b>Hábitos</b>${S.habits.map(h => row('hab:' + h.id, h.icon, h.name, (P.habs || []).includes(h.id))).join('')}</div>` : ''}
@@ -2132,7 +2132,7 @@ function openPinManager(done) {
       else if (k.startsWith('list:')) { const l = S.lists.find(x => 'list:' + x.id === k); if (l) { l.hideOnDay = !on; save('lists'); } }
       else if (k.startsWith('hab:')) { const id = k.slice(4); P2.habs = (P2.habs || []).filter(x => x !== id); if (on) P2.habs.push(id); }
       else if (k.startsWith('reto:')) { const id = k.slice(5); P2.noReto = (P2.noReto || []).filter(x => x !== id); if (!on) P2.noReto.push(id); }
-      save('meta'); toast(on ? '📌 Fijado' : 'Quitado del acceso rápido');
+      save('meta'); toast(on ? 'Fijado' : 'Quitado del acceso rápido');
     })});
 }
 // Deslizar desde el borde derecho abre los fijados
@@ -2189,7 +2189,7 @@ function habPill(h) {
 // Botón para quitar de fijados desde la misma ventana
 function addUnpin(box) {
   const f = box.querySelector('.qfoot'); if (!f || f.querySelector('[data-unpin]')) return;
-  const b = document.createElement('button'); b.className = 'btn ghost sm qunpin'; b.dataset.unpin = UI.popTab; b.textContent = '📍 Quitar de fijados';
+  const b = document.createElement('button'); b.className = 'btn ghost sm qunpin'; b.dataset.unpin = UI.popTab; b.textContent = 'Quitar de fijados';
   f.prepend(b);
   b.onclick = () => {
     const k = b.dataset.unpin, P = pins();
@@ -2197,7 +2197,7 @@ function addUnpin(box) {
     else if (k.startsWith('reto:')) { P.noReto = (P.noReto || []).filter(x => x !== k.slice(5)); P.noReto.push(k.slice(5)); }
     else if (k.startsWith('hab:')) P.habs = (P.habs || []).filter(x => x !== k.slice(4));
     else { const l = S.lists.find(x => x.id === k); if (l) { l.hideOnDay = true; save('lists'); } }
-    save('meta'); toast('📍 Quitado de fijados'); if (box.dataset.fixkey) { UI.pinIdx = Math.max(0, (UI.pinIdx || 0) - 1); renderView(); return; } if (UI.view === 'dia') renderView();
+    save('meta'); toast('Quitado de fijados'); if (box.dataset.fixkey) { UI.pinIdx = Math.max(0, (UI.pinIdx || 0) - 1); renderView(); return; } if (UI.view === 'dia') renderView();
     const keys = popKeys(); if (!keys.length) { const sh = sheets.find(x => x.el.contains(box)); sh && sh.close(); return; }
     UI.popTab = keys[0]; dayLists(box); listBadge();
   };
@@ -2206,8 +2206,8 @@ function addUnpin(box) {
 /* Fijados en Mi Día: una tarjeta a la vez, se pasan de lado */
 function pinCardsHTML() {
   const keys = popKeys();
-  if (!keys.length) return '<div class="pinhd"><b>📍 Fijados</b><button class="btn ghost sm" data-pinmgr>📌 Fijar</button></div>';
-  return `<div class="pinhd"><b>📍 Fijados</b><span class="muted xs">desliza de lado</span><span class="sp"></span><button class="btn ghost sm" data-pinmgr>📌 Fijar</button></div>
+  if (!keys.length) return '<div class="pinhd"><b>Fijados</b><button class="btn ghost sm" data-pinmgr>Editar</button></div>';
+  return `<div class="pinhd"><b>Fijados</b><span class="sp"></span><button class="btn ghost sm" data-pinmgr>Editar</button></div>
     <div class="pincards" id="pinCards">${keys.map(k => `<div class="pincard"><div class="pinbox" data-fixkey="${esc(k)}"></div></div>`).join('')}</div>
     ${keys.length > 1 ? `<div class="pindots">${keys.map((k, i) => `<i data-pdi="${i}"></i>`).join('')}</div>` : ''}`;
 }

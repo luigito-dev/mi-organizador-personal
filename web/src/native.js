@@ -157,12 +157,12 @@
         await LN.registerActionTypes({types: [
           {id: 'TAREA', actions: [{id: 'hecha', title: '✓ Completar'}, {id: 'posponer', title: 'Posponer 10 min'}]},
           {id: 'EVENTO', actions: [{id: 'posponer', title: 'Posponer 10 min'}]},
-          {id: 'AGUA', actions: [{id: 'bebi', title: '💧 Bebí 8 oz'}, {id: 'posponer', title: 'Posponer 10 min'}]}
+          {id: 'AGUA', actions: [{id: 'bebi', title: '💧 Bebí 16 oz'}, {id: 'posponer', title: 'Posponer 10 min'}]}
         ]});
         LN.addListener('localNotificationActionPerformed', ev => whenReady(() => {
           const n = ev.notification || {}, ex = n.extra || {};
           if (ev.actionId === 'hecha' && ex.kind === 't') setDone(ex.id, true);
-          else if (ev.actionId === 'bebi' && ex.kind === 'h') { const h = (S.habits || []).find(x => x.id === ex.id); if (h) { const d = todayISO(); h.log = h.log || {}; h.log[d] = habCount(h, d) + OZ; save('habits'); if (UI.view === 'habitos') renderView(); toast('💧 +8 oz anotadas'); } }
+          else if (ev.actionId === 'bebi' && ex.kind === 'h') { const h = (S.habits || []).find(x => x.id === ex.id); if (h) { const d = todayISO(); h.log = h.log || {}; h.log[d] = habCount(h, d) + OZ; save('habits'); if (UI.view === 'habitos') renderView(); toast('💧 +16 oz anotadas'); } }
           else if (ev.actionId === 'posponer') this.snooze(n);
           else if (ex.kind === 't' && S.tasks.some(t => t.id === ex.id)) openTaskDetail(ex.id);
           else if (ex.kind === 'e' && S.events.some(e => e.id === ex.id)) openEventDetail(ex.id);
