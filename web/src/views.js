@@ -187,13 +187,16 @@ let motivTimer = null;
 // Cuenta regresiva: días que faltan (o que pasaron) para fechas importantes
 const CD_ICONS = ['🎂', '💰', '🎤', '🎆', '✈️', '💍', '👶', '🎓', '🏖️', '💼', '❤️', '🎄', '🏥', '⭐'];
 function cdList() { return (S.settings.countdowns || []).slice().sort((a, b) => a.date.localeCompare(b.date)); }
+const CD_COLORS = ['#f5c842', '#7dd3c0', '#f08a8a', '#9bb8f0', '#f4a6d0', '#b6e388', '#ffb36b'];
 function calCuentas(body) {
   const t = todayISO(), list = cdList();
   const diff = c => dayDiff(t, c.date);
-  const next = list.find(c => c.date >= t);
-  const row = c => { const n = diff(c), since = n < 0; return `<button class="cdrow" data-cd="${c.id}"><span class="cdi" style="background:color-mix(in srgb,var(--blue) 14%,transparent)">${c.icon}</span><span class="cdn">${esc(c.name)}<small>${fmtShort(c.date)}</small></span><span class="cdv"><b class="${since ? 'since' : ''}">${n === 0 ? 'Hoy' : Math.abs(n)}</b><small class="${since ? 'since' : ''}">${n === 0 ? '' : since ? 'Días desde' : 'Días para'}</small></span></button>`; };
+  const colorOf = c => c.color || CD_COLORS[Math.max(0, list.indexOf(c)) % CD_COLORS.length];
+  const next = list.find(c => c.date >= t) || list.find(c => c.date < t);
+  const row = c => { const n = diff(c), since = n < 0, hl = next && c.id === next.id; return `<button class="cdrow ${hl ? 'hl' : ''}" data-cd="${c.id}"><span class="cdi" style="background:${colorOf(c)}">${c.icon}</span><span class="cdn">${esc(c.name)}</span><span class="cdv"><b class="${since ? 'since' : ''}">${n === 0 ? 'Hoy' : Math.abs(n)}</b><small class="${since ? 'since' : ''}">${n === 0 ? '' : since ? 'Days Since' : 'Days Until'}</small></span></button>`; };
+  const feat = next ? (() => { const n = diff(next), since = n < 0; return `<div class="cdfeat" style="${next.photo ? `background-image:url(${next.photo})` : `background:${colorOf(next)}`}">${next.photo ? '<div class="cdfshade"></div>' : ''}<div class="cdfbody"><b>${n === 0 ? 'Hoy' : Math.abs(n)}${n === 0 ? '' : '<small>D</small>'}</b><span>${esc(next.name)}</span><small class="cdfdate">${since ? 'Días desde' : 'Días para'} ${fmtShort(next.date)}</small></div></div>`; })() : '';
   body.innerHTML = `<div class="cdspace"><div class="row" style="margin-bottom:10px"><span class="sp"></span><button class="btn sm" id="cdNew">+ Nueva cuenta</button></div>
-    ${next && next.photo ? `<div class="cdfeat" style="background-image:url(${next.photo})"><div class="cdfshade"></div><div class="cdfbody"><b>${diff(next) === 0 ? 'Hoy' : diff(next)}</b><small>${diff(next) === 0 ? '' : 'Días para'}</small><span>${esc(next.name)}</span></div></div>` : ''}
+    ${feat}
     ${list.length ? list.map(row).join('') : '<div class="card empty"><div class="big">⏳</div>Aún no tienes cuentas. Toca “+ Nueva cuenta”.</div>'}</div>`;
   body.querySelector('#cdNew').onclick = () => openCountdownForm(null);
   body.querySelectorAll('[data-cd]').forEach(b => b.onclick = () => openCountdownForm(list.find(x => x.id === b.dataset.cd)));
