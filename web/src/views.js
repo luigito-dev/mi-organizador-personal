@@ -2027,12 +2027,32 @@ function plateSVG(f) {
   const seg = (a0, a1) => { const [x0, y0] = pt(a0), [x1, y1] = pt(a1); return `M${cx} ${cy} L${x0} ${y0} A${R} ${R} 0 0 1 ${x1} ${y1}Z`; };
   const parts = [['v', '#b9e8a6', '🥦', -180, -90], ['f', '#ffd3b0', '🍎', -90, 0], ['g', '#f7e3b5', '🍚', 0, 90], ['p', '#f6c1c1', '🍗', 90, 180]];
   return `<svg class="plate" viewBox="0 0 220 220" aria-hidden="true"><circle cx="110" cy="110" r="108" fill="#f4f4f2" stroke="#e0e0da" stroke-width="2"/>
-    ${parts.map(([k, col, em, a0, a1]) => { const n = f[k] || 0, m = (a0 + a1) / 2, rad = 52, x = cx + rad * Math.cos(m * Math.PI / 180), y = cy + rad * Math.sin(m * Math.PI / 180); return `<path d="${seg(a0, a1)}" fill="${n ? col : '#fafaf7'}" stroke="#fff" stroke-width="3"/><text x="${x}" y="${y + 6}" text-anchor="middle" font-size="22">${em}</text>${n ? `<text x="${x}" y="${y + 26}" text-anchor="middle" font-size="13" font-weight="800" fill="#333">×${n}</text>` : ''}`; }).join('')}
+    ${parts.map(([k, col, em, a0, a1]) => { const n = f[k] || 0, m = (a0 + a1) / 2, rad = 52, x = cx + rad * Math.cos(m * Math.PI / 180), y = cy + rad * Math.sin(m * Math.PI / 180); return `<path d="${seg(a0, a1)}" fill="${n ? col : '#fafaf7'}" stroke="#fff" stroke-width="3" data-sec="${k}" class="plsec"/><text x="${x}" y="${y + 6}" text-anchor="middle" font-size="22">${em}</text>${n ? `<text x="${x}" y="${y + 26}" text-anchor="middle" font-size="13" font-weight="800" fill="#333">×${n}</text>` : ''}`; }).join('')}
   </svg>`;
 }
+const NUT_FOODS = [
+  ['Arroz blanco · 1 taza', 'g', 205, 4.3, 45, 0.4], ['Arroz integral · 1 taza', 'g', 216, 5, 45, 1.8],
+  ['Habichuelas cocidas · ½ taza', 'p', 120, 7.5, 22, 0.5], ['Pollo a la plancha · 100 g', 'p', 165, 31, 0, 3.6],
+  ['Pescado (filete) · 100 g', 'p', 110, 22, 0, 2], ['Huevo grande · 1', 'p', 72, 6.3, 0.4, 4.8],
+  ['Nueces · 1 oz (≈ 14 mitades)', 'p', 185, 4, 4, 18], ['Pan integral · 1 rebanada', 'g', 70, 3.6, 12, 1],
+  ['Batata (camote) · 1 mediana', 'g', 112, 2, 26, 0.1], ['Plátano maduro · 1 mediano', 'g', 180, 1.3, 47, 0.4],
+  ['Brócoli · 1 taza', 'v', 31, 2.6, 6, 0.3], ['Ensalada verde · 1 taza', 'v', 10, 0.7, 2, 0.1],
+  ['Manzana · 1 mediana', 'f', 95, 0.5, 25, 0.3], ['Guineo · 1 mediano', 'f', 105, 1.3, 27, 0.4],
+  ['Aguacate · ½ unidad', 'f', 114, 1.4, 6, 10.5], ['Leche descremada · 1 taza', 'l', 83, 8.3, 12.2, 0.2],
+  ['Yogur natural · 1 taza', 'l', 130, 9, 12, 3], ['Queso · 1 oz', 'l', 110, 7, 0.9, 9],
+  ['Hamburguesa con pan · 1', '', 500, 25, 40, 25], ['Papas fritas · porción pequeña', '', 220, 2.7, 27, 11]
+];
+const NUT_EDU = {
+  v: {t: 'Vegetales', d: 'Un cuarto del plato. Aportan fibra, vitaminas y minerales con pocas calorías.', ej: 'Brócoli, espinaca, ensalada verde, zanahoria, berenjena, habichuelas tiernas.', porc: '≈ 1 taza'},
+  f: {t: 'Frutas', d: 'Otro cuarto del plato. Dan fibra, vitamina C y potasio. Prefiérelas enteras en vez de jugo.', ej: 'Guineo, manzana, naranja, guayaba, papaya, uvas.', porc: '≈ 1 fruta mediana o 1 taza picada'},
+  g: {t: 'Granos', d: 'Un cuarto del plato. Dale preferencia a los integrales: tienen más fibra y te llenan por más tiempo.', ej: 'Arroz integral, avena, pan integral, batata, quinoa, maíz.', porc: '≈ ½ a 1 taza cocida'},
+  p: {t: 'Proteína', d: 'Un cuarto del plato. Ayuda a construir y reparar músculo. Escoge magras y prepara a la plancha o al horno.', ej: 'Pollo sin piel, pescado, huevo, habichuelas, tofu, nueces.', porc: '≈ 100 g (la palma de tu mano)'},
+  l: {t: 'Lácteos', d: 'Aparte del plato. Aportan calcio y proteína. Escoge versiones bajas en grasa o sin azúcar añadida.', ej: 'Leche descremada, yogur natural, queso bajo en grasa.', porc: '≈ 1 taza de leche o yogur'}
+};
 function openFood(h, d, host) {
   const draw = el => {
     h.food = h.food || {}; const f = h.food[d] = h.food[d] || {f: 0, v: 0, g: 0, p: 0, l: 0, meals: {}}, g = FOOD_GOAL(h), n = (f.f || 0) + (f.v || 0), tot = ['f', 'v', 'g', 'p', 'l'].reduce((a, k) => a + (f[k] || 0), 0);
+    const tk = x => (x.entries || []).reduce((a, en) => ({kcal: a.kcal + en.kcal, p: a.p + en.p, c: a.c + en.c, g: a.g + en.g}), {kcal: 0, p: 0, c: 0, g: 0}); const tt = tk(f); tt.p = Math.round(tt.p * 10) / 10; tt.c = Math.round(tt.c * 10) / 10; tt.g = Math.round(tt.g * 10) / 10;
     const ml = Object.values(f.meals || {}), sano = ml.filter(x => x === 'sano').length, tip = FOOD_TIPS[(parseISO(d).getDate() + parseISO(d).getMonth()) % FOOD_TIPS.length];
     el.querySelector('#fdBody').innerHTML = `
       <div class="fdplate">${plateSVG(f)}</div>
@@ -2041,6 +2061,10 @@ function openFood(h, d, host) {
       <div class="prcard"><div class="bknh"><b>¿Cómo comiste hoy?</b>${ml.length ? `<span>${sano} de ${ml.length} sanas</span>` : ''}</div>
         ${MEALS.map(([k, n2]) => `<div class="fdmeal"><span>${n2}</span><div class="fdst">${MEAL_ST.map(([sk, e, lbl]) => `<button data-ml="${k}" data-ms="${sk}" class="${f.meals[k] === sk ? 'on ' + sk : ''}" aria-label="${lbl}" title="${lbl}">${e}</button>`).join('')}</div></div>`).join('')}
         <small class="hint">🥗 Sano · 😐 Regular · 🍔 Comida rápida. Toca otra vez para quitar.</small></div>
+      <div class="fdedu" id="fdEdu">${(() => { const k = UI.foodSec || 'v', e = NUT_EDU[k]; return `<div class="fdedu-h">${e.t} <small>· ${e.porc}</small></div><p>${e.d}</p><small class="muted">Ejemplos: ${e.ej}</small>`; })()}</div>
+      <div class="fdtot"><b>Hoy</b> ${tt.kcal} kcal · Proteína ${tt.p} g · Carbohidratos ${tt.c} g · Grasa ${tt.g} g</div>
+      <button class="btn sec sm fdadd" id="fdAdd">+ Registrar comida con foto o alimento</button>
+      ${(f.entries || []).length ? `<div class="fdlist">${f.entries.map(en => `<div class="fdrow">${en.photo ? `<img src="${en.photo}" alt="">` : `<span class="fdno">🍽️</span>`}<div class="fdt"><b>${esc(en.name)}</b><small>${MEALS.find(m => m[0] === en.meal)?.[1] || ''} · ${en.q} · ${en.kcal} kcal · P ${en.p} g · C ${en.c} g · G ${en.g} g</small></div><button class="wrdel" data-fdel="${en.id}" aria-label="Quitar"><i class="xdel"></i></button></div>`).join('')}</div>` : ''}
       <div class="fdtip">💡 ${tip}</div>
       <button class="acgoal" id="fdG">Meta: <b>${g} porciones al día</b> <span>Cambiar ✎</span></button>`;
     const q = x => el.querySelector(x);
@@ -2048,6 +2072,39 @@ function openFood(h, d, host) {
     el.querySelectorAll('[data-fa]').forEach(b => b.onclick = () => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } const was = habDone(h, d), k = b.dataset.fa; f[k] = (f[k] || 0) + 1; f.order = (f.order || '') + k; setLog(); if (!was && habDone(h, d)) toast('🥗 ¡Meta cumplida! Sigue así'); draw(el); });
     q('#fdM').onclick = () => { const last = (f.order || '').slice(-1); const k = f[last] ? last : ['v', 'f', 'g', 'p', 'l'].find(x => f[x]); if (k) f[k]--; f.order = (f.order || '').slice(0, -1); setLog(); draw(el); };
     el.querySelectorAll('[data-ml]').forEach(b => b.onclick = () => { const k = b.dataset.ml; f.meals[k] = f.meals[k] === b.dataset.ms ? undefined : b.dataset.ms; if (!f.meals[k]) delete f.meals[k]; save('habits'); draw(el); });
+    el.querySelectorAll('[data-sec]').forEach(pth => pth.onclick = () => { UI.foodSec = pth.dataset.sec; draw(el); });
+    const r1 = x => Math.round(x * 10) / 10;
+    const pickPhoto = file => new Promise(res => { const img = new Image(), url = URL.createObjectURL(file); img.onload = () => { const sc = Math.min(1, 260 / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', .6)); }; img.onerror = () => res(null); img.src = url; });
+    const openAdd = () => {
+      if (d > todayISO()) { toast('Ese día todavía no llega'); return; }
+      const hr = new Date().getHours(), defMeal = hr < 11 ? 'desayuno' : hr < 16 ? 'almuerzo' : 'cena';
+      let meal = defMeal, qty = 1, photo = null;
+      const sh = openSheet({title: 'Registrar comida', body: `
+        <div class="fld"><label>¿Cuál comida?</label><div class="chchips">${MEALS.map(([k, n2]) => `<button type="button" data-nm="${k}" class="${k === meal ? 'on' : ''}">${n2}</button>`).join('')}</div></div>
+        <div class="fld"><label>Alimento</label><select class="inp" id="nfF">${NUT_FOODS.map((x, i) => `<option value="${i}">${x[0]}</option>`).join('')}</select></div>
+        <div class="fld"><label>Porciones</label><div class="habgoal"><button type="button" class="btn sec sm" id="nfM">−</button><b id="nfQv">1</b><button type="button" class="btn sec sm" id="nfP">+</button></div></div>
+        <div class="fld"><label>Foto (opcional)</label><input class="inp" type="file" accept="image/*" capture="environment" id="nfPh"><img id="nfImg" class="nfimg" alt="" hidden></div>
+        <div class="nfres" id="nfRes"></div>
+        <small class="hint">Valores aproximados por porción. Para exactitud, usa la etiqueta del producto.</small>`,
+        foot: '<button class="btn" id="nfS">Guardar comida</button>',
+        onMount: sel => {
+          const qq = x => sel.querySelector(x);
+          const upd = () => { const food = NUT_FOODS[+qq('#nfF').value]; qq('#nfQv').textContent = qty; qq('#nfRes').innerHTML = `<b>${Math.round(food[2] * qty)} kcal</b> · Proteína ${r1(food[3] * qty)} g · Carbohidratos ${r1(food[4] * qty)} g · Grasa ${r1(food[5] * qty)} g`; };
+          sel.querySelectorAll('[data-nm]').forEach(b => b.onclick = () => { meal = b.dataset.nm; sel.querySelectorAll('[data-nm]').forEach(x => x.classList.toggle('on', x === b)); });
+          qq('#nfF').onchange = upd;
+          qq('#nfM').onclick = () => { qty = Math.max(0.5, qty - 0.5); upd(); };
+          qq('#nfP').onclick = () => { qty = qty + 0.5; upd(); };
+          qq('#nfPh').onchange = async e => { const file = e.target.files[0]; if (!file) return; photo = await pickPhoto(file); const im = qq('#nfImg'); if (photo) { im.src = photo; im.hidden = false; } };
+          qq('#nfS').onclick = () => {
+            const food = NUT_FOODS[+qq('#nfF').value], sec = food[1], en = {id: uid(), meal, name: food[0], sec, q: qty, kcal: Math.round(food[2] * qty), p: r1(food[3] * qty), c: r1(food[4] * qty), g: r1(food[5] * qty), photo: photo || undefined, at: Date.now(), secN: 0};
+            if (sec) { en.secN = Math.max(1, Math.round(qty)); f[sec] = (f[sec] || 0) + en.secN; f.order = (f.order || '') + sec.repeat(en.secN); }
+            f.entries = f.entries || []; f.entries.push(en); save('habits'); setLog(); sh.close(); toast('Comida guardada'); draw(el);
+          };
+          upd();
+        }});
+    };
+    const fa = el.querySelector('#fdAdd'); if (fa) fa.onclick = openAdd;
+    el.querySelectorAll('[data-fdel]').forEach(b => b.onclick = () => { const en = (f.entries || []).find(x => x.id === b.dataset.fdel); if (!en) return; f.entries = f.entries.filter(x => x !== en); if (en.sec && en.secN) { f[en.sec] = Math.max(0, (f[en.sec] || 0) - en.secN); for (let i = 0; i < en.secN; i++) f.order = (f.order || '').replace(new RegExp(en.sec + '(?=[^' + en.sec + ']*$)'), ''); } save('habits'); setLog(); draw(el); });
     q('#fdG').onclick = async () => { const v = await pickNumber(g, {min: 1, max: 12, unit: 'porciones', title: 'Frutas y vegetales al día'}); if (v) { h.goal = v; setLog(); draw(el); } };
   };
   hostOrSheet(host, {title: `${h.icon} ${esc(h.name)}`, cls: 'foodsheet', body: '<div id="fdBody"></div>', onMount: draw, onClose: () => { if (UI.view === 'habitos') renderView(); }});
