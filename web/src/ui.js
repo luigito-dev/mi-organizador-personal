@@ -129,7 +129,7 @@ function pickReminder(current) {
 // Campanita: estado en obj.reminder (null = apagado). onSave opcional para guardar al instante.
 function bellHTML(val) {
   const on = val != null;
-  return `<button type="button" class="bellrow ${on ? 'on' : ''}" data-bell aria-label="Recordatorio"><span class="b">🔔</span><span class="switch ${on ? 'on' : ''}"></span>${on ? `<span class="lbl">${remLabel(val)}</span>` : ''}</button>`;
+  return `<button type="button" class="bellrow ${on ? 'on' : ''}" data-bell aria-label="Recordatorio"><span class="b">🔔</span><span class="switch ${on ? 'on' : ''}"></span></button>`;
 }
 function wireBell(root, obj, onSave) {
   const btn = root.querySelector('[data-bell]'); if (!btn) return;
@@ -243,7 +243,7 @@ function openTaskDetail(id) {
     ${t.obs ? `<div class="fld"><div class="lab">Observaciones</div><div style="white-space:pre-wrap">${esc(t.obs)}</div></div>` : ''}
     ${calLinks({title: t.title, date: t.date, start: t.time, allDay: !t.time, details: desc})}`;
   const s = openSheet({title: 'Tarea', body,
-    foot: `<button class="btn sec" id="dDel"><i class="xdel"></i> Eliminar</button><button class="btn sec" id="dEdit">✎ Editar</button><button class="btn" id="dDone">${isDone(t) ? '↺ Reabrir' : '✓ Completar'}</button>`,
+    foot: `<button class="btn sec" id="dDel" aria-label="Eliminar" title="Eliminar"><i class="xdel"></i></button><button class="btn sec" id="dEdit">✎ Editar</button><button class="btn" id="dDone">${isDone(t) ? '↺ Reabrir' : '✓ Completar'}</button>`,
     onMount: el => {
       wireBell(el.querySelector('#dBell'), t, () => { save('tasks'); render(); toast(t.reminder == null ? 'Recordatorio apagado' : 'Recordatorio: ' + remLabel(t.reminder)); });
       el.querySelectorAll('[data-step]').forEach(c => c.onchange = () => { t.steps[+c.dataset.step].done = c.checked; c.nextElementSibling.classList.toggle('done', c.checked); save('tasks'); render(); });
@@ -274,8 +274,8 @@ function openEventForm(ev, preset = {}, mode) {
     <div class="fld"><button type="button" class="row" id="eAllRow" style="padding:4px 0;font-weight:600"><span class="switch blue ${e.allDay ? 'on' : ''}" id="eAll"></span>Todo el día</button></div>
     ${mode === 'week' ? '' : `<div class="fld"><label>Termina otro día (para eventos de varios días)</label><input type="date" class="inp" id="eEnd" value="${e.endDate || ''}" min="${e.date}"></div>`}
     <div class="fld row" id="eTimes"></div>
-    <div class="fld"><label>Tipo de evento</label><div class="opts hscroll" id="eTypes"></div></div>
-    <div class="fld"><label>Sticker en el calendario</label><div class="opts hscroll stk" id="eStk"></div></div>
+    <div class="fld"><label>Tipo de evento</label><div id="eTypes"></div></div>
+    <div class="fld"><label>Sticker en el calendario</label><div id="eStk"></div></div>
     <div class="fld"><label>Lugar</label><input class="inp" id="ePlace" value="${esc(e.place)}" placeholder="¿Dónde?"></div>
     <div class="fld"><label>Área</label><div class="opts hscroll" id="eAreas"></div></div>
     <div class="fld row"><span class="lab" style="margin:0">Recordatorio</span><span class="sp"></span><span id="eBell">${bellHTML(e.reminder)}</span></div>
@@ -292,8 +292,9 @@ function openEventForm(ev, preset = {}, mode) {
       };
       paintTimes();
       el.querySelector('#eAllRow').onclick = () => { e.allDay = !e.allDay; el.querySelector('#eAll').classList.toggle('on', e.allDay); paintTimes(); };
-      const pt = () => { el.querySelector('#eTypes').innerHTML = EVENT_TYPES.map(t => `<button type="button" class="opt ${t.id === e.evType ? 'on' : ''}" data-et="${t.id}">${t.icon} ${t.name}</button>`).join(''); el.querySelectorAll('[data-et]').forEach(b => b.onclick = () => { e.evType = b.dataset.et; if (e.evType === 'celebracion' && !e.sticker) { e.sticker = '🎂'; wireStickers(el.querySelector('#eStk'), e); } pt(); }); };
-      wireStickers(el.querySelector('#eStk'), e);
+      const pt = () => { const cur = EVENT_TYPES.find(t => t.id === e.evType) || EVENT_TYPES[0]; el.querySelector('#eTypes').innerHTML = `<button type="button" class="pickbtn" id="eTypeBtn"><span>${cur.icon} ${cur.name}</span><b>›</b></button>`; el.querySelector('#eTypeBtn').onclick = () => popPick('Tipo de evento', EVENT_TYPES.map(t => ({value: t.id, label: `${t.icon} ${t.name}`})), e.evType, v => { e.evType = v; if (e.evType === 'celebracion' && !e.sticker) { e.sticker = '🎂'; } pt(); paintSticker(); }); };
+      const paintSticker = () => { el.querySelector('#eStk').innerHTML = `<button type="button" class="pickbtn" id="eStkBtn"><span>${e.sticker || 'Ninguno'}</span><b>›</b></button>`; el.querySelector('#eStkBtn').onclick = () => popPick('Sticker en el calendario', [{value: '', label: 'Ninguno'}, ...STICKERS.map(x => ({value: x, label: x}))], e.sticker || '', v => { e.sticker = v || null; paintSticker(); }, true); };
+      paintSticker();
       pt();
       const pa = () => { el.querySelector('#eAreas').innerHTML = areaButtons(e.areaId); el.querySelectorAll('[data-area]').forEach(b => b.onclick = () => { e.areaId = b.dataset.area || null; pa(); }); };
       pa();
@@ -324,7 +325,7 @@ function openEventDetail(id) {
     <div class="kv"><span class="k">Recordatorio</span><span id="dBell">${bellHTML(e.reminder)}</span></div>
     ${e.note ? `<div class="fld"><div class="lab">Nota</div><div style="white-space:pre-wrap">${esc(e.note)}</div></div>` : ''}
     ${calLinks({title: e.title, date: e.date, start: e.start, end: e.end, allDay: e.allDay, details: e.note, place: e.place})}`;
-  const s = openSheet({title: 'Evento', body, foot: `<button class="btn sec" id="dDel"><i class="xdel"></i> Eliminar</button><button class="btn" id="dEdit">✎ Editar</button>`,
+  const s = openSheet({title: 'Evento', body, foot: `<button class="btn sec" id="dDel" aria-label="Eliminar" title="Eliminar"><i class="xdel"></i></button><button class="btn" id="dEdit">✎ Editar</button>`,
     onMount: el => {
       wireBell(el.querySelector('#dBell'), e, () => { save('events'); render(); toast(e.reminder == null ? 'Recordatorio apagado' : 'Recordatorio: ' + remLabel(e.reminder)); });
       el.querySelector('#dEdit').onclick = () => { s.close(); openEventForm(e); };
@@ -360,7 +361,7 @@ function openTypesManager(after) {
         el.querySelector('#tyL').innerHTML = S.types.map(t => {
           const used = S.tasks.filter(x => x.typeId === t.id).length;
           return `<div class="item" style="cursor:default"><span class="em">${t.icon}</span><span class="dot" style="background:${t.color}"></span><div class="body"><div class="t">${esc(t.name)}</div><div class="m">${t.builtin ? 'Original' : 'Creado por ti'} · ${used} actividad${used === 1 ? '' : 'es'}</div></div>
-            <button class="btn ghost sm" data-ed="${t.id}">Editar</button>${t.builtin ? '' : `<button class="btn ghost sm" data-del="${t.id}"><i class="xdel"></i> Eliminar</button>`}</div>`;
+            <button class="btn ghost sm" data-ed="${t.id}">Editar</button>${t.builtin ? '' : `<button class="btn ghost sm" data-del="${t.id}" aria-label="Eliminar" title="Eliminar"><i class="xdel"></i></button>`}</div>`;
         }).join('');
         el.querySelectorAll('[data-ed]').forEach(b => b.onclick = () => openTypeForm(S.types.find(x => x.id === b.dataset.ed), paint));
         el.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
@@ -427,7 +428,7 @@ function openRoutineForm(r0, preset = {}) {
       <div class="fld"><label>Lugar</label><input class="inp" id="rL" value="${esc(r.place)}"></div>
       <details class="fold" ${r.from || r.to ? 'open' : ''}><summary>Fechas de inicio y fin</summary><div class="cols">
         <div class="fld"><label>Empieza</label><input type="date" class="inp" id="rF" value="${r.from}"></div><div class="fld"><label>Termina</label><input type="date" class="inp" id="rTo" value="${r.to}"></div></div></details>`,
-    foot: `${editing ? '<button class="btn sec" id="rDel"><i class="xdel"></i> Eliminar</button>' : '<button class="btn sec" data-close>Cancelar</button>'}<button class="btn" id="rS">Guardar rutina</button>`,
+    foot: `${editing ? '<button class="btn sec" id="rDel" aria-label="Eliminar" title="Eliminar"><i class="xdel"></i></button>' : '<button class="btn sec" data-close>Cancelar</button>'}<button class="btn" id="rS">Guardar rutina</button>`,
     onMount: el => {
       const pa = () => { el.querySelector('#rA').innerHTML = areaButtons(r.areaId); el.querySelectorAll('[data-area]').forEach(b => b.onclick = () => { r.areaId = b.dataset.area || null; pa(); }); }; pa();
       const pd = () => el.querySelectorAll('[data-d]').forEach(b => { const d = +b.dataset.d; b.classList.toggle('on', r.days.includes(d)); b.onclick = () => { r.days = r.days.includes(d) ? r.days.filter(x => x !== d) : [...r.days, d]; pd(); }; }); pd();
@@ -481,6 +482,10 @@ function openNote(id) {
 }
 
 // Selector de sticker: lo que eliges aquí aparece en el día del calendario
+function popPick(title, items, current, onPick, grid = false) {
+  const s = openSheet({title, float: true, cls: 'pickpop', body: `<div class="pickgrid ${grid ? 'g' : ''}">${items.map(it => `<button type="button" class="opt ${it.value === current ? 'on' : ''}" data-pv="${esc(it.value)}">${it.label}</button>`).join('')}</div>`});
+  s.el.querySelectorAll('[data-pv]').forEach(b => b.onclick = () => { s.close(); onPick(b.dataset.pv); });
+}
 function wireStickers(box, obj) {
   if (!box) return;
   const paint = () => {
