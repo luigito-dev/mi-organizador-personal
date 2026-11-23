@@ -54,7 +54,7 @@ with sync_playwright() as p:
     pg.locator('[data-hab="f1"]').click(); pg.wait_for_timeout(400)
     for _ in range(3): tap('[data-fa="f"]'); pg.wait_for_timeout(100)
     for _ in range(2): tap('[data-fa="v"]'); pg.wait_for_timeout(100)
-    ok(f'[{lab}] plato lleno 5/5', pg.evaluate("habDone(S.habits[3],todayISO())") and '5/5' in pg.locator('.plate').inner_html())
+    ok(f'[{lab}] plato lleno 5/5', pg.evaluate("habDone(S.habits[3],todayISO())") and '×3' in pg.locator('.plate').inner_html() and '×2' in pg.locator('.plate').inner_html())
     tap('#fdM'); pg.wait_for_timeout(150); ok(f'[{lab}] quitar una', pg.evaluate("habCount(S.habits[3],todayISO())")==4)
     tap('[data-ml="desayuno"][data-ms="sano"]'); tap('[data-ml="almuerzo"][data-ms="rapida"]'); pg.wait_for_timeout(200)
     ok(f'[{lab}] comidas', '1 de 2' in pg.locator('.foodsheet').inner_text())

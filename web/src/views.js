@@ -2021,21 +2021,23 @@ function syncWakeRem(h) { const tgt = h.wakeAt || '06:00', bed = fromMin((toMinT
 const FOOD_TIPS = ['Llena la mitad de tu plato con vegetales.', 'Una fruta es la mejor merienda.', 'Toma agua antes de cada comida.', 'Prefiere lo asado o al horno en vez de frito.', 'Come despacio: tu cuerpo tarda 20 min en sentirse lleno.', 'Cambia el refresco por agua con limón.', 'Añade un vegetal al desayuno.', 'Lee las etiquetas: menos azúcar y sodio.', 'Arroz integral o habichuelas: más fibra.', 'Prepara tu almuerzo la noche antes.', 'Pon frutas a la vista en la cocina.', 'Come colores distintos: cada uno aporta algo.'];
 const MEALS = [['desayuno', '🍳 Desayuno'], ['almuerzo', '🍽️ Almuerzo'], ['cena', '🌙 Cena'], ['merienda', '🍎 Merienda']];
 const MEAL_ST = [['sano', '🥗', 'Sano'], ['regular', '😐', 'Regular'], ['rapida', '🍔', 'Comida rápida']];
-function plateSVG(n, g, items) {
-  const R = 92, cx = 110, cy = 110, seg = (i) => { const a0 = -Math.PI / 2 + i * 2 * Math.PI / g, a1 = a0 + 2 * Math.PI / g; return `M${cx} ${cy} L${cx + R * Math.cos(a0)} ${cy + R * Math.sin(a0)} A${R} ${R} 0 ${g === 1 ? 1 : 0} 1 ${cx + R * Math.cos(a1)} ${cy + R * Math.sin(a1)}Z`; };
-  return `<svg class="plate" viewBox="0 0 220 220" aria-hidden="true"><circle cx="110" cy="110" r="108" fill="#f4f4f2" stroke="#e0e0da" stroke-width="2"/><circle cx="110" cy="110" r="96" fill="#fff" stroke="#ececE6"/>
-    ${[...Array(g)].map((_, i) => { const a = -Math.PI / 2 + (i + .5) * 2 * Math.PI / g, on = i < n, it = items[i]; return `<path d="${seg(i)}" fill="${on ? (it === 'v' ? '#b9e8a6' : '#ffd3b0') : '#fafaf7'}" stroke="#fff" stroke-width="3" class="${on && i === n - 1 ? 'segpop' : ''}"/>${on ? `<text x="${110 + 58 * Math.cos(a)}" y="${118 + 58 * Math.sin(a)}" text-anchor="middle" font-size="24">${it === 'v' ? '🥦' : '🍎'}</text>` : ''}`; }).join('')}
-    <circle cx="110" cy="110" r="30" fill="#fff" stroke="#eee"/><text x="110" y="118" text-anchor="middle" font-size="22" font-weight="800" fill="#2e7d32">${n}/${g}</text></svg>`;
+function plateSVG(f) {
+  // MiPlato (USDA): mitad frutas y vegetales, un cuarto granos, un cuarto proteína; el lácteo va aparte
+  const R = 98, cx = 110, cy = 110, pt = a => [cx + R * Math.cos(a * Math.PI / 180), cy + R * Math.sin(a * Math.PI / 180)];
+  const seg = (a0, a1) => { const [x0, y0] = pt(a0), [x1, y1] = pt(a1); return `M${cx} ${cy} L${x0} ${y0} A${R} ${R} 0 0 1 ${x1} ${y1}Z`; };
+  const parts = [['v', '#b9e8a6', '🥦', -180, -90], ['f', '#ffd3b0', '🍎', -90, 0], ['g', '#f7e3b5', '🍚', 0, 90], ['p', '#f6c1c1', '🍗', 90, 180]];
+  return `<svg class="plate" viewBox="0 0 220 220" aria-hidden="true"><circle cx="110" cy="110" r="108" fill="#f4f4f2" stroke="#e0e0da" stroke-width="2"/>
+    ${parts.map(([k, col, em, a0, a1]) => { const n = f[k] || 0, m = (a0 + a1) / 2, rad = 52, x = cx + rad * Math.cos(m * Math.PI / 180), y = cy + rad * Math.sin(m * Math.PI / 180); return `<path d="${seg(a0, a1)}" fill="${n ? col : '#fafaf7'}" stroke="#fff" stroke-width="3"/><text x="${x}" y="${y + 6}" text-anchor="middle" font-size="22">${em}</text>${n ? `<text x="${x}" y="${y + 26}" text-anchor="middle" font-size="13" font-weight="800" fill="#333">×${n}</text>` : ''}`; }).join('')}
+  </svg>`;
 }
 function openFood(h, d, host) {
   const draw = el => {
-    h.food = h.food || {}; const f = h.food[d] = h.food[d] || {f: 0, v: 0, meals: {}}, g = FOOD_GOAL(h), n = (f.f || 0) + (f.v || 0);
-    const items = [...Array(f.f || 0).fill('f'), ...Array(f.v || 0).fill('v')];
+    h.food = h.food || {}; const f = h.food[d] = h.food[d] || {f: 0, v: 0, g: 0, p: 0, l: 0, meals: {}}, g = FOOD_GOAL(h), n = (f.f || 0) + (f.v || 0), tot = ['f', 'v', 'g', 'p', 'l'].reduce((a, k) => a + (f[k] || 0), 0);
     const ml = Object.values(f.meals || {}), sano = ml.filter(x => x === 'sano').length, tip = FOOD_TIPS[(parseISO(d).getDate() + parseISO(d).getMonth()) % FOOD_TIPS.length];
     el.querySelector('#fdBody').innerHTML = `
-      <div class="fdplate">${plateSVG(Math.min(n, g), g, items)}</div>
+      <div class="fdplate">${plateSVG(f)}</div>
       <div class="wmsg">${n >= g ? '🎉 ¡Meta de frutas y vegetales cumplida!' : `Te ${g - n === 1 ? 'falta 1 porción' : `faltan ${g - n} porciones`} de frutas o vegetales`}</div>
-      <div class="fdbtns"><button class="fdb fruit" data-fa="f">🍎 Fruta <b>+1</b></button><button class="fdb veg" data-fa="v">🥦 Vegetal <b>+1</b></button><button class="wsmall" id="fdM" ${n ? '' : 'disabled'} aria-label="Quitar una">−1</button></div>
+      <div class="fdbtns"><button class="fdb veg" data-fa="v">🥦 Vegetal <b>+1</b></button><button class="fdb fruit" data-fa="f">🍎 Fruta <b>+1</b></button><button class="fdb grain" data-fa="g">🍚 Granos <b>+1</b></button><button class="fdb prot" data-fa="p">🍗 Proteína <b>+1</b></button><button class="fdb dairy" data-fa="l">🥛 Lácteo <b>+1</b></button><button class="wsmall" id="fdM" ${tot ? '' : 'disabled'} aria-label="Quitar una">−1</button></div>
       <div class="prcard"><div class="bknh"><b>¿Cómo comiste hoy?</b>${ml.length ? `<span>${sano} de ${ml.length} sanas</span>` : ''}</div>
         ${MEALS.map(([k, n2]) => `<div class="fdmeal"><span>${n2}</span><div class="fdst">${MEAL_ST.map(([sk, e, lbl]) => `<button data-ml="${k}" data-ms="${sk}" class="${f.meals[k] === sk ? 'on ' + sk : ''}" aria-label="${lbl}" title="${lbl}">${e}</button>`).join('')}</div></div>`).join('')}
         <small class="hint">🥗 Sano · 😐 Regular · 🍔 Comida rápida. Toca otra vez para quitar.</small></div>
@@ -2043,8 +2045,8 @@ function openFood(h, d, host) {
       <button class="acgoal" id="fdG">Meta: <b>${g} porciones al día</b> <span>Cambiar ✎</span></button>`;
     const q = x => el.querySelector(x);
     const setLog = () => { h.log = h.log || {}; const t = (f.f || 0) + (f.v || 0); if (t) h.log[d] = t; else delete h.log[d]; save('habits'); };
-    el.querySelectorAll('[data-fa]').forEach(b => b.onclick = () => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } const was = habDone(h, d); f[b.dataset.fa] = (f[b.dataset.fa] || 0) + 1; f.order = (f.order || '') + b.dataset.fa; setLog(); if (!was && habDone(h, d)) toast('🥗 ¡Meta cumplida! Sigue así'); draw(el); });
-    q('#fdM').onclick = () => { const last = (f.order || '').slice(-1) || (f.v ? 'v' : 'f'); if (f[last]) f[last]--; else if (f.f) f.f--; else if (f.v) f.v--; f.order = (f.order || '').slice(0, -1); setLog(); draw(el); };
+    el.querySelectorAll('[data-fa]').forEach(b => b.onclick = () => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } const was = habDone(h, d), k = b.dataset.fa; f[k] = (f[k] || 0) + 1; f.order = (f.order || '') + k; setLog(); if (!was && habDone(h, d)) toast('🥗 ¡Meta cumplida! Sigue así'); draw(el); });
+    q('#fdM').onclick = () => { const last = (f.order || '').slice(-1); const k = f[last] ? last : ['v', 'f', 'g', 'p', 'l'].find(x => f[x]); if (k) f[k]--; f.order = (f.order || '').slice(0, -1); setLog(); draw(el); };
     el.querySelectorAll('[data-ml]').forEach(b => b.onclick = () => { const k = b.dataset.ml; f.meals[k] = f.meals[k] === b.dataset.ms ? undefined : b.dataset.ms; if (!f.meals[k]) delete f.meals[k]; save('habits'); draw(el); });
     q('#fdG').onclick = async () => { const v = await pickNumber(g, {min: 1, max: 12, unit: 'porciones', title: 'Frutas y vegetales al día'}); if (v) { h.goal = v; setLog(); draw(el); } };
   };

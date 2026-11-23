@@ -1034,10 +1034,10 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .plate{width:220px;height:220px;display:block;filter:drop-shadow(0 6px 14px rgba(0,0,0,.12))}
 .segpop{animation:segpop .5s ease}
 @keyframes segpop{0%{opacity:.2}100%{opacity:1}}
-.fdbtns{display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0 4px}
-.fdb{padding:13px 16px;border-radius:999px;font-weight:700;font-size:15px}
+.fdbtns{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:6px 0 4px}
+.fdb{padding:11px 13px;border-radius:999px;font-weight:700;font-size:14px}
 .fdb b{margin-left:2px}
-.fdb.fruit{background:#ffe1cc;color:#b4501a}.fdb.veg{background:#dcf3d2;color:#2e7d32}
+.fdb.fruit{background:#ffe1cc;color:#b4501a}.fdb.veg{background:#dcf3d2;color:#2e7d32}.fdb.grain{background:#f7e3b5;color:#7a5a12}.fdb.prot{background:#f6d5d5;color:#9b2c2c}.fdb.dairy{background:#e3efff;color:#1d4ed8}
 .fdb:active{transform:scale(.95)}
 .fdmeal{display:flex;align-items:center;justify-content:space-between;padding:7px 2px;border-top:1px solid var(--line);font-weight:600}
 .fdst{display:flex;gap:6px}
