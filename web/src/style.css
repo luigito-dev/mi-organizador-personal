@@ -1361,3 +1361,5 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .voicebtn .rdot{width:16px;height:16px;border-radius:50%;background:var(--blue);display:block}
 .voicebtn.rec{background:#e5484d;border-color:#e5484d;box-shadow:0 0 0 6px rgba(229,72,77,.18)}
 .voicebtn.rec .rdot{background:#fff}
+
+#dlBtn.rec{background:#e5484d;box-shadow:0 0 0 6px rgba(229,72,77,.18)}

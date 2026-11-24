@@ -988,7 +988,7 @@ function dayLists(box) {
   if (!box.dataset.fixkey) popSwipe(box);
   if (UI.popTab === 'hoy' && pins().hoy === false) { const first = [...lists.map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(pins().cal ? ['cal'] : [])][0]; if (first) UI.popTab = first; }
   const wireTabs = () => { addUnpin(box); box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; dayLists(box); listBadge(); }); box.querySelectorAll('[data-qpins]').forEach(b => b.onclick = () => openPinManager(() => dayLists(box))); };
-  if (/^(tk|nt|cd):/.test(String(UI.popTab))) { const it = pinItemView(UI.popTab); if (it) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:var(--blue)"><span class="qtitle ${it.title.length > 9 ? 'long' : ''}">${esc(it.title.toUpperCase())}</span><span class="qcount">${esc(it.pill)}</span></div><div class="pinhost">${it.html}</div><div class="row qfoot"><button class="btn ghost sm" id="qOpenIt">Abrir ›</button><span class="sp"></span><button type="button" class="voicebtn" id="qVoice" aria-label="Mantén presionado para grabar una nota" title="Mantén presionado para grabar"><i class="rdot"></i></button><span class="sp"></span></div>`; box.querySelector('#qOpenIt').onclick = it.open; wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
+  if (/^(tk|nt|cd):/.test(String(UI.popTab))) { const it = pinItemView(UI.popTab); if (it) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:var(--blue)"><span class="qtitle ${it.title.length > 9 ? 'long' : ''}">${esc(it.title.toUpperCase())}</span><span class="qcount">${esc(it.pill)}</span></div><div class="pinhost">${it.html}</div><div class="row qfoot"><button class="btn ghost sm" id="qOpenIt">Abrir ›</button></div>`; box.querySelector('#qOpenIt').onclick = it.open; wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
   if (String(UI.popTab).startsWith('hab:')) { const h = S.habits.find(x => 'hab:' + x.id === UI.popTab); if (h) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:${h.color}"><span class="qtitle ${h.name.length > 9 ? 'long' : ''}">${esc(h.name.toUpperCase())}</span><span class="qcount">${habPill(h)}</span></div><div class="pinhost" id="pinHost"></div><div class="row qfoot"><span class="sp"></span><button class="btn ghost sm" id="qHab">Abrir hábito ›</button></div>`; box.querySelector('#qHab').onclick = () => { go('habitos'); }; pinHabit(h, box.querySelector('#pinHost'), () => dayLists(box)); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
   if (UI.popTab === 'cal') { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:var(--teal,#0f9d8f)"><span class="qtitle">CALENDARIO</span><span class="qcount">${sortedDay(todayISO()).length} hoy</span></div><div id="pinCal"></div>`; pinCalendar(box.querySelector('#pinCal')); wireTabs(); return; }
   if (String(UI.popTab).startsWith('reto:')) { const h = S.habits.find(x => 'reto:' + x.id === UI.popTab); if (h && h.challenge) { challengeBox(box, h, tabs, null); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
@@ -1012,7 +1012,7 @@ function dayLists(box) {
   }
   box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div>${head}<div class="qrows">${rows}</div>
     <div class="qadd"><input id="dlAdd" placeholder="${esc(addPh)}" maxlength="300" autocomplete="off"><button class="btn" id="dlBtn" aria-label="Añadir">+</button></div>
-    <div class="row qfoot">${foot}<span class="sp"></span><button type="button" class="voicebtn" id="qVoice" aria-label="Mantén presionado para grabar una nota" title="Mantén presionado para grabar"><i class="rdot"></i></button><span class="sp"></span>${UI.popTab === 'hoy' && !lists.length ? '<button class="btn ghost sm" id="qNewList">+ Nueva lista</button>' : ''}</div>`;
+    <div class="row qfoot">${foot}${UI.popTab === 'hoy' && !lists.length ? '<button class="btn ghost sm" id="qNewList">+ Nueva lista</button>' : ''}</div>`;
   const redraw = () => { dayLists(box); listBadge(); };
   box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; redraw(); });
   box.querySelectorAll('[data-qpins]').forEach(b => b.onclick = () => openPinManager(() => dayLists(box)));
@@ -1040,7 +1040,13 @@ function dayLists(box) {
   $('#dlBtn', box).onclick = add; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
   const q = id => $(id, box);
   if (q('#qGo')) q('#qGo').onclick = () => go('dia');
-  const qv = q('#qVoice'); if (qv) { qv.addEventListener('pointerdown', e => { e.preventDefault(); startVoiceNote(qv); }); ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => qv.addEventListener(ev, () => stopVoiceNote(qv))); }
+  const dl = q('#dlBtn'); if (dl) {
+    let t3 = null, fired = false;
+    dl.addEventListener('pointerdown', () => { fired = false; clearTimeout(t3); t3 = setTimeout(() => { fired = true; toast('Grabando… suelta para guardar la nota'); startVoiceNote(dl); }, 3000); });
+    const endHold = () => { clearTimeout(t3); t3 = null; if (fired) stopVoiceNote(dl); };
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => dl.addEventListener(ev, endHold));
+    dl.addEventListener('click', e => { if (fired) { e.stopImmediatePropagation(); e.preventDefault(); fired = false; } }, true);
+  }
   if (q('#qOpen')) q('#qOpen').onclick = () => { const id = UI.popTab; go('listas'); UI.openList = id; render(); };
   if (q('#qUndo')) q('#qUndo').onclick = () => { S.lists.find(y => y.id === UI.popTab).items.forEach(i => i.done = false); save('lists'); redraw(); };
   if (q('#qNewList')) q('#qNewList').onclick = () => { go('listas'); render(); openListForm(); };
