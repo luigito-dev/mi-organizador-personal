@@ -1040,7 +1040,7 @@ function dayLists(box) {
     const raw = inp.value.trim(); if (!raw) { inp.focus(); return; }
     if (UI.popTab === 'hoy') { const g = guess(raw); S.tasks.push({id: uid(), title: raw, date: t, time: g.time, typeId: g.typeId, areaId: g.areaId, priority: 'Media', details: '', steps: [], status: 'Pendiente', obs: '', reminder: null, noCal: true, createdAt: Date.now()}); save('tasks'); }
     else { const l = S.lists.find(y => y.id === UI.popTab); raw.split(/\n|,/).map(x => x.trim()).filter(Boolean).forEach(x => l.items.push({id: uid(), t: cap(x), done: false})); save('lists'); }
-    redraw(); const n = $('#dlAdd'); n && n.focus();
+    redraw(); const n = box.querySelector('#dlAdd'); if (n) n.focus({preventScroll: true});
   };
   $('#dlBtn', box).onclick = add; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
   const q = id => $(id, box);
