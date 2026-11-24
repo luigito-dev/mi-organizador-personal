@@ -1407,3 +1407,18 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .qadd .micbtn{position:absolute;right:62px;top:50%;transform:translateY(-50%);width:14px;height:14px;margin:0;padding:0;border:0;border-radius:50%;background:#dc2626;font-size:0;cursor:pointer;z-index:1}
 .qadd .micbtn.rec{animation:recpulse 1s ease-in-out infinite}
 @keyframes recpulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.6)}50%{box-shadow:0 0 0 6px rgba(220,38,38,0)}}
+
+/* Escenarios: el fondo cambia de color en bucle y los íconos se repiten */
+.cdfeat.fx:not(.ph){background-size:200% 200%!important;animation:fxBgLoop 14s ease-in-out infinite alternate}
+@keyframes fxBgLoop{from{background-position:0% 50%}to{background-position:100% 50%}}
+.fx-reyes:not(.ph){background:linear-gradient(120deg,#1b1048,#4b2a8a,#c9a227,#1b1048)!important}
+.fx-const:not(.ph){background:linear-gradient(120deg,#0a2a6b,#c8102e,#ffffff,#0a2a6b)!important}
+.fx-carnaval:not(.ph){background:linear-gradient(120deg,#5b1a7a,#e0a500,#1f8a4c,#5b1a7a)!important}
+.fx-indep:not(.ph){background:linear-gradient(120deg,#0b1f4d,#b22234,#ffffff,#0b1f4d)!important}
+.fx-gracias:not(.ph){background:linear-gradient(120deg,#7a3b12,#d9782d,#f2c26b,#7a3b12)!important}
+.fx-halloween:not(.ph){background:linear-gradient(120deg,#1a0b2e,#ff7a18,#2b1a3d,#1a0b2e)!important}
+.fx-valentin:not(.ph){background:linear-gradient(120deg,#8a1538,#ff6f9c,#ffc2d6,#8a1538)!important}
+.fx-navidad .fxp,.fx-reyes .fxp,.fx-const .fxp,.fx-carnaval .fxp,.fx-gracias .fxp{top:-8%;animation:fxFall linear infinite}
+.fx-aniversario .fxp,.fx-cumple .fxp,.fx-valentin .fxp{top:auto;bottom:-10%;animation:fxRise linear infinite}
+.fx-anio .fxp,.fx-indep .fxp{top:auto;font-size:22px;animation:fxPop ease-out infinite}
+.fx-verano .fxp,.fx-halloween .fxp{top:auto;bottom:4%;font-size:24px;animation:fxWave ease-in-out infinite alternate}

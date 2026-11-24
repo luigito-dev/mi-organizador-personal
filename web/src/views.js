@@ -187,21 +187,23 @@ let motivTimer = null;
 // Cuenta regresiva: días que faltan (o que pasaron) para fechas importantes
 const CD_ICONS = ['🎂', '💰', '🎤', '🎆', '✈️', '💍', '👶', '🎓', '🏖️', '💼', '❤️', '🎄', '🏥', '⭐'];
 function cdList() { return (S.settings.countdowns || []).slice().sort((a, b) => a.date.localeCompare(b.date)); }
-const CD_THEMES = [['', '✨', 'Normal'], ['aniversario', '💞', 'Aniversario'], ['navidad', '🎄', 'Navidad'], ['anio', '🎆', 'Año nuevo'], ['cumple', '🎈', 'Cumpleaños'], ['verano', '🌴', 'Verano']];
-const CD_FX = {aniversario: '💗', navidad: '❄️', anio: '✨', cumple: '🎈', verano: '🌊'};
+const CD_THEMES = [['', '✨', 'Normal'], ['aniversario', '💞', 'Aniversario'], ['navidad', '🎄', 'Navidad'], ['reyes', '👑', 'Reyes Magos (PR)'], ['const', '🇵🇷', 'Constitución de PR'], ['carnaval', '🎭', 'Carnaval (PR)'], ['anio', '🎆', 'Año nuevo'], ['indep', '🇺🇸', 'Independencia (EE. UU.)'], ['gracias', '🦃', 'Acción de Gracias (EE. UU.)'], ['halloween', '🎃', 'Halloween'], ['valentin', '💘', 'San Valentín'], ['cumple', '🎈', 'Cumpleaños'], ['verano', '🌴', 'Verano']];
+const CD_FX = {aniversario: '💗', navidad: '❄️', reyes: '⭐', const: '⭐', carnaval: '🎊', anio: '✨', indep: '🎆', gracias: '🍂', halloween: '🦇', valentin: '💗', cumple: '🎈', verano: '🌊'};
 const CD_COLORS = ['#f5c842', '#7dd3c0', '#f08a8a', '#9bb8f0', '#f4a6d0', '#b6e388', '#ffb36b'];
 function calCuentas(body) {
   const t = todayISO(), list = cdList();
   const diff = c => dayDiff(t, c.date);
   const colorOf = c => c.color || CD_COLORS[Math.max(0, list.indexOf(c)) % CD_COLORS.length];
   const next = list.find(c => c.date >= t) || list.find(c => c.date < t);
-  const row = c => { const n = diff(c), since = n < 0, hl = next && c.id === next.id; return `<button class="cdrow ${hl ? 'hl' : ''}" data-cd="${c.id}"><span class="cdi" style="background:${colorOf(c)}">${c.icon}</span><span class="cdn">${esc(c.name)}</span><span class="cdv"><b class="${since ? 'since' : ''}">${n === 0 ? 'Hoy' : Math.abs(n)}</b><small class="${since ? 'since' : ''}">${n === 0 ? '' : since ? 'Days Since' : 'Days Until'}</small></span></button>`; };
-  const feat = next ? (() => { const n = diff(next), since = n < 0, th = next.theme && CD_FX[next.theme] ? next.theme : ''; const fxCls = th ? `fx fx-${th}${next.photo ? ' ph' : ''}` : ''; const fxLayer = th ? `<div class="fxlayer">${Array.from({length: 14}, (_, i) => `<i class="fxp" style="left:${(i * 37) % 100}%;top:${(i * 29) % 70}%;animation-delay:${((i * 0.41) % 3).toFixed(2)}s;animation-duration:${(3 + (i % 4)).toFixed(1)}s">${CD_FX[th]}</i>`).join('')}</div>` : ''; return `<div class="cdfeat ${fxCls}" style="${next.photo ? `background-image:url(${next.photo})` : `background:${colorOf(next)}`}">${next.photo ? '<div class="cdfshade"></div>' : ''}${fxLayer}<div class="cdfbody"><b>${n === 0 ? 'Hoy' : Math.abs(n)}${n === 0 ? '' : '<small>D</small>'}</b><span>${esc(next.name)}</span><small class="cdfdate">${since ? 'Días desde' : 'Días para'} ${fmtShort(next.date)}</small></div></div>`; })() : '';
+  const row = c => { const n = diff(c), since = n < 0, hl = sel && c.id === sel.id; return `<button class="cdrow ${hl ? 'hl' : ''}" data-cd="${c.id}"><span class="cdi" style="background:${colorOf(c)}">${c.icon}</span><span class="cdn">${esc(c.name)}</span><span class="cdv"><b class="${since ? 'since' : ''}">${n === 0 ? 'Hoy' : Math.abs(n)}</b><small class="${since ? 'since' : ''}">${n === 0 ? '' : since ? 'Days Since' : 'Days Until'}</small></span></button>`; };
+  const sel = list.find(c => c.id === UI.cdSel) || next;
+  const feat = sel ? (() => { const next = sel; const n = diff(next), since = n < 0, th = next.theme && CD_FX[next.theme] ? next.theme : ''; const fxCls = th ? `fx fx-${th}${next.photo ? ' ph' : ''}` : ''; const fxLayer = th ? `<div class="fxlayer">${Array.from({length: 14}, (_, i) => `<i class="fxp" style="left:${(i * 37) % 100}%;top:${(i * 29) % 70}%;animation-delay:${((i * 0.41) % 3).toFixed(2)}s;animation-duration:${(3 + (i % 4)).toFixed(1)}s">${CD_FX[th]}</i>`).join('')}</div>` : ''; return `<div class="cdfeat ${fxCls}" style="${next.photo ? `background-image:url(${next.photo})` : `background:${colorOf(next)}`}">${next.photo ? '<div class="cdfshade"></div>' : ''}${fxLayer}<div class="cdfbody"><b>${n === 0 ? 'Hoy' : Math.abs(n)}${n === 0 ? '' : '<small>D</small>'}</b><span>${esc(next.name)}</span><small class="cdfdate">${since ? 'Días desde' : 'Días para'} ${fmtShort(next.date)}</small></div></div>`; })() : '';
   body.innerHTML = `<div class="cdspace"><div class="row" style="margin-bottom:10px"><span class="sp"></span><button class="btn sm" id="cdNew">+ Nueva cuenta</button></div>
-    ${feat}
+    ${feat}${sel ? `<div class="row" style="justify-content:flex-end;margin:-4px 0 10px"><button class="btn ghost sm" id="cdEdit">Editar cuenta</button></div>` : ''}
     ${list.length ? list.map(row).join('') : '<div class="card empty"><div class="big">⏳</div>Aún no tienes cuentas. Toca “+ Nueva cuenta”.</div>'}</div>`;
   body.querySelector('#cdNew').onclick = () => openCountdownForm(null);
-  body.querySelectorAll('[data-cd]').forEach(b => b.onclick = () => openCountdownForm(list.find(x => x.id === b.dataset.cd)));
+  body.querySelectorAll('[data-cd]').forEach(b => b.onclick = () => { UI.cdSel = b.dataset.cd; calCuentas(body); });
+  const ce = body.querySelector('#cdEdit'); if (ce) ce.onclick = () => openCountdownForm(sel);
 }
 function openCountdownForm(c) {
   const editing = !!c; let icon = c ? c.icon : CD_ICONS[0], photo = c ? c.photo || null : null, theme = c ? c.theme || '' : '';
@@ -2292,8 +2294,8 @@ function pinCalendar(box) {
   box.innerHTML = `<div class="pcal">
     <div class="pcalh"><button class="iconbtn" id="pcP" aria-label="Mes anterior">‹</button><b>${cap(MESES[m.getMonth()])} ${m.getFullYear()}</b><button class="iconbtn" id="pcN" aria-label="Mes siguiente">›</button></div>
     <div class="pcalg">${wdHeaders().map(w => `<span class="wd">${w.slice(0, 1)}</span>`).join('')}${cells.map(c => { const n = sortedDay(c).length, st = daySticker(c), out = parseISO(c).getMonth() !== m.getMonth(); return `<button data-pcd="${c}" class="${c === d ? 'sel' : ''} ${c === t ? 'today' : ''} ${out ? 'out' : ''}">${parseISO(c).getDate()}${st ? `<i class="st">${st}</i>` : n ? '<i class="dt"></i>' : ''}</button>`; }).join('')}</div>
-    <div class="pcald"><b>${d === t ? 'Hoy' : cap(fmtLong(d))}</b><span>${its.length ? its.length + ' cosas' : 'Libre'}</span></div>
-    <div class="qrows">${its.map(i => { const x = i.x, title = i.k === 'rt' ? x.name : x.title, tm = i.k === 'ev' ? (x.allDay || x.date !== d ? 'Todo el día' : fmtTime(x.start)) : i.k === 'tk' ? (x.time ? fmtTime(x.time) : '') : fmtTime(x.start); return `<div class="qrow ${i.k === 'tk' && isDone(x) ? 'done' : ''}" ${i.k === 'tk' ? `data-pctk="${x.id}"` : i.k === 'ev' ? `data-pcev="${x.id}"` : ''} role="button" tabindex="0">${i.k === 'tk' ? '<span class="qbox"></span>' : `<span class="pcdot" style="background:${colorOf(i.k, x)}"></span>`}<span class="qtx">${esc(title)}${tm ? ` <span class="qtime">${tm}</span>` : ''}</span></div>`; }).join('') || '<div class="qempty">✓ Nada para este día</div>'}</div>
+    ${d === t ? '' : `    <div class="pcald"><b>${d === t ? 'Hoy' : cap(fmtLong(d))}</b><span>${its.length ? its.length + ' cosas' : 'Libre'}</span></div>
+    <div class="qrows">${its.map(i => { const x = i.x, title = i.k === 'rt' ? x.name : x.title, tm = i.k === 'ev' ? (x.allDay || x.date !== d ? 'Todo el día' : fmtTime(x.start)) : i.k === 'tk' ? (x.time ? fmtTime(x.time) : '') : fmtTime(x.start); return `<div class="qrow ${i.k === 'tk' && isDone(x) ? 'done' : ''}" ${i.k === 'tk' ? `data-pctk="${x.id}"` : i.k === 'ev' ? `data-pcev="${x.id}"` : ''} role="button" tabindex="0">${i.k === 'tk' ? '<span class="qbox"></span>' : `<span class="pcdot" style="background:${colorOf(i.k, x)}"></span>`}<span class="qtx">${esc(title)}${tm ? ` <span class="qtime">${tm}</span>` : ''}</span></div>`; }).join('') || '<div class="qempty">✓ Nada para este día</div>'}</div>`}
     <div class="qadd"><input id="pcAdd" placeholder="Añadir a este día…" maxlength="200" autocomplete="off"><button class="btn" id="pcBtn" aria-label="Añadir">+</button></div>
     <div class="row qfoot"><span class="sp"></span><button class="btn ghost sm" id="pcGo">Abrir calendario ›</button></div></div>`;
   const q = x => box.querySelector(x), redraw = () => pinCalendar(box);
@@ -2385,21 +2387,16 @@ async function startQuick(target) {
     try {
       const perm = await NP.checkPermissions();
       if (perm.speechRecognition !== 'granted') { const r = await NP.requestPermissions(); if (r.speechRecognition !== 'granted') { quick.active = false; setQuickUI(false); toast('Permite el micrófono en Ajustes del teléfono'); return; } }
-      quick.h = await NP.addListener('partialResults', d => { if (d && d.matches && d.matches.length) { quick.partial = d.matches[0]; qRender(); } });
-      quick.hs = await NP.addListener('listeningState', st => { if (st && st.status === 'stopped' && quick.endUtt) { const r = quick.endUtt; quick.endUtt = null; r(); } });
       let empty = 0;
       while (quick.active) {
-        quick.partial = ''; const t0 = Date.now();
-        try { await NP.start({language: 'es-US', maxResults: 1, partialResults: true, popup: false}); } catch (err) { /* sin voz: se cuenta abajo */ }
-        await new Promise(res => { quick.endUtt = res; });
-        const had = !!quick.partial; qCommit();
-        if (!had && Date.now() - t0 < 2000 && ++empty >= 4) { toast('No te escuché. Toca Parar o intenta de nuevo'); break; }
-        if (had) empty = 0;
+        const t0 = Date.now(); let r = null;
+        try { r = await NP.start({language: 'es-US', maxResults: 1, partialResults: false, popup: false}); } catch (err) { r = null; }
+        const t = r && r.matches && r.matches[0] || '';
+        if (t) { quick.partial = t; qCommit(); empty = 0; }
+        else if (quick.active && Date.now() - t0 < 2000 && ++empty >= 4) { toast('No te escuché. Toca Parar o intenta de nuevo'); break; }
       }
     } catch (err) { toast('No pude usar el micrófono'); }
-    if (quick.h) { quick.h.remove(); quick.h = null; }
-    if (quick.hs) { quick.hs.remove(); quick.hs = null; }
-    quick.endUtt = null; quick.active = false; setQuickUI(false); if (!qFinish()) renderView();
+    quick.active = false; setQuickUI(false); if (!qFinish()) renderView();
     return;
   }
   const loop = () => {
@@ -2416,7 +2413,7 @@ function stopQuick() {
   quick.active = false;
   const NP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition;
   if (quick.rec) { try { quick.rec.stop(); } catch (_) {} }
-  else if (NP) { try { NP.stop(); } catch (_) {} if (quick.endUtt) { const r = quick.endUtt; quick.endUtt = null; setTimeout(r, 300); } }
+  else if (NP) { try { NP.stop(); } catch (_) {} }
 }
 document.addEventListener('pointerdown', e => {
   const b = e.target.closest && e.target.closest('[data-pinmgr]'); if (!b) return;
