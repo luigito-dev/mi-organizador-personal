@@ -739,7 +739,7 @@ function vNotas(v) {
   const hidden = list.filter(n => n.hidden);
   list = UI.showHiddenNotes ? hidden : list.filter(n => !n.hidden);
   list.sort((a, b) => (b.date + (b.created || '')).localeCompare(a.date + (a.created || '')));
-  v.innerHTML = `<div class="row" style="justify-content:flex-end;margin-bottom:6px"><button type="button" class="voicebtn" id="nVoice" aria-label="Mantén presionado para grabar una nota" title="Mantén presionado para grabar">🎙️</button></div><div class="card"><div class="note-new"><textarea class="inp" id="nNew" placeholder="Escribe una nota…"></textarea><button class="btn" id="nSave">Guardar</button></div></div>
+  v.innerHTML = `<div class="row" style="justify-content:flex-end;margin-bottom:6px"><button type="button" class="voicebtn" id="nVoice" aria-label="Mantén presionado para grabar una nota" title="Mantén presionado para grabar"><i class="rdot"></i></button></div><div class="card"><div class="note-new"><textarea class="inp" id="nNew" placeholder="Escribe una nota…"></textarea><button class="btn" id="nSave">Guardar</button></div></div>
     <div class="row" style="margin:14px 0 8px"><b>${UI.showHiddenNotes ? 'Notas ocultas' : 'Mis notas'}</b><span class="sp"></span>${hidden.length || UI.showHiddenNotes ? `<button class="btn ghost sm" id="nHid">${UI.showHiddenNotes ? '‹ Volver a mis notas' : `Ver ocultas (${hidden.length})`}</button>` : ''}</div>
     ${list.length ? list.map(n => { const a = areaById(n.areaId); return `<div class="nitem" data-note="${n.id}"><div class="body"><div class="t">${esc(noteTitle(n))}</div>${noteSnippet(n) ? `<div class="s">${esc(noteSnippet(n))}</div>` : ''}<div class="xs muted row" style="margin-top:3px"><span>${fmtShort(n.date)}</span>${n.category ? `<span class="tag">${esc(n.category)}</span>` : ''}${a ? `<span class="tag"><span class="dot" style="background:${a.color}"></span>${esc(a.name)}</span>` : ''}</div></div>
       <div class="acts"><button data-nh="${n.id}" title="${n.hidden ? 'Mostrar' : 'Ocultar'}" aria-label="${n.hidden ? 'Mostrar' : 'Ocultar'}">${n.hidden ? '👁‍🗨' : '👁'}</button><button data-nd="${n.id}" title="Eliminar" aria-label="Eliminar"><i class="xdel"></i></button></div></div>`; }).join('')
@@ -1801,7 +1801,7 @@ function openTimer(h, d, host) {
   const draw = el => {
     const u = h.unitD || 'mi', ds = actDist(h, d), md = actMode(h, d);
     el.querySelector('#tmBody').innerHTML = `
-      <div class="pinsw-row"><button type="button" class="pinor ${isHabPinned(h.id) ? 'on' : ''}" id="pinSw" aria-pressed="${isHabPinned(h.id)}" aria-label="${isHabPinned(h.id) ? 'Quitar de fijados' : 'Fijar en Mi Día'}" title="${isHabPinned(h.id) ? 'Quitar de fijados' : 'Fijar en Mi Día'}"></button></div>
+      <div class="pinsw-row"><button type="button" class="pinplus ${isHabPinned(h.id) ? 'on' : ''}" id="pinSw" aria-pressed="${isHabPinned(h.id)}" aria-label="${isHabPinned(h.id) ? 'Quitar de fijados' : 'Fijar en Mi Día'}" title="${isHabPinned(h.id) ? 'Quitar de fijados' : 'Fijar en Mi Día'}"></button></div>
       ${act ? `<div class="seg acmode">${[['caminar', '🚶 Caminar'], ['correr', '🏃 Correr']].map(([k, n]) => `<button data-am="${k}" class="${md === k ? 'on' : ''}">${n}</button>`).join('')}</div>` : ''}
       <div id="tmRing"></div>
       <div class="bkq tmq"><button data-tq="-5">−5</button><button data-tq="5">+5</button><button data-tq="10">+10</button><button data-tq="15">+15</button></div>
@@ -2362,7 +2362,7 @@ function habPill(h) {
 // Botón para quitar de fijados desde la misma ventana
 function addUnpin(box) {
   const f = box.querySelector('.qfoot'); if (!f || f.querySelector('[data-unpin]')) return;
-  const b = document.createElement('button'); b.className = 'pinor on qunpin'; b.dataset.unpin = UI.popTab; b.setAttribute('aria-label', 'Quitar de fijados'); b.title = 'Quitar de fijados';
+  const b = document.createElement('button'); b.className = 'pinplus on qunpin'; b.textContent = '+'; b.dataset.unpin = UI.popTab; b.setAttribute('aria-label', 'Quitar de fijados'); b.title = 'Quitar de fijados';
   f.prepend(b);
   b.onclick = () => {
     const k = b.dataset.unpin, P = pins();
