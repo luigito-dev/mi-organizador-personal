@@ -2322,17 +2322,34 @@ function pinCalendar(box) {
 function micFor(input) {
   if (!input || input.dataset.mic) return; input.dataset.mic = 1;
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const NP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition;
   const b = document.createElement('button'); b.type = 'button'; b.className = 'micbtn'; b.textContent = '🎙'; b.setAttribute('aria-label', 'Dictar');
   input.insertAdjacentElement('afterend', b);
-  b.onclick = e => {
+  const fail = msg => { b._rec = null; b.classList.remove('rec'); input.focus(); toast(msg || 'Toca el micrófono del teclado para dictar'); };
+  const base = () => input.value ? input.value.trim() + ' ' : '';
+  b.onclick = async e => {
     e.preventDefault();
+    if (NP && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+      if (b._rec) { b._rec = null; b.classList.remove('rec'); try { await NP.stop(); } catch (_) {} input.focus(); return; }
+      try {
+        const perm = await NP.checkPermissions();
+        if (perm.speechRecognition !== 'granted') { const r = await NP.requestPermissions(); if (r.speechRecognition !== 'granted') return fail('Permite el micrófono en Ajustes del teléfono'); }
+        const start = base(); b._rec = true; b.classList.add('rec'); toast('Habla ahora… toca 🎙 para terminar');
+        const h = await NP.addListener('partialResults', d => { if (d && d.matches && d.matches.length) input.value = start + d.matches[0]; });
+        b._h = h;
+        const res = await NP.start({ language: 'es-PR', maxResults: 1, partialResults: true, popup: false });
+        if (res && res.matches && res.matches.length) input.value = start + res.matches[0];
+        if (b._h) { b._h.remove(); b._h = null; }
+        b._rec = null; b.classList.remove('rec'); input.focus();
+      } catch (err) { if (b._h) { b._h.remove(); b._h = null; } fail(); }
+      return;
+    }
     if (!SR) { input.focus(); toast('Toca el micrófono del teclado para dictar'); return; }
     if (b._rec) { b._rec.stop(); return; }
     const rec = new SR(); rec.lang = 'es-PR'; rec.interimResults = true; rec.continuous = false; b._rec = rec;
-    const base = input.value ? input.value.trim() + ' ' : '';
-    rec.onresult = ev => { input.value = base + Array.from(ev.results).map(r => r[0].transcript).join(' ').trim(); };
+    rec.onresult = ev => { input.value = base() + Array.from(ev.results).map(r => r[0].transcript).join(' ').trim(); };
     rec.onend = () => { b._rec = null; b.classList.remove('rec'); input.focus(); };
-    rec.onerror = () => { b._rec = null; b.classList.remove('rec'); input.focus(); toast('Toca el micrófono del teclado para dictar'); };
+    rec.onerror = () => fail();
     try { rec.start(); b.classList.add('rec'); toast('Habla ahora… toca 🎙 para terminar'); } catch (err) { b._rec = null; toast('No pude iniciar el dictado'); }
   };
 }
