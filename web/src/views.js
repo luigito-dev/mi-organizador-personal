@@ -1017,7 +1017,7 @@ function dayLists(box) {
   }
   box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div>${head}<div class="qrows">${rows}</div>
     <div class="qadd"><input id="dlAdd" placeholder="${esc(addPh)}" maxlength="300" autocomplete="off"><button class="btn" id="dlBtn" aria-label="Añadir">+</button></div>
-    <div class="row qfoot">${foot}${UI.popTab === 'hoy' && !lists.length ? '<button class="btn ghost sm" id="qNewList">+ Nueva lista</button>' : ''}</div>`;
+    <div class="row qfoot">${foot}</div>`;
   const redraw = () => { dayLists(box); listBadge(); };
   box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; redraw(); });
   box.querySelectorAll('[data-qpins]').forEach(b => b.onclick = () => openPinManager(() => dayLists(box)));
@@ -1047,7 +1047,6 @@ function dayLists(box) {
   if (q('#qGo')) q('#qGo').onclick = () => go('dia');
   if (q('#qOpen')) q('#qOpen').onclick = () => { const id = UI.popTab; go('listas'); UI.openList = id; render(); };
   if (q('#qUndo')) q('#qUndo').onclick = () => { S.lists.find(y => y.id === UI.popTab).items.forEach(i => i.done = false); save('lists'); redraw(); };
-  if (q('#qNewList')) q('#qNewList').onclick = () => { go('listas'); render(); openListForm(); };
 }
 
 /* ========== MI DÍA (v2): tira de días + línea de tiempo con gestos ========== */
@@ -2254,6 +2253,12 @@ const spanCount = (m, f) => f === 'mes' ? m : f === 'quin' ? Math.round(m * 52 /
 /* ===== 📌 Fijados: acceso rápido que se abre deslizando ===== */
 const pins = () => { S.settings.pins = S.settings.pins || {hoy: true, cal: false, habs: [], noReto: []}; return S.settings.pins; };
 const pinItems = () => { const P = pins(); P.items = P.items || []; return P.items; };
+function cdFeatBox(c) {
+  const n = dayDiff(todayISO(), c.date), since = n < 0, th = c.theme && CD_FX[c.theme] ? c.theme : '';
+  const fxCls = th ? `fx fx-${th}${c.photo ? ' ph' : ''}` : '';
+  const fxLayer = th ? `<div class="fxlayer">${Array.from({length: 14}, (_, i) => `<i class="fxp" style="left:${(i * 37) % 100}%;top:${(i * 29) % 70}%;animation-delay:${((i * 0.41) % 3).toFixed(2)}s;animation-duration:${(3 + (i % 4)).toFixed(1)}s">${CD_FX[th]}</i>`).join('')}</div>` : '';
+  return `<div class="cdfeat ${fxCls}" style="${c.photo ? `background-image:url(${c.photo})` : `background:${c.color || CD_COLORS[0]}`}">${c.photo ? '<div class="cdfshade"></div>' : ''}${fxLayer}<div class="cdfbody"><b>${n === 0 ? 'Hoy' : Math.abs(n)}${n === 0 ? '' : '<small>D</small>'}</b><span>${esc(c.name)}</span><small class="cdfdate">${since ? 'Días desde' : 'Días para'} ${fmtShort(c.date)}</small></div></div>`;
+}
 const itemExists = k => { const id = k.slice(3); if (k.startsWith('tk:')) return S.tasks.some(x => x.id === id); if (k.startsWith('nt:')) return S.notes.some(x => x.id === id); if (k.startsWith('cd:')) return (S.settings.countdowns || []).some(x => x.id === id); return false; };
 function isPinnedKey(k) {
   if (k.startsWith('hab:')) return (pins().habs || []).includes(k.slice(4));
@@ -2272,7 +2277,7 @@ function pinItemView(k) {
   const id = k.slice(3);
   if (k.startsWith('tk:')) { const t = S.tasks.find(x => x.id === id); if (!t) return null; return {title: t.title, pill: t.status || '', html: `<div class="small muted" style="padding:10px 4px">${fmtLong(t.date)}${t.time ? ' · ' + fmtTime(t.time) : ''}</div>`, open: () => openTaskDetail(id)}; }
   if (k.startsWith('nt:')) { const n = S.notes.find(x => x.id === id); if (!n) return null; return {title: noteTitle(n), pill: fmtShort(n.date), html: `<div class="small" style="padding:10px 4px;white-space:pre-wrap">${esc(n.text).slice(0, 300)}</div>`, open: () => openNote(id)}; }
-  if (k.startsWith('cd:')) { const c = (S.settings.countdowns || []).find(x => x.id === id); if (!c) return null; const n = dayDiff(todayISO(), c.date); return {title: c.name, pill: n === 0 ? 'Hoy' : `${Math.abs(n)} ${n < 0 ? 'días desde' : 'días para'}`, html: `<div class="small muted" style="padding:10px 4px">${fmtShort(c.date)}</div>`, open: () => openCountdownForm(c)}; }
+  if (k.startsWith('cd:')) { const c = (S.settings.countdowns || []).find(x => x.id === id); if (!c) return null; const n = dayDiff(todayISO(), c.date); return {title: c.name, pill: n === 0 ? 'Hoy' : `${Math.abs(n)} ${n < 0 ? 'días desde' : 'días para'}`, html: cdFeatBox(c), open: () => openCountdownForm(c)}; }
   return null;
 }
 const pinHabits = () => (pins().habs || []).map(id => (S.habits || []).find(h => h.id === id)).filter(Boolean);
