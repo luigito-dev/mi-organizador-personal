@@ -203,7 +203,7 @@ function calCuentas(body) {
 }
 function openCountdownForm(c) {
   const editing = !!c; let icon = c ? c.icon : CD_ICONS[0], photo = c ? c.photo || null : null;
-  const s = openSheet({title: editing ? 'Editar cuenta' : 'Nueva cuenta', body: `
+  const s = openSheet({pin: editing ? 'cd:' + c.id : null, title: editing ? 'Editar cuenta' : 'Nueva cuenta', body: `
     <div class="fld"><label>Nombre</label><input class="inp" id="cdN" maxlength="40" value="${esc(c ? c.name : '')}" placeholder="Ej.: Cumpleaños de mamá"></div>
     <div class="fld"><label>Fecha</label><input class="inp" type="date" id="cdD" value="${c ? c.date : todayISO()}"></div>
     <div class="fld"><label>Ícono</label><div class="emojis" id="cdI">${CD_ICONS.map(x => `<button type="button" class="opt ${x === icon ? 'on' : ''}" data-ci="${x}">${x}</button>`).join('')}</div></div>
@@ -739,7 +739,7 @@ function vNotas(v) {
   const hidden = list.filter(n => n.hidden);
   list = UI.showHiddenNotes ? hidden : list.filter(n => !n.hidden);
   list.sort((a, b) => (b.date + (b.created || '')).localeCompare(a.date + (a.created || '')));
-  v.innerHTML = `<div class="row" style="justify-content:flex-end;margin-bottom:6px"><button type="button" class="voicebtn" id="nVoice" aria-label="Mantén presionado para grabar una nota" title="Mantén presionado para grabar"><i class="rdot"></i></button></div><div class="card"><div class="note-new"><textarea class="inp" id="nNew" placeholder="Escribe una nota…"></textarea><button class="btn" id="nSave">Guardar</button></div></div>
+  v.innerHTML = `<div class="row" style="justify-content:flex-end;align-items:center;gap:8px;margin-bottom:6px"><span class="small muted">Mantén para grabar</span><button type="button" class="voicebtn" id="nVoice" aria-label="Mantén presionado para grabar una nota" title="Mantén presionado para grabar"><i class="rdot"></i></button></div><div class="card"><div class="note-new"><textarea class="inp" id="nNew" placeholder="Escribe una nota…"></textarea><button class="btn" id="nSave">Guardar</button></div></div>
     <div class="row" style="margin:14px 0 8px"><b>${UI.showHiddenNotes ? 'Notas ocultas' : 'Mis notas'}</b><span class="sp"></span>${hidden.length || UI.showHiddenNotes ? `<button class="btn ghost sm" id="nHid">${UI.showHiddenNotes ? '‹ Volver a mis notas' : `Ver ocultas (${hidden.length})`}</button>` : ''}</div>
     ${list.length ? list.map(n => { const a = areaById(n.areaId); return `<div class="nitem" data-note="${n.id}"><div class="body"><div class="t">${esc(noteTitle(n))}</div>${noteSnippet(n) ? `<div class="s">${esc(noteSnippet(n))}</div>` : ''}<div class="xs muted row" style="margin-top:3px"><span>${fmtShort(n.date)}</span>${n.category ? `<span class="tag">${esc(n.category)}</span>` : ''}${a ? `<span class="tag"><span class="dot" style="background:${a.color}"></span>${esc(a.name)}</span>` : ''}</div></div>
       <div class="acts"><button data-nh="${n.id}" title="${n.hidden ? 'Mostrar' : 'Ocultar'}" aria-label="${n.hidden ? 'Mostrar' : 'Ocultar'}">${n.hidden ? '👁‍🗨' : '👁'}</button><button data-nd="${n.id}" title="Eliminar" aria-label="Eliminar"><i class="xdel"></i></button></div></div>`; }).join('')
@@ -938,7 +938,7 @@ function vListaDetalle(v, l) {
 }
 function openListForm(list) {
   const editing = !!list; const l = list ? {...list} : {id: uid(), name: '', icon: '📝', color: AREA_COLORS[S.lists.length % AREA_COLORS.length], items: []};
-  const s = openSheet({title: editing ? 'Editar lista' : 'Nueva lista',
+  const s = openSheet({pin: editing ? 'list:' + list.id : null, title: editing ? 'Editar lista' : 'Nueva lista',
     body: `${editing ? '' : `<div class="fld"><label>Ideas rápidas</label><div class="opts">${LIST_TEMPLATES.map(([i, n]) => `<button type="button" class="opt" data-tpl="${i}|${n}">${i} ${n}</button>`).join('')}</div></div>`}
       <input class="inp title" id="lN" placeholder="Nombre de la lista" value="${esc(l.name)}" maxlength="40">
       <div class="fld"><label>Ícono</label><div class="emojis" id="lE"></div></div>
@@ -982,12 +982,13 @@ function dayLists(box) {
   if (!box) return;
   if (box.dataset.fixkey) { UI.popTab = box.dataset.fixkey; if (!box._fx) { box._fx = 1; const fix = () => { UI.popTab = box.dataset.fixkey; }; ['click', 'keydown', 'pointerdown', 'change', 'input'].forEach(ev => box.addEventListener(ev, fix, true)); } }
   const t = todayISO(), lists = S.lists.filter(l => !l.hideOnDay);
-  if (!UI.popTab || (UI.popTab !== 'hoy' && UI.popTab !== 'cal' && !/^(reto|hab):/.test(String(UI.popTab)) && !lists.some(l => l.id === UI.popTab))) UI.popTab = 'hoy';
+  if (!UI.popTab || (UI.popTab !== 'hoy' && UI.popTab !== 'cal' && !/^(reto|hab|tk|nt|cd):/.test(String(UI.popTab)) && !lists.some(l => l.id === UI.popTab))) UI.popTab = 'hoy';
   const keys = popKeys(), ki = Math.max(0, keys.indexOf(UI.popTab)), kprev = keys[(ki - 1 + keys.length) % keys.length], knext = keys[(ki + 1) % keys.length];
   const tabs = `<div class="qnav">${keys.length > 1 ? `<button class="qarr" data-qt="${kprev}" aria-label="Anterior">‹</button>` : ''}<div class="qdots">${keys.map(k => `<i class="${k === UI.popTab ? 'on' : ''}"></i>`).join('')}</div>${keys.length > 1 ? `<button class="qarr" data-qt="${knext}" aria-label="Siguiente">›</button>` : ''}</div>`;
   if (!box.dataset.fixkey) popSwipe(box);
   if (UI.popTab === 'hoy' && pins().hoy === false) { const first = [...lists.map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(pins().cal ? ['cal'] : [])][0]; if (first) UI.popTab = first; }
   const wireTabs = () => { addUnpin(box); box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; dayLists(box); listBadge(); }); box.querySelectorAll('[data-qpins]').forEach(b => b.onclick = () => openPinManager(() => dayLists(box))); };
+  if (/^(tk|nt|cd):/.test(String(UI.popTab))) { const it = pinItemView(UI.popTab); if (it) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:var(--blue)"><span class="qtitle ${it.title.length > 9 ? 'long' : ''}">${esc(it.title.toUpperCase())}</span><span class="qcount">${esc(it.pill)}</span></div><div class="pinhost">${it.html}</div><div class="row qfoot"><span class="sp"></span><button class="btn ghost sm" id="qOpenIt">Abrir ›</button></div>`; box.querySelector('#qOpenIt').onclick = it.open; wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
   if (String(UI.popTab).startsWith('hab:')) { const h = S.habits.find(x => 'hab:' + x.id === UI.popTab); if (h) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:${h.color}"><span class="qtitle ${h.name.length > 9 ? 'long' : ''}">${esc(h.name.toUpperCase())}</span><span class="qcount">${habPill(h)}</span></div><div class="pinhost" id="pinHost"></div><div class="row qfoot"><span class="sp"></span><button class="btn ghost sm" id="qHab">Abrir hábito ›</button></div>`; box.querySelector('#qHab').onclick = () => { go('habitos'); }; pinHabit(h, box.querySelector('#pinHost'), () => dayLists(box)); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
   if (UI.popTab === 'cal') { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:var(--teal,#0f9d8f)"><span class="qtitle">CALENDARIO</span><span class="qcount">${sortedDay(todayISO()).length} hoy</span></div><div id="pinCal"></div>`; pinCalendar(box.querySelector('#pinCal')); wireTabs(); return; }
   if (String(UI.popTab).startsWith('reto:')) { const h = S.habits.find(x => 'reto:' + x.id === UI.popTab); if (h && h.challenge) { challengeBox(box, h, tabs, null); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
@@ -1801,7 +1802,6 @@ function openTimer(h, d, host) {
   const draw = el => {
     const u = h.unitD || 'mi', ds = actDist(h, d), md = actMode(h, d);
     el.querySelector('#tmBody').innerHTML = `
-      <div class="pinsw-row"><button type="button" class="pinplus ${isHabPinned(h.id) ? 'on' : ''}" id="pinSw" aria-pressed="${isHabPinned(h.id)}" aria-label="${isHabPinned(h.id) ? 'Quitar de fijados' : 'Fijar en Mi Día'}" title="${isHabPinned(h.id) ? 'Quitar de fijados' : 'Fijar en Mi Día'}"></button></div>
       ${act ? `<div class="seg acmode">${[['caminar', '🚶 Caminar'], ['correr', '🏃 Correr']].map(([k, n]) => `<button data-am="${k}" class="${md === k ? 'on' : ''}">${n}</button>`).join('')}</div>` : ''}
       <div id="tmRing"></div>
       <div class="bkq tmq"><button data-tq="-5">−5</button><button data-tq="5">+5</button><button data-tq="10">+10</button><button data-tq="15">+15</button></div>
@@ -1814,7 +1814,6 @@ function openTimer(h, d, host) {
       ${habKind(h) === 'oracion' ? prayerHTML(h) : ''}
       <div class="wacts"><button class="wdrink tmgo" id="tmGo" style="--g1:${h.color}">▶ EMPEZAR</button></div>`;
     ring(el); if (act) stats(el);
-    el.querySelector('#pinSw').onclick = () => { toggleHabPin(h.id); draw(el); };
     const q = x => el.querySelector(x), g = habGoal(h);
     const setMin = v => { const before = habCount(h, d); v = Math.max(0, v); h.log = h.log || {}; if (v) h.log[d] = v; else delete h.log[d]; save('habits'); if (habDone(h, d) && before < g && v >= g) toast(`${h.icon} ¡${h.name} listo!`); };
     el.querySelectorAll('[data-tq]').forEach(b => b.onclick = () => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } setMin(habCount(h, d) + +b.dataset.tq); draw(el); });
@@ -1846,7 +1845,7 @@ function openTimer(h, d, host) {
         onMount: e2 => { e2.querySelector('#pwS').onclick = () => { const n = parseFloat(e2.querySelector('#pwV').value); S.settings.pesoLb = n > 50 && n < 700 ? Math.round(n) : null; save('meta'); w.close(); stats(el); toast(S.settings.pesoLb ? `⚖️ ${S.settings.pesoLb} lb guardado` : 'Se usará 160 lb'); }; }});
     };
   };
-  hostOrSheet(host, {title: `${h.icon} ${esc(h.name)}`, cls: 'timersheet', body: '<div id="tmBody"></div>', onMount: el => { draw(el); tick = setInterval(() => { if (!el.isConnected) { clearInterval(tick); return; } if (UI.habTimer && UI.habTimer.id === h.id) ring(el); }, 1000); }, onClose: () => { clearInterval(tick); if (UI.view === 'habitos') renderView(); }});
+  hostOrSheet(host, {pin: 'hab:' + h.id, title: `${h.icon} ${esc(h.name)}`, cls: 'timersheet', body: '<div id="tmBody"></div>', onMount: el => { draw(el); tick = setInterval(() => { if (!el.isConnected) { clearInterval(tick); return; } if (UI.habTimer && UI.habTimer.id === h.id) ring(el); }, 1000); }, onClose: () => { clearInterval(tick); if (UI.view === 'habitos') renderView(); }});
 }
 function openActGoal(h, done) {
   const act = habKind(h) === 'actividad', u0 = h.unitD || 'mi';
@@ -2252,6 +2251,28 @@ const spanCount = (m, f) => f === 'mes' ? m : f === 'quin' ? Math.round(m * 52 /
 
 /* ===== 📌 Fijados: acceso rápido que se abre deslizando ===== */
 const pins = () => { S.settings.pins = S.settings.pins || {hoy: true, cal: false, habs: [], noReto: []}; return S.settings.pins; };
+const pinItems = () => { const P = pins(); P.items = P.items || []; return P.items; };
+const itemExists = k => { const id = k.slice(3); if (k.startsWith('tk:')) return S.tasks.some(x => x.id === id); if (k.startsWith('nt:')) return S.notes.some(x => x.id === id); if (k.startsWith('cd:')) return (S.settings.countdowns || []).some(x => x.id === id); return false; };
+function isPinnedKey(k) {
+  if (k.startsWith('hab:')) return (pins().habs || []).includes(k.slice(4));
+  if (k.startsWith('list:')) { const l = S.lists.find(x => x.id === k.slice(5)); return !!l && !l.hideOnDay; }
+  return pinItems().includes(k);
+}
+function togglePinKey(k, quiet = false) {
+  const was = isPinnedKey(k), P = pins();
+  if (k.startsWith('hab:')) { const id = k.slice(4); P.habs = (P.habs || []).filter(x => x !== id); if (!was) P.habs.push(id); save('meta'); }
+  else if (k.startsWith('list:')) { const l = S.lists.find(x => x.id === k.slice(5)); if (l) { l.hideOnDay = was; save('lists'); } }
+  else { P.items = pinItems().filter(x => x !== k); if (!was) P.items.push(k); save('meta'); }
+  if (!quiet) toast(was ? 'Quitado de fijados' : 'Fijado');
+  listBadge();
+}
+function pinItemView(k) {
+  const id = k.slice(3);
+  if (k.startsWith('tk:')) { const t = S.tasks.find(x => x.id === id); if (!t) return null; return {title: t.title, pill: t.status || '', html: `<div class="small muted" style="padding:10px 4px">${fmtLong(t.date)}${t.time ? ' · ' + fmtTime(t.time) : ''}</div>`, open: () => openTaskDetail(id)}; }
+  if (k.startsWith('nt:')) { const n = S.notes.find(x => x.id === id); if (!n) return null; return {title: noteTitle(n), pill: fmtShort(n.date), html: `<div class="small" style="padding:10px 4px;white-space:pre-wrap">${esc(n.text).slice(0, 300)}</div>`, open: () => openNote(id)}; }
+  if (k.startsWith('cd:')) { const c = (S.settings.countdowns || []).find(x => x.id === id); if (!c) return null; const n = dayDiff(todayISO(), c.date); return {title: c.name, pill: n === 0 ? 'Hoy' : `${Math.abs(n)} ${n < 0 ? 'días desde' : 'días para'}`, html: `<div class="small muted" style="padding:10px 4px">${fmtShort(c.date)}</div>`, open: () => openCountdownForm(c)}; }
+  return null;
+}
 const pinHabits = () => (pins().habs || []).map(id => (S.habits || []).find(h => h.id === id)).filter(Boolean);
 function hostOrSheet(host, o) {
   if (!host) return openSheet(o);
@@ -2333,7 +2354,7 @@ function wirePinBar(v) {
 // Orden de lo fijado en la ventana flotante (se pasa de uno a otro deslizando de lado)
 function popKeys() {
   const P = pins();
-  return [...(P.hoy === false ? [] : ['hoy']), ...S.lists.filter(l => !l.hideOnDay).map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(P.cal ? ['cal'] : [])];
+  return [...(P.hoy === false ? [] : ['hoy']), ...S.lists.filter(l => !l.hideOnDay).map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(P.cal ? ['cal'] : []), ...pinItems().filter(itemExists)];
 }
 function popSwipe(box) {
   if (box._sw) return; box._sw = 1;
@@ -2368,7 +2389,7 @@ function addUnpin(box) {
     const k = b.dataset.unpin, P = pins();
     if (k === 'hoy') P.hoy = false; else if (k === 'cal') P.cal = false;
     else if (k.startsWith('reto:')) { P.noReto = (P.noReto || []).filter(x => x !== k.slice(5)); P.noReto.push(k.slice(5)); }
-    else if (k.startsWith('hab:')) P.habs = (P.habs || []).filter(x => x !== k.slice(4));
+    else if (/^(hab|tk|nt|cd):/.test(k)) togglePinKey(k, true);
     else { const l = S.lists.find(x => x.id === k); if (l) { l.hideOnDay = true; save('lists'); } }
     save('meta'); toast('Quitado de fijados'); if (box.dataset.fixkey) { UI.pinIdx = Math.max(0, (UI.pinIdx || 0) - 1); renderView(); return; } if (UI.view === 'dia') renderView();
     const keys = popKeys(); if (!keys.length) { const sh = sheets.find(x => x.el.contains(box)); sh && sh.close(); return; }

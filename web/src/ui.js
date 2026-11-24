@@ -1,8 +1,9 @@
 /* ========== Ventanas emergentes ========== */
 const sheets = [];
-function openSheet({title = '', body = '', foot = '', cls = '', onMount, onClose, head = true, float = false}) {
+function openSheet({title = '', body = '', foot = '', cls = '', onMount, onClose, head = true, float = false, pin = null}) {
   const ov = document.createElement('div'); ov.className = 'ov' + (float ? ' float' : '');
   ov.innerHTML = `<div class="sheet ${cls}" role="dialog" aria-modal="true"><div class="grab"></div>${head ? `<div class="sh-head"><h2>${title}</h2><button class="iconbtn" data-close aria-label="Cerrar">✕</button></div>` : ''}<div class="sh-body">${body}</div>${foot ? `<div class="sh-foot">${foot}</div>` : ''}</div>`;
+  if (pin) { const hd = ov.querySelector('.sh-head'); if (hd) { const pb = document.createElement('button'); pb.type = 'button'; pb.className = 'pinplus'; pb.textContent = '+'; const paint = () => { const on = isPinnedKey(pin); pb.classList.toggle('on', on); pb.setAttribute('aria-pressed', on); pb.setAttribute('aria-label', on ? 'Quitar de fijados' : 'Fijar'); pb.title = pb.getAttribute('aria-label'); }; paint(); pb.onclick = () => { togglePinKey(pin); paint(); }; hd.insertBefore(pb, hd.querySelector('[data-close]')); } }
   document.body.appendChild(ov);
   const api = {el: ov.firstElementChild, close: () => { ov.remove(); const i = sheets.indexOf(api); if (i >= 0) sheets.splice(i, 1); onClose && onClose(); }};
   ov.addEventListener('mousedown', e => { if (e.target === ov) api.downOut = true; });
@@ -242,7 +243,7 @@ function openTaskDetail(id) {
     ${t.steps && t.steps.length ? `<div class="fld"><div class="lab">Pasos (${t.steps.filter(x => x.done).length}/${t.steps.length})</div><div class="steps">${t.steps.map((st, i) => `<label><input type="checkbox" data-step="${i}" ${st.done ? 'checked' : ''}><span class="${st.done ? 'done' : ''}">${esc(st.t)}</span></label>`).join('')}</div></div>` : ''}
     ${t.obs ? `<div class="fld"><div class="lab">Observaciones</div><div style="white-space:pre-wrap">${esc(t.obs)}</div></div>` : ''}
     ${calLinks({title: t.title, date: t.date, start: t.time, allDay: !t.time, details: desc})}`;
-  const s = openSheet({title: 'Tarea', body,
+  const s = openSheet({pin: 'tk:' + t.id, title: 'Tarea', body,
     foot: `<button class="btn sec" id="dDel" aria-label="Eliminar" title="Eliminar"><i class="xdel"></i></button><button class="btn sec" id="dEdit">✎ Editar</button><button class="btn" id="dDone">${isDone(t) ? '↺ Reabrir' : '✓ Completar'}</button>`,
     onMount: el => {
       wireBell(el.querySelector('#dBell'), t, () => { save('tasks'); render(); toast(t.reminder == null ? 'Recordatorio apagado' : 'Recordatorio: ' + remLabel(t.reminder)); });
@@ -459,7 +460,7 @@ const noteTitle = n => (n.text.split('\n').find(l => l.trim()) || 'Nota sin text
 const noteSnippet = n => n.text.split('\n').filter(l => l.trim()).slice(1).join(' ').slice(0, 120);
 function openNote(id) {
   const n = S.notes.find(x => x.id === id); if (!n) return;
-  const s = openSheet({title: 'Nota · ' + fmtShort(n.date),
+  const s = openSheet({pin: 'nt:' + n.id, title: 'Nota · ' + fmtShort(n.date),
     body: `<textarea class="inp" id="nT" style="min-height:180px">${esc(n.text)}</textarea>
       <details class="fold" ${n.category || n.areaId ? 'open' : ''}><summary>Más opciones</summary>
         <div class="fld"><label>Categoría</label><input class="inp" id="nC" value="${esc(n.category || '')}" placeholder="Ej. Ideas, Recetas, Compras"></div>
