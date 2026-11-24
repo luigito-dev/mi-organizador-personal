@@ -1048,7 +1048,7 @@ function dayLists(box) {
   if (q('#qGo')) q('#qGo').onclick = () => go('dia');
   const dl = q('#dlBtn'); if (dl) {
     let t3 = null, fired = false;
-    dl.addEventListener('pointerdown', () => { fired = false; clearTimeout(t3); t3 = setTimeout(() => { fired = true; toast('Grabando… suelta para guardar la nota'); startVoiceNote(dl); }, 3000); });
+    dl.addEventListener('pointerdown', () => { fired = false; clearTimeout(t3); t3 = setTimeout(() => { fired = true; startVoiceNote(dl); }, 3000); });
     const endHold = () => { clearTimeout(t3); t3 = null; if (fired) stopVoiceNote(dl); };
     ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => dl.addEventListener(ev, endHold));
     dl.addEventListener('click', e => { if (fired) { e.stopImmediatePropagation(); e.preventDefault(); fired = false; } }, true);
@@ -2378,13 +2378,13 @@ async function startQuick() {
       if (perm.speechRecognition !== 'granted') { const r = await NP.requestPermissions(); if (r.speechRecognition !== 'granted') { quick.active = false; setQuickUI(false); toast('Permite el micrófono en Ajustes del teléfono'); return; } }
       let empty = 0;
       while (quick.active) {
-        const t0 = Date.now();
-        const r = await NP.start({language: 'es-PR', maxResults: 1, partialResults: false, popup: false});
-        const t = r && r.matches && r.matches[0];
+        let t = '';
+        try { const r = await NP.start({language: 'es-US', maxResults: 1, partialResults: false, popup: false}); t = r && r.matches && r.matches[0] || ''; }
+        catch (err) { t = ''; }
         if (t) { quick.parts.push(t); empty = 0; }
-        else if (Date.now() - t0 < 1500) { if (++empty >= 3) break; }
+        else if (++empty >= 4 && quick.active) { toast('No te escuché. Toca + para terminar o intenta de nuevo'); break; }
       }
-    } catch (err) { toast('No pude usar el micrófono: ' + (err && err.message || 'error')); }
+    } catch (err) { toast('No pude usar el micrófono'); }
     quick.active = false; setQuickUI(false); quickSave(); renderView();
     return;
   }
