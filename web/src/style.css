@@ -1268,7 +1268,7 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .pinhd{display:flex;align-items:center;gap:8px;margin:14px 2px 6px}
 #pinCards{margin-top:12px}
 .qrow:not(.done) .hl,.item:not(.done) .hl,.hlrow:not(.done) .hl{background-image:none;padding:0}
-.pincards{display:flex;overflow:hidden;scroll-snap-type:x proximity;scrollbar-width:none;align-items:flex-start;overscroll-behavior-x:contain}
+.pincards{display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;align-items:flex-start;overscroll-behavior-x:contain;touch-action:pan-x pan-y}
 .pincards::-webkit-scrollbar{display:none}
 .pincard{flex:0 0 100%;min-width:0;scroll-snap-align:start}
 .pinbox{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px 14px 8px;box-shadow:0 4px 14px rgba(10,30,70,.08)}

@@ -2505,8 +2505,5 @@ function wirePinCards(v) {
   const fit = () => { const c = wrap.children[UI.pinIdx || 0]; if (c) wrap.style.height = c.offsetHeight + 'px'; };
   requestAnimationFrame(() => { wrap.scrollLeft = UI.pinIdx * wrap.clientWidth; mark(); fit(); });
   let t; wrap.addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(() => { UI.pinIdx = Math.round(wrap.scrollLeft / wrap.clientWidth); mark(); fit(); }, 80); }, {passive: true});
-  let sx = null, sy = 0, st = 0;
-  wrap.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); }, {passive: true});
-  wrap.addEventListener('touchend', e => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; sx = null; if (Math.abs(dx) < 90 || Math.abs(dy) > Math.abs(dx) * 0.5 || Date.now() - st > 600) return; const i = Math.max(0, Math.min(wrap.children.length - 1, (UI.pinIdx || 0) + (dx < 0 ? 1 : -1))); UI.pinIdx = i; wrap.scrollTo({left: i * wrap.clientWidth, behavior: 'smooth'}); mark(); fit(); }, {passive: true});
   dots.forEach((d, i) => d.onclick = () => wrap.scrollTo({left: i * wrap.clientWidth, behavior: 'smooth'}));
 }
