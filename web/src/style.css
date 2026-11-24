@@ -1284,8 +1284,7 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .pinbox .whandle{display:none}
 .pinbox .wtop,.pinbox .wgoalrow{display:none}
 .pinbox .bigbot{width:110px;height:154px}.pinbox .wbot{width:110px;margin-top:0}
-.pinbox .wnum{top:86px}
-.pinbox .watersheet .wnum{margin:0;position:absolute}
+.pinbox .watersheet .wnum{margin:0 0 -2px}
 .pinbox .wmsg{margin:4px 0 8px;font-size:13px}
 .pinbox .wacts{padding-bottom:0}
 .pinbox .pinhost{padding-bottom:0}
