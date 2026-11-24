@@ -187,6 +187,8 @@ let motivTimer = null;
 // Cuenta regresiva: días que faltan (o que pasaron) para fechas importantes
 const CD_ICONS = ['🎂', '💰', '🎤', '🎆', '✈️', '💍', '👶', '🎓', '🏖️', '💼', '❤️', '🎄', '🏥', '⭐'];
 function cdList() { return (S.settings.countdowns || []).slice().sort((a, b) => a.date.localeCompare(b.date)); }
+const CD_THEMES = [['', '✨', 'Normal'], ['aniversario', '💞', 'Aniversario'], ['navidad', '🎄', 'Navidad'], ['anio', '🎆', 'Año nuevo'], ['cumple', '🎈', 'Cumpleaños'], ['verano', '🌴', 'Verano']];
+const CD_FX = {aniversario: '💗', navidad: '❄️', anio: '✨', cumple: '🎈', verano: '🌊'};
 const CD_COLORS = ['#f5c842', '#7dd3c0', '#f08a8a', '#9bb8f0', '#f4a6d0', '#b6e388', '#ffb36b'];
 function calCuentas(body) {
   const t = todayISO(), list = cdList();
@@ -194,7 +196,7 @@ function calCuentas(body) {
   const colorOf = c => c.color || CD_COLORS[Math.max(0, list.indexOf(c)) % CD_COLORS.length];
   const next = list.find(c => c.date >= t) || list.find(c => c.date < t);
   const row = c => { const n = diff(c), since = n < 0, hl = next && c.id === next.id; return `<button class="cdrow ${hl ? 'hl' : ''}" data-cd="${c.id}"><span class="cdi" style="background:${colorOf(c)}">${c.icon}</span><span class="cdn">${esc(c.name)}</span><span class="cdv"><b class="${since ? 'since' : ''}">${n === 0 ? 'Hoy' : Math.abs(n)}</b><small class="${since ? 'since' : ''}">${n === 0 ? '' : since ? 'Days Since' : 'Days Until'}</small></span></button>`; };
-  const feat = next ? (() => { const n = diff(next), since = n < 0; return `<div class="cdfeat" style="${next.photo ? `background-image:url(${next.photo})` : `background:${colorOf(next)}`}">${next.photo ? '<div class="cdfshade"></div>' : ''}<div class="cdfbody"><b>${n === 0 ? 'Hoy' : Math.abs(n)}${n === 0 ? '' : '<small>D</small>'}</b><span>${esc(next.name)}</span><small class="cdfdate">${since ? 'Días desde' : 'Días para'} ${fmtShort(next.date)}</small></div></div>`; })() : '';
+  const feat = next ? (() => { const n = diff(next), since = n < 0, th = next.theme && CD_FX[next.theme] ? next.theme : ''; const fxCls = th ? `fx fx-${th}${next.photo ? ' ph' : ''}` : ''; const fxLayer = th ? `<div class="fxlayer">${Array.from({length: 14}, (_, i) => `<i class="fxp" style="left:${(i * 37) % 100}%;top:${(i * 29) % 70}%;animation-delay:${((i * 0.41) % 3).toFixed(2)}s;animation-duration:${(3 + (i % 4)).toFixed(1)}s">${CD_FX[th]}</i>`).join('')}</div>` : ''; return `<div class="cdfeat ${fxCls}" style="${next.photo ? `background-image:url(${next.photo})` : `background:${colorOf(next)}`}">${next.photo ? '<div class="cdfshade"></div>' : ''}${fxLayer}<div class="cdfbody"><b>${n === 0 ? 'Hoy' : Math.abs(n)}${n === 0 ? '' : '<small>D</small>'}</b><span>${esc(next.name)}</span><small class="cdfdate">${since ? 'Días desde' : 'Días para'} ${fmtShort(next.date)}</small></div></div>`; })() : '';
   body.innerHTML = `<div class="cdspace"><div class="row" style="margin-bottom:10px"><span class="sp"></span><button class="btn sm" id="cdNew">+ Nueva cuenta</button></div>
     ${feat}
     ${list.length ? list.map(row).join('') : '<div class="card empty"><div class="big">⏳</div>Aún no tienes cuentas. Toca “+ Nueva cuenta”.</div>'}</div>`;
@@ -202,23 +204,25 @@ function calCuentas(body) {
   body.querySelectorAll('[data-cd]').forEach(b => b.onclick = () => openCountdownForm(list.find(x => x.id === b.dataset.cd)));
 }
 function openCountdownForm(c) {
-  const editing = !!c; let icon = c ? c.icon : CD_ICONS[0], photo = c ? c.photo || null : null;
+  const editing = !!c; let icon = c ? c.icon : CD_ICONS[0], photo = c ? c.photo || null : null, theme = c ? c.theme || '' : '';
   const s = openSheet({pin: editing ? 'cd:' + c.id : null, title: editing ? 'Editar cuenta' : 'Nueva cuenta', body: `
     <div class="fld"><label>Nombre</label><input class="inp" id="cdN" maxlength="40" value="${esc(c ? c.name : '')}" placeholder="Ej.: Cumpleaños de mamá"></div>
     <div class="fld"><label>Fecha</label><input class="inp" type="date" id="cdD" value="${c ? c.date : todayISO()}"></div>
     <div class="fld"><label>Ícono</label><div class="emojis" id="cdI">${CD_ICONS.map(x => `<button type="button" class="opt ${x === icon ? 'on' : ''}" data-ci="${x}">${x}</button>`).join('')}</div></div>
+    <div class="fld"><label>Ambiente</label><div class="emojis" id="cdT">${CD_THEMES.map(([k, i, n]) => `<button type="button" class="opt ${(c && c.theme || '') === k ? 'on' : ''}" data-th="${k}" title="${n}">${i}</button>`).join('')}</div></div>
     <div class="fld"><label>Foto (opcional)</label><input class="inp" type="file" accept="image/*" id="cdP"><img id="cdPi" class="nfimg" alt="" ${photo ? `src="${photo}"` : 'hidden'}></div>`,
     foot: `${editing ? '<button class="btn sec" id="cdDel" aria-label="Eliminar" title="Eliminar"><i class="xdel"></i></button>' : ''}<button class="btn" id="cdS">Guardar</button>`,
     onMount: el => {
       const q = x => el.querySelector(x);
       el.querySelectorAll('[data-ci]').forEach(b => b.onclick = () => { icon = b.dataset.ci; el.querySelectorAll('[data-ci]').forEach(x => x.classList.toggle('on', x === b)); });
+      el.querySelectorAll('[data-th]').forEach(b => b.onclick = () => { theme = b.dataset.th; el.querySelectorAll('[data-th]').forEach(x => x.classList.toggle('on', x === b)); });
       q('#cdP').onchange = async e => { const f = e.target.files[0]; if (!f) return; const img = new Image(), url = URL.createObjectURL(f); img.onload = () => { const sc = Math.min(1, 320 / Math.max(img.width, img.height)), cv = document.createElement('canvas'); cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(url); photo = cv.toDataURL('image/jpeg', .6); q('#cdPi').src = photo; q('#cdPi').hidden = false; }; img.src = url; };
       q('#cdS').onclick = () => {
         const name = (q('#cdN').value || '').trim(), date = q('#cdD').value;
         if (!name || !date) { toast('Pon un nombre y una fecha'); return; }
         S.settings.countdowns = S.settings.countdowns || [];
-        if (editing) Object.assign(c, {name, date, icon, photo: photo || undefined});
-        else S.settings.countdowns.push({id: uid(), name, date, icon, photo: photo || undefined});
+        if (editing) Object.assign(c, {name, date, icon, photo: photo || undefined, theme: theme || undefined});
+        else S.settings.countdowns.push({id: uid(), name, date, icon, photo: photo || undefined, theme: theme || undefined});
         save('meta'); s.close(); renderView(); toast('Cuenta guardada');
       };
       const d = q('#cdDel'); if (d) d.onclick = async () => { if (await ask(`¿Eliminar “${esc(c.name)}”?`, {yes: 'Eliminar'})) { S.settings.countdowns = S.settings.countdowns.filter(x => x.id !== c.id); save('meta'); s.close(); renderView(); } };
@@ -2322,13 +2326,13 @@ function micFor(input) {
   input.insertAdjacentElement('afterend', b);
   b.onclick = e => {
     e.preventDefault();
-    if (!SR) { toast('El dictado no está disponible en este teléfono'); return; }
+    if (!SR) { input.focus(); toast('Toca el micrófono del teclado para dictar'); return; }
     if (b._rec) { b._rec.stop(); return; }
     const rec = new SR(); rec.lang = 'es-PR'; rec.interimResults = true; rec.continuous = false; b._rec = rec;
     const base = input.value ? input.value.trim() + ' ' : '';
     rec.onresult = ev => { input.value = base + Array.from(ev.results).map(r => r[0].transcript).join(' ').trim(); };
     rec.onend = () => { b._rec = null; b.classList.remove('rec'); input.focus(); };
-    rec.onerror = () => { b._rec = null; b.classList.remove('rec'); toast('No pude escuchar. Intenta otra vez'); };
+    rec.onerror = () => { b._rec = null; b.classList.remove('rec'); input.focus(); toast('Toca el micrófono del teclado para dictar'); };
     try { rec.start(); b.classList.add('rec'); toast('Habla ahora… toca 🎙 para terminar'); } catch (err) { b._rec = null; toast('No pude iniciar el dictado'); }
   };
 }
@@ -2344,12 +2348,11 @@ function openPinManager(done) {
   const row = (key, icon, name, on, sub = '') => `<label class="wrsw pinrow"><span><b>${icon} ${esc(name)}</b>${sub ? `<small>${sub}</small>` : ''}</span><input type="checkbox" data-pk="${key}" ${on ? 'checked' : ''}><i></i></label>`;
   const s = openSheet({title: 'Fijar en el acceso rápido', body: `<p class="hint" style="margin-top:0">
     <div class="pingrp"><b>Básicos</b>${row('hoy', '☀️', 'Hoy', P.hoy !== false, 'Tareas de hoy')}${row('cal', '📅', 'Calendario', !!P.cal, 'Mes y cosas del día')}</div>
-    <div class="pingrp"><b>Crear</b><button class="btn sec" id="pmNew" type="button">＋ Lista de tareas nueva</button></div>
-    ${S.lists.length ? `<div class="pingrp"><b>Listas</b>${S.lists.map(l => row('list:' + l.id, l.icon, l.name, !l.hideOnDay)).join('')}</div>` : ''}
+    <div class="pingrp"><b>Listas</b>${S.lists.map(l => row('list:' + l.id, l.icon, l.name, !l.hideOnDay)).join('')}<button class="btn sec pinnew" id="pmNew" type="button">＋ Lista de tareas nueva</button></div>
     ${S.tasks.filter(t => !isDone(t)).length ? `<div class="pingrp"><b>Tareas</b>${S.tasks.filter(t => !isDone(t)).slice(0, 40).map(t => row('tk:' + t.id, '✔️', t.title, isPinnedKey('tk:' + t.id), fmtShort(t.date))).join('')}</div>` : ''}
     ${S.notes.length ? `<div class="pingrp"><b>Notas</b>${S.notes.slice(0, 40).map(n => row('nt:' + n.id, '📝', noteTitle(n), isPinnedKey('nt:' + n.id), fmtShort(n.date))).join('')}</div>` : ''}
     ${(S.settings.countdowns || []).length ? `<div class="pingrp"><b>Cuentas</b>${S.settings.countdowns.map(c => row('cd:' + c.id, c.icon || '⏳', c.name, isPinnedKey('cd:' + c.id), fmtShort(c.date))).join('')}</div>` : ''}
-    ${(S.habits || []).length ? `<div class="pingrp"><b>Hábitos</b>${S.habits.map(h => row('hab:' + h.id, h.icon, h.name, (P.habs || []).includes(h.id))).join('')}</div>` : ''}
+    <div class="pingrp"><b>Hábitos</b>${S.habits.map(h => row('hab:' + h.id, h.icon, h.name, (P.habs || []).includes(h.id))).join('')}${HAB_SUG.map((x, i) => S.habits.some(h => h.name === x[1]) ? '' : row('sug:' + i, x[0], x[1], false, 'Crear y fijar')).join('')}</div>
     ${retos.length ? `<div class="pingrp"><b>Retos de ahorro</b>${retos.map(h => row('reto:' + h.id, '🏆', h.challenge.name, !(P.noReto || []).includes(h.id))).join('')}</div>` : ''}`,
     foot: '<button class="btn" data-close>Listo</button>',
     onClose: () => { done && done(); },
@@ -2357,6 +2360,7 @@ function openPinManager(done) {
       const k = c.dataset.pk, on = c.checked, P2 = pins();
       if (k === 'hoy') P2.hoy = on; else if (k === 'cal') P2.cal = on;
       else if (k.startsWith('list:')) { const l = S.lists.find(x => 'list:' + x.id === k); if (l) { l.hideOnDay = !on; save('lists'); } }
+      else if (k.startsWith('sug:')) { if (on) { const x = HAB_SUG[+k.slice(4)]; const id = uid(); S.habits.push({id, icon: x[0], name: x[1], goal: x[2], unit: '', kind: HAB_KINDS.some(kk => kk[0] === x[3]) ? x[3] : '', wakeAt: x[3] === 'despertar' ? '06:00' : undefined, goalOz: x[3] === 'agua' ? 64 : undefined, migA: 1, migO: 1, migW: 1, unitD: 'mi', color: HL_PASTEL[S.habits.length % HL_PASTEL.length], days: [], log: {}, created: todayISO()}); save('habits'); P2.habs = (P2.habs || []).concat(id); c.disabled = true; } }
       else if (/^(tk|nt|cd):/.test(k)) { if (on !== isPinnedKey(k)) togglePinKey(k, true); }
       else if (k.startsWith('hab:')) { const id = k.slice(4); P2.habs = (P2.habs || []).filter(x => x !== id); if (on) P2.habs.push(id); }
       else if (k.startsWith('reto:')) { const id = k.slice(5); P2.noReto = (P2.noReto || []).filter(x => x !== id); if (!on) P2.noReto.push(id); }
@@ -2454,5 +2458,8 @@ function wirePinCards(v) {
   const fit = () => { const c = wrap.children[UI.pinIdx || 0]; if (c) wrap.style.height = c.offsetHeight + 'px'; };
   requestAnimationFrame(() => { wrap.scrollLeft = UI.pinIdx * wrap.clientWidth; mark(); fit(); });
   let t; wrap.addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(() => { UI.pinIdx = Math.round(wrap.scrollLeft / wrap.clientWidth); mark(); fit(); }, 80); }, {passive: true});
+  let sx = null, sy = 0, st = 0;
+  wrap.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); }, {passive: true});
+  wrap.addEventListener('touchend', e => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; sx = null; if (Math.abs(dx) < 90 || Math.abs(dy) > Math.abs(dx) * 0.5 || Date.now() - st > 600) return; const i = Math.max(0, Math.min(wrap.children.length - 1, (UI.pinIdx || 0) + (dx < 0 ? 1 : -1))); UI.pinIdx = i; wrap.scrollTo({left: i * wrap.clientWidth, behavior: 'smooth'}); mark(); fit(); }, {passive: true});
   dots.forEach((d, i) => d.onclick = () => wrap.scrollTo({left: i * wrap.clientWidth, behavior: 'smooth'}));
 }

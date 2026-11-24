@@ -1378,3 +1378,22 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .voicebtn.rec .rdot{background:#fff}
 
 #dlBtn.rec{background:#e5484d;box-shadow:0 0 0 6px rgba(229,72,77,.18)}
+
+.cdfeat.fx{position:relative}
+.fxlayer{position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:inherit}
+.fxp{position:absolute;font-style:normal;font-size:16px;line-height:1;opacity:.85}
+.cdfeat.fx .cdfbody{position:relative;z-index:1}
+.fx-navidad:not(.ph){background:linear-gradient(#0b1f3a,#1e4d7b)!important}
+.fx-navidad .fxp{top:-8%;animation:fxFall linear infinite}
+@keyframes fxFall{from{transform:translateY(0)}to{transform:translateY(230px)}}
+.fx-aniversario:not(.ph){background:linear-gradient(#ff8fb1,#c2185b)!important}
+.fx-aniversario .fxp,.fx-cumple .fxp{top:auto;bottom:-10%;animation:fxRise linear infinite;font-size:20px}
+@keyframes fxRise{0%{transform:translateY(0);opacity:0}15%{opacity:.9}100%{transform:translateY(-230px);opacity:0}}
+.fx-cumple:not(.ph){background:linear-gradient(#ffd66b,#ff8a5b)!important}
+.fx-anio:not(.ph){background:radial-gradient(circle at 50% 40%,#243b7a,#070b1f)!important}
+.fx-anio .fxp{font-size:22px;animation:fxPop ease-out infinite}
+@keyframes fxPop{0%{transform:scale(.2);opacity:0}40%{opacity:1}100%{transform:scale(1.5);opacity:0}}
+.fx-verano:not(.ph){background:linear-gradient(#7fd8ff,#1b8fb0)!important}
+.fx-verano .fxp{top:auto;bottom:4%;font-size:26px;animation:fxWave ease-in-out infinite alternate}
+@keyframes fxWave{from{transform:translateX(-14px)}to{transform:translateX(14px)}}
+.pinnew{width:100%;margin-top:8px}
