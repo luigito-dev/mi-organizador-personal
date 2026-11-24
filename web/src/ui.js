@@ -162,12 +162,11 @@ function openTaskForm(task, preset = {}) {
 
     <input class="inp title" id="tTitle" placeholder="¿Qué tienes que hacer?" value="${esc(t.title)}" maxlength="140">
     <div class="fld"><label>¿Para cuándo?</label><div class="opts" id="tWhen">
-      <button type="button" class="opt" data-w="hoy">Hoy</button><button type="button" class="opt" data-w="man">Mañana</button><button type="button" class="opt" data-w="otra">Otra fecha</button>
-      <input type="date" class="inp" id="tDate" style="width:auto;padding:6px 10px" value="${t.date}"></div></div>
+      <button type="button" class="opt" data-w="hoy">Hoy</button><button type="button" class="opt" data-w="man">Mañana</button></div></div>
     <div class="fld row" id="tTimeRow" style="flex-wrap:nowrap"></div>
-    <div class="fld"><label>Tipo</label><div class="opts hscroll" id="tTypes"></div></div>
+    <div class="fld"><label>Tipo</label><div class="opts" id="tTypes"></div></div>
     <div class="fld"><label>Área</label><div class="opts hscroll" id="tAreas"></div></div>
-<div class="fld"><label>Sticker en el calendario</label><div class="emojis" id="tStk"></div></div>
+<div class="fld"><label>Sticker en el calendario</label><div class="opts" id="tStk"></div></div>
     <div class="fld"><label>Prioridad</label><div class="seg full" id="tPrio">${PRIOS.map(p => `<button type="button" class="opt" data-p="${p}">${p}</button>`).join('')}</div></div>
     <details class="fold" ${t.details ? 'open' : ''}><summary>Añadir más detalles</summary>
       <div class="fld"><label>¿De qué se trata?</label><textarea class="inp" id="tDet" placeholder="Escribe aquí… Usa “+ Añadir” para crear pasos con •">${esc(t.details)}</textarea>
@@ -177,13 +176,11 @@ function openTaskForm(task, preset = {}) {
   const s = openSheet({title: editing ? 'Editar tarea' : 'Nueva tarea', body,
     foot: `<button class="btn sec" data-close>Cancelar</button><button class="btn" id="tSave">${editing ? 'Guardar cambios' : 'Guardar tarea'}</button>`,
     onMount: el => {
-      const paintWhen = () => { el.querySelectorAll('[data-w]').forEach(b => b.classList.toggle('on', b.dataset.w === dateMode())); el.querySelector('#tDate').style.display = dateMode() === 'otra' ? '' : 'none'; el.querySelector('#tDate').value = t.date; };
+      const paintWhen = () => { el.querySelectorAll('[data-w]').forEach(b => b.classList.toggle('on', b.dataset.w === dateMode())); };
       el.querySelectorAll('[data-w]').forEach(b => b.onclick = () => {
         if (b.dataset.w === 'hoy') t.date = todayISO(); else if (b.dataset.w === 'man') t.date = addDays(todayISO(), 1);
-        else { if (dateMode() !== 'otra') t.date = addDays(todayISO(), 2); paintWhen(); const di = el.querySelector('#tDate'); try { di.showPicker && di.showPicker(); } catch (e) {} return; }
         paintWhen();
       });
-      el.querySelector('#tDate').onchange = e => { if (e.target.value) t.date = e.target.value; paintWhen(); };
       paintWhen();
       const paintTime = () => {
         el.querySelector('#tTimeRow').innerHTML = (t.time ? `<button type="button" class="chip on" id="tTimeBtn">🕒 ${fmtTime(t.time)}</button><button type="button" class="btn ghost sm" id="tNoTime" title="Quitar hora" aria-label="Quitar hora" style="padding:6px 8px">✕<span class="qh"> Quitar hora</span></button>` : `<button type="button" class="btn sec sm" id="tTimeBtn">🕒 Añadir hora</button>`) + `<span class="sp"></span>` + bellHTML(t.reminder);
@@ -196,10 +193,16 @@ function openTaskForm(task, preset = {}) {
       };
       paintTime();
       const paintTypes = () => {
-        el.querySelector('#tTypes').innerHTML = typeButtons(t.typeId);
-        el.querySelectorAll('[data-type]').forEach(b => b.onclick = () => { t.typeId = b.dataset.type; paintTypes(); });
-        el.querySelector('[data-newtype]').onclick = () => openTypeForm(null, nt => { t.typeId = nt.id; paintTypes(); });
-        el.querySelector('[data-edittypes]').onclick = () => openTypesManager(() => { if (!S.types.some(x => x.id === t.typeId)) t.typeId = S.types[0].id; paintTypes(); });
+        const cur = S.types.find(x => x.id === t.typeId);
+        el.querySelector('#tTypes').innerHTML = `<button type="button" class="opt on" id="tTypeOpen" style="${cur ? `border-color:${cur.color};background:${cur.color}22;color:${cur.color}` : ''}">${cur ? cur.icon + ' ' + esc(cur.name) : 'Elegir tipo'} ▾</button>`;
+        el.querySelector('#tTypeOpen').onclick = () => {
+          const ps = openSheet({title: 'Tipo', cls: 'small', body: `<div class="opts" id="tyPop">${typeButtons(t.typeId)}</div>`, foot: '<button class="btn sec" data-close>Cerrar</button>',
+            onMount: sel => {
+              sel.querySelectorAll('[data-type]').forEach(b => b.onclick = () => { t.typeId = b.dataset.type; ps.close(); paintTypes(); });
+              sel.querySelector('[data-newtype]').onclick = () => { ps.close(); openTypeForm(null, nt => { t.typeId = nt.id; paintTypes(); }); };
+              sel.querySelector('[data-edittypes]').onclick = () => { ps.close(); openTypesManager(() => { if (!S.types.some(x => x.id === t.typeId)) t.typeId = S.types[0].id; paintTypes(); }); };
+            }});
+        };
       };
       paintTypes();
       const paintAreas = () => { el.querySelector('#tAreas').innerHTML = areaButtons(t.areaId); el.querySelectorAll('[data-area]').forEach(b => b.onclick = () => { t.areaId = b.dataset.area || null; paintAreas(); }); };
@@ -513,8 +516,11 @@ function addCustom(kind, cb) {
 function wireStickers(box, obj) {
   if (!box) return;
   const paint = () => {
-    box.innerHTML = `<button type="button" class="${!obj.sticker ? 'on' : ''}" data-stk="">Ninguno</button>` + allStickers().map(s => `<button type="button" class="${obj.sticker === s ? 'on' : ''}" data-stk="${s}">${s}</button>`).join('');
-    box.querySelectorAll('[data-stk]').forEach(b => b.onclick = () => { obj.sticker = b.dataset.stk || null; paint(); });
+    box.innerHTML = `<button type="button" class="opt on" id="stkOpen">${obj.sticker ? obj.sticker : 'Elegir'} ▾</button>`;
+    box.querySelector('#stkOpen').onclick = () => {
+      const ps = openSheet({title: 'Sticker en el calendario', cls: 'small', body: `<div class="emojis" id="stkPop">${allStickers().map(s => `<button type="button" class="${obj.sticker === s ? 'on' : ''}" data-stk="${s}">${s}</button>`).join('')}</div><p class="hint">Toca el que ya está elegido para quitarlo.</p>`, foot: '<button class="btn sec" data-close>Cerrar</button>',
+        onMount: sel => sel.querySelectorAll('[data-stk]').forEach(b => b.onclick = () => { obj.sticker = obj.sticker === b.dataset.stk ? null : b.dataset.stk; ps.close(); paint(); })});
+    };
   };
   paint();
 }

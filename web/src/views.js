@@ -742,7 +742,7 @@ function vNotas(v) {
       : `<div class="empty">${q ? 'No hay notas que coincidan con “' + esc(UI.q) + '”.' : UI.showHiddenNotes ? 'No hay notas ocultas.' : '<div class="big">🗒️</div>Escribe arriba tu primera nota.'}</div>`}`;
   const nn = $('#nNew', v);
   const vb = $('#nVoice', v);
-  vb.onclick = () => { if (quick.active) stopQuick(); else startQuick('nNew'); };
+  vb.onclick = () => { if (quick.active) stopQuick(); else startQuick(nn); };
   $('#nSave', v).onclick = () => { const tx = nn.value.trim(); if (!tx) { nn.focus(); return; } S.notes.push({id: uid(), text: tx, date: todayISO(), created: String(Date.now()), hidden: false, category: '', areaId: null}); save('notes'); UI.showHiddenNotes = false; renderView(); toast('Nota guardada ✓'); };
   nn.onkeydown = e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('#nSave', v).click(); };
   const hb = $('#nHid', v); if (hb) hb.onclick = () => { UI.showHiddenNotes = !UI.showHiddenNotes; renderView(); };
@@ -1045,13 +1045,6 @@ function dayLists(box) {
   $('#dlBtn', box).onclick = add; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
   const q = id => $(id, box);
   if (q('#qGo')) q('#qGo').onclick = () => go('dia');
-  const dl = q('#dlBtn'); if (dl) {
-    let t3 = null, fired = false;
-    dl.addEventListener('pointerdown', () => { fired = false; clearTimeout(t3); t3 = setTimeout(() => { fired = true; startVoiceNote(dl); }, 3000); });
-    const endHold = () => { clearTimeout(t3); t3 = null; if (fired) stopVoiceNote(dl); };
-    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => dl.addEventListener(ev, endHold));
-    dl.addEventListener('click', e => { if (fired) { e.stopImmediatePropagation(); e.preventDefault(); fired = false; } }, true);
-  }
   if (q('#qOpen')) q('#qOpen').onclick = () => { const id = UI.popTab; go('listas'); UI.openList = id; render(); };
   if (q('#qUndo')) q('#qUndo').onclick = () => { S.lists.find(y => y.id === UI.popTab).items.forEach(i => i.done = false); save('lists'); redraw(); };
   if (q('#qNewList')) q('#qNewList').onclick = () => { go('listas'); render(); openListForm(); };
@@ -2321,7 +2314,12 @@ function pinCalendar(box) {
 }
 /* Dictado: botón 🎙 junto a la caja para escribir hablando */
 // El 🎙 de los campos se quitó; el dictado ahora es con el + mantenido (ver quickNote)
-function micFor() {}
+function micFor(input) {
+  if (!input || input.dataset.mic) return; input.dataset.mic = 1;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'micbtn'; b.textContent = quick.active ? 'Parar' : 'Grabar'; b.setAttribute('aria-label', 'Grabar por voz');
+  input.insertAdjacentElement('afterend', b);
+  b.onclick = e => { e.preventDefault(); if (quick.active) stopQuick(); else startQuick(input); };
+}
 /* Selectores de ícono y color: se ven contraídos y al tocar se despliegan */
 document.addEventListener('click', e => {
   const b = e.target.closest('.emojis button, .colors button'); if (!b) return;
@@ -2357,21 +2355,22 @@ function openPinManager(done) {
 const quick = {active: false, parts: [], live: '', h: null, rec: null};
 let lpTimer = null, lpFired = false;
 function quickSave() {
-  const target = quick.target; quick.target = null;
+  const el = quick.el; quick.el = null;
   const tx = quick.parts.concat(quick.live ? [quick.live] : []).join(' ').replace(/\s+/g, ' ').trim();
   quick.parts = []; quick.live = '';
-  if (target === 'nNew') { const nn = document.querySelector('#nNew'); if (tx && nn) { nn.value = (nn.value.trim() ? nn.value.trim() + ' ' : '') + tx; nn.focus(); toast('Revisa el texto y toca Guardar'); } else if (!tx) toast('No escuché nada'); return true; }
+  if (el && el.isConnected) { if (tx) { el.value = (el.value.trim() ? el.value.trim() + ' ' : '') + tx; el.focus(); toast('Revisa el texto y guárdalo'); } else toast('No escuché nada'); return true; }
   if (!tx) { toast('No escuché nada'); return false; }
   S.notes.unshift({id: uid(), text: tx, date: todayISO(), created: String(Date.now()), hidden: false, category: '', areaId: null});
   save('notes'); toast('Nota guardada ✓'); return false;
 }
-function setQuickUI(on) { document.querySelectorAll('[data-pinmgr]').forEach(b => b.classList.toggle('rec', on)); const nv = document.querySelector('#nVoice'); if (nv) { nv.textContent = on ? 'Parar' : 'Tocar para grabar'; nv.classList.toggle('rec', on); } }
+function setQuickUI(on) { document.querySelectorAll('[data-pinmgr]').forEach(b => b.classList.toggle('rec', on)); const nv = document.querySelector('#nVoice'); if (nv) { nv.textContent = on ? 'Parar' : 'Tocar para grabar'; nv.classList.toggle('rec', on); } document.querySelectorAll('.micbtn').forEach(b => { b.textContent = on ? 'Parar' : 'Grabar'; b.classList.toggle('rec', on); }); }
 async function startQuick(target) {
+  const el = target && target.nodeType === 1 ? target : null;
   const NP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition;
   const native = NP && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!native && !SR) { toast('El dictado no está disponible en este teléfono'); return; }
-  quick.active = true; quick.parts = []; quick.live = ''; quick.target = target || null; setQuickUI(true);
+  quick.active = true; quick.parts = []; quick.live = ''; quick.el = el; setQuickUI(true);
   toast(native ? 'Escuchando… habla y toca + para terminar' : 'Escuchando… toca + para terminar');
   if (native) {
     try {
