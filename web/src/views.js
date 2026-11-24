@@ -2388,8 +2388,10 @@ function habPill(h) {
 // Botón para quitar de fijados desde la misma ventana
 function addUnpin(box) {
   const f = box.querySelector('.qtop'); if (!f || f.querySelector('[data-unpin]')) return;
-  const b = document.createElement('button'); b.className = 'pinplus qunpin on'; b.textContent = '+'; b.dataset.unpin = UI.popTab; b.setAttribute('aria-label', 'Quitar de fijados'); b.title = 'Quitar de fijados';
+  const b = document.createElement('button'); b.className = 'pinplus qunpin on'; b.textContent = '+'; b.dataset.unpin = UI.popTab;
   f.insertBefore(b, f.querySelector('[data-close]'));
+  if (box.dataset.fixkey) { b.setAttribute('aria-label', 'Añadir o quitar fijados'); b.title = 'Añadir o quitar fijados'; b.onclick = () => openPinManager(() => renderView()); return; }
+  b.setAttribute('aria-label', 'Quitar de fijados'); b.title = 'Quitar de fijados';
   b.onclick = () => {
     const k = b.dataset.unpin, P = pins();
     if (k === 'hoy') P.hoy = false; else if (k === 'cal') P.cal = false;
@@ -2405,9 +2407,8 @@ function addUnpin(box) {
 /* Fijados en Mi Día: una tarjeta a la vez, se pasan de lado */
 function pinCardsHTML() {
   const keys = popKeys();
-  if (!keys.length) return '<div class="pinhd"><b>Fijados</b><button class="btn ghost sm" data-pinmgr>Editar</button></div>';
-  return `<div class="pinhd"><b>Fijados</b><span class="sp"></span><button class="btn ghost sm" data-pinmgr>Editar</button></div>
-    <div class="pincards" id="pinCards">${keys.map(k => `<div class="pincard"><div class="pinbox" data-fixkey="${esc(k)}"></div></div>`).join('')}</div>
+  if (!keys.length) return '<div class="pinhd"><span class="sp"></span><button class="pinplus on" data-pinmgr aria-label="Añadir fijados" title="Añadir fijados">+</button></div>';
+  return `<div class="pincards" id="pinCards">${keys.map(k => `<div class="pincard"><div class="pinbox" data-fixkey="${esc(k)}"></div></div>`).join('')}</div>
     ${keys.length > 1 ? `<div class="pindots">${keys.map((k, i) => `<i data-pdi="${i}"></i>`).join('')}</div>` : ''}`;
 }
 function wirePinCards(v) {
