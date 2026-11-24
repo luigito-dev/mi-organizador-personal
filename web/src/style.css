@@ -1264,7 +1264,8 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .pincards::-webkit-scrollbar{display:none}
 .pincard{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always}
 .pinbox{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px 14px 8px;box-shadow:0 4px 14px rgba(10,30,70,.08)}
-.pinbox .qtop{display:none}
+.pinbox .qtop{display:flex;justify-content:flex-end;margin:-4px 0 2px}
+.pinbox .qtop>.qnav,.pinbox .qtop>[data-close]{display:none}
 .pinbox .qrows{max-height:none}
 .pinbox .pinhost{max-height:none}
 .pindots{display:flex;justify-content:center;gap:6px;margin:8px 0 2px}

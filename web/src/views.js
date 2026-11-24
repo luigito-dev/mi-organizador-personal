@@ -2382,9 +2382,9 @@ function habPill(h) {
 }
 // Botón para quitar de fijados desde la misma ventana
 function addUnpin(box) {
-  const f = box.querySelector('.qfoot'); if (!f || f.querySelector('[data-unpin]')) return;
+  const f = box.querySelector('.qtop'); if (!f || f.querySelector('[data-unpin]')) return;
   const b = document.createElement('button'); b.className = 'pinplus on qunpin'; b.textContent = '+'; b.dataset.unpin = UI.popTab; b.setAttribute('aria-label', 'Quitar de fijados'); b.title = 'Quitar de fijados';
-  f.prepend(b);
+  f.insertBefore(b, f.querySelector('[data-close]'));
   b.onclick = () => {
     const k = b.dataset.unpin, P = pins();
     if (k === 'hoy') P.hoy = false; else if (k === 'cal') P.cal = false;
