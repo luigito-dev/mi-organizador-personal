@@ -8,7 +8,7 @@
   const App = window.capacitorApp.App;
   const Browser = window.capacitorBrowser.Browser;
   const Org = core.registerPlugin('Organizador');
-  const REPO = 'luigito-dev/mi-organizador';
+  const REPO = 'luigito-dev/mi-organizador-personal';
   const APK = 'https://github.com/' + REPO + '/releases/latest/download/mi-organizador.apk';
   let ready = false; const queue = [];
   const whenReady = fn => ready ? fn() : queue.push(fn);

@@ -4,7 +4,7 @@ Organizador personal: Mi Día, calendario, tareas, listas, rutina semanal, enfoq
 Incluye una widget "Hoy" para la pantalla de inicio y avisos que llegan aunque la app esté cerrada.
 
 ## Cómo instalarla en tu teléfono
-1. En el teléfono, abre: https://github.com/luigito-dev/mi-organizador/releases/latest/download/mi-organizador.apk
+1. En el teléfono, abre: https://github.com/luigito-dev/mi-organizador-personal/releases/latest/download/mi-organizador.apk
 2. Cuando termine de bajar, toca el archivo. Si Android pregunta, permite "Instalar apps desconocidas" para Chrome.
 3. Abre **Mi Organizador**, toca **Permitir** cuando pida notificaciones.
 4. Para la widget: mantén el dedo en un espacio vacío de la pantalla de inicio → **Widgets** → **Mi Organizador · Hoy**.
