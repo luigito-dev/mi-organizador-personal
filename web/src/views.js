@@ -1703,7 +1703,7 @@ function openWater(h, d, host) {
       <div class="wtip">Desliza el botón verde para subir o bajar el agua</div>
       <div class="wbottles">${[...Array(Math.max(gb, nb))].map((_, i) => `<span class="${i < nb ? 'on' : ''} ${just && i === nb - 1 ? 'pop' : ''}">${bottleSVG({id: 'w' + i, goal: 99}, i < nb ? OZ : 0)}</span>`).join('')}</div>
       <div class="wmsg">${c >= g ? '🎉 ¡Meta del día cumplida!' : `${nb} de ${gb} botellas · faltan ${g - c} oz`}</div>
-      <div class="wacts"><button class="wsmall wminus" id="wMinus" ${c ? '' : 'disabled'} aria-label="Quitar 1 onza">−1<small>oz</small></button><button class="wdrink" id="wDrink">+ BEBER <small>1 oz</small></button><button class="wsmall" id="wRem" aria-label="Recordatorios">⏰${nr ? `<i>${nr}</i>` : ''}</button></div>`;
+      <div class="wacts"><button class="wsmall wminus" id="wMinus" ${c ? '' : 'disabled'} aria-label="Quitar 1 onza">−1<small>oz</small></button><button class="wdrink" id="wDrink">BEBER <small>1 oz</small></button><button class="wsmall" id="wRem" aria-label="Recordatorios">⏰${nr ? `<i>${nr}</i>` : ''}</button></div>`;
     let emptyNext = false;
     const commit = total => {
       const before = habCount(h, d); h.log = h.log || {}; if (total > 0) h.log[d] = total; else delete h.log[d]; save('habits');
