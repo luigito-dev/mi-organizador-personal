@@ -2347,13 +2347,27 @@ function openPinManager(done) {
     }); }});
 }
 /* Mantener el + 3 segundos: dictar una nota. Otra vez el + (toque o mantener) la guarda */
-const quick = {active: false, parts: [], live: '', h: null, rec: null};
+const quick = {active: false, el: null, text: '', partial: '', rec: null, h: null, hs: null, endUtt: null};
 let lpTimer = null, lpFired = false;
-function quickSave() {
-  const el = quick.el; quick.el = null;
-  const tx = quick.parts.concat(quick.live ? [quick.live] : []).join(' ').replace(/\s+/g, ' ').trim();
-  quick.parts = []; quick.live = '';
-  if (el && el.isConnected) { if (tx) { el.value = (el.value.trim() ? el.value.trim() + ' ' : '') + tx; el.focus(); toast('Revisa el texto y guárdalo'); } else toast('No escuché nada'); return true; }
+const qJoin = (a, b) => [a, b].map(x => (x || '').trim()).filter(Boolean).join(' ');
+const qNorm = s => (s || '').toLowerCase().replace(/[.,!?;:]/g, '').trim();
+/* Órdenes de voz: "borrar" (última palabra), "borrar todo", "borrar leche" (quita esa palabra) */
+function qApply(said) {
+  const s = (said || '').trim(); if (!s) return;
+  const m = qNorm(s).match(/^borra(?:r)?(?:\s+([\s\S]*))?$/);
+  if (!m) { quick.text = qJoin(quick.text, s); return; }
+  const arg = (m[1] || '').trim(); const words = quick.text.split(/\s+/).filter(Boolean);
+  if (!arg || /^(la |una )?ultima palabra$|^(la |una )?última palabra$/.test(arg) || arg === 'ultima' || arg === 'última') { words.pop(); quick.text = words.join(' '); return; }
+  if (/^(todo|todo el texto|todo lo escrito|todo lo que escribi|todo lo que escribí)$/.test(arg)) { quick.text = ''; return; }
+  const tw = qNorm(arg.replace(/^(el |la |los |las |un |una )/, '')).split(/\s+/).filter(Boolean);
+  for (let i = words.length - tw.length; i >= 0; i--) { if (words.slice(i, i + tw.length).map(qNorm).join(' ') === tw.join(' ')) { words.splice(i, tw.length); break; } }
+  quick.text = words.join(' ');
+}
+function qRender() { if (quick.el) quick.el.value = qJoin(quick.text, quick.partial); }
+function qCommit() { if (quick.partial) { qApply(quick.partial); quick.partial = ''; } qRender(); }
+function qFinish() {
+  const el = quick.el; quick.el = null; const tx = quick.text.replace(/\s+/g, ' ').trim(); quick.text = ''; quick.partial = '';
+  if (el && el.isConnected) { el.value = tx; el.focus(); toast(tx ? 'Revisa el texto y guárdalo' : 'No escuché nada'); return true; }
   if (!tx) { toast('No escuché nada'); return false; }
   S.notes.unshift({id: uid(), text: tx, date: todayISO(), created: String(Date.now()), hidden: false, category: '', areaId: null});
   save('notes'); toast('Nota guardada ✓'); return false;
@@ -2365,28 +2379,33 @@ async function startQuick(target) {
   const native = NP && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!native && !SR) { toast('El dictado no está disponible en este teléfono'); return; }
-  quick.active = true; quick.parts = []; quick.live = ''; quick.el = el; setQuickUI(true);
-  toast(native ? 'Escuchando… habla y toca + para terminar' : 'Escuchando… toca + para terminar');
+  quick.active = true; quick.el = el; quick.text = el ? el.value.trim() : ''; quick.partial = ''; setQuickUI(true);
+  toast('Escuchando… habla y toca Parar. Di "borrar" para quitar');
   if (native) {
     try {
       const perm = await NP.checkPermissions();
       if (perm.speechRecognition !== 'granted') { const r = await NP.requestPermissions(); if (r.speechRecognition !== 'granted') { quick.active = false; setQuickUI(false); toast('Permite el micrófono en Ajustes del teléfono'); return; } }
+      quick.h = await NP.addListener('partialResults', d => { if (d && d.matches && d.matches.length) { quick.partial = d.matches[0]; qRender(); } });
+      quick.hs = await NP.addListener('listeningState', st => { if (st && st.status === 'stopped' && quick.endUtt) { const r = quick.endUtt; quick.endUtt = null; r(); } });
       let empty = 0;
       while (quick.active) {
-        let t = '';
-        try { const r = await NP.start({language: 'es-US', maxResults: 1, partialResults: false, popup: false}); t = r && r.matches && r.matches[0] || ''; }
-        catch (err) { t = ''; }
-        if (t) { quick.parts.push(t); empty = 0; }
-        else if (++empty >= 4 && quick.active) { toast('No te escuché. Toca + para terminar o intenta de nuevo'); break; }
+        quick.partial = ''; const t0 = Date.now();
+        try { await NP.start({language: 'es-US', maxResults: 1, partialResults: true, popup: false}); } catch (err) { /* sin voz: se cuenta abajo */ }
+        await new Promise(res => { quick.endUtt = res; });
+        const had = !!quick.partial; qCommit();
+        if (!had && Date.now() - t0 < 2000 && ++empty >= 4) { toast('No te escuché. Toca Parar o intenta de nuevo'); break; }
+        if (had) empty = 0;
       }
     } catch (err) { toast('No pude usar el micrófono'); }
-    quick.active = false; setQuickUI(false); if (!quickSave()) renderView();
+    if (quick.h) { quick.h.remove(); quick.h = null; }
+    if (quick.hs) { quick.hs.remove(); quick.hs = null; }
+    quick.endUtt = null; quick.active = false; setQuickUI(false); if (!qFinish()) renderView();
     return;
   }
   const loop = () => {
-    const rec = new SR(); rec.lang = 'es-PR'; rec.interimResults = true; rec.continuous = true; quick.rec = rec;
-    rec.onresult = ev => { quick.live = Array.from(ev.results).map(r => r[0].transcript).join(' ').trim(); };
-    rec.onend = () => { if (quick.live) quick.parts.push(quick.live); quick.live = ''; if (quick.active) loop(); else { quick.rec = null; setQuickUI(false); if (!quickSave()) renderView(); } };
+    const rec = new SR(); rec.lang = 'es-US'; rec.interimResults = true; rec.continuous = true; quick.rec = rec;
+    rec.onresult = ev => { let p = ''; for (let i = ev.resultIndex; i < ev.results.length; i++) { const r = ev.results[i]; if (r.isFinal) { qApply(r[0].transcript); } else p += r[0].transcript; } quick.partial = p; qRender(); };
+    rec.onend = () => { qCommit(); if (quick.active) loop(); else { quick.rec = null; setQuickUI(false); if (!qFinish()) renderView(); } };
     rec.onerror = () => { quick.active = false; };
     try { rec.start(); } catch (err) { quick.active = false; }
   };
@@ -2397,7 +2416,7 @@ function stopQuick() {
   quick.active = false;
   const NP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition;
   if (quick.rec) { try { quick.rec.stop(); } catch (_) {} }
-  else if (NP) { try { NP.stop(); } catch (_) {} }
+  else if (NP) { try { NP.stop(); } catch (_) {} if (quick.endUtt) { const r = quick.endUtt; quick.endUtt = null; setTimeout(r, 300); } }
 }
 document.addEventListener('pointerdown', e => {
   const b = e.target.closest && e.target.closest('[data-pinmgr]'); if (!b) return;
