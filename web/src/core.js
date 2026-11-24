@@ -304,7 +304,7 @@ const routineOn = (r, d) => r.days.includes(dow(d)) && (!r.from || d >= r.from) 
 const evOn = (e, d) => e.date === d || (!!e.endDate && e.date < d && d <= e.endDate);
 function itemsOn(d, opts = {}) {
   const ev = S.events.filter(e => evOn(e, d) && (opts.all || areaVisible(e.areaId)));
-  const tk = S.tasks.filter(t => t.date === d && (opts.all || areaVisible(t.areaId)) && (opts.withDone || !isDone(t)));
+  const tk = S.tasks.filter(t => t.date === d && !t.noCal && (opts.all || areaVisible(t.areaId)) && (opts.withDone || !isDone(t)));
   const rt = S.routines.filter(r => routineOn(r, d) && (opts.all || areaVisible(r.areaId)));
   return {ev, tk, rt};
 }
