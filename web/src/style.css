@@ -253,6 +253,12 @@ textarea.inp{min-height:80px;resize:vertical}
 .emojis{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
 .emojis button{font-size:20px;padding:6px 0;border-radius:8px;border:1.5px solid transparent}
 .emojis button.on{border-color:var(--blue);background:var(--blue-l)}
+.emojis:not(.open):has(button.on) button:not(.on){display:none}
+.emojis:not(.open):has(button.on){grid-template-columns:1fr;justify-items:start}
+.colors:not(.open):has(button.on) button:not(.on){display:none}
+.emojis.open,.colors.open{background:var(--soft);border-radius:12px;padding:6px}
+.micbtn{flex:none;width:40px;height:40px;border-radius:50%;border:1.5px solid var(--blue);background:var(--card);font-size:18px;margin-left:6px;cursor:pointer}
+.micbtn.rec{background:var(--red);border-color:var(--red);color:#fff}
 /* Focus */
 .focus{display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:10px}
 .fring{position:relative;width:260px;height:260px}
@@ -1262,7 +1268,7 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .pinhd{display:flex;align-items:center;gap:8px;margin:14px 2px 6px}
 #pinCards{margin-top:12px}
 .qrow:not(.done) .hl,.item:not(.done) .hl,.hlrow:not(.done) .hl{background-image:none;padding:0}
-.pincards{display:flex;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;align-items:flex-start;overscroll-behavior-x:contain}
+.pincards{display:flex;overflow:hidden;scroll-snap-type:x proximity;scrollbar-width:none;align-items:flex-start;overscroll-behavior-x:contain}
 .pincards::-webkit-scrollbar{display:none}
 .pincard{flex:0 0 100%;min-width:0;scroll-snap-align:start}
 .pinbox{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px 14px 8px;box-shadow:0 4px 14px rgba(10,30,70,.08)}

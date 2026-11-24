@@ -936,7 +936,7 @@ function vListaDetalle(v, l) {
   const un = $('#lUn', v); if (un) un.onclick = () => { l.items.forEach(i => i.done = false); save('lists'); renderView(); toast('Lista lista para usar otra vez'); };
   const cl = $('#lClr', v); if (cl) cl.onclick = async () => { if (await ask('¿Borrar de la lista todo lo que está marcado como listo?', {yes: 'Borrar'})) { l.items = l.items.filter(i => !i.done); save('lists'); renderView(); } };
 }
-function openListForm(list) {
+function openListForm(list, o = {}) {
   const editing = !!list; const l = list ? {...list} : {id: uid(), name: '', icon: '📝', color: AREA_COLORS[S.lists.length % AREA_COLORS.length], items: []};
   const s = openSheet({pin: editing ? 'list:' + list.id : null, title: editing ? 'Editar lista' : 'Nueva lista',
     body: `${editing ? '' : `<div class="fld"><label>Ideas rápidas</label><div class="opts">${LIST_TEMPLATES.map(([i, n]) => `<button type="button" class="opt" data-tpl="${i}|${n}">${i} ${n}</button>`).join('')}</div></div>`}
@@ -953,7 +953,7 @@ function openListForm(list) {
       el.querySelector('#lS').onclick = () => {
         l.name = el.querySelector('#lN').value.trim() || (editing ? l.name : 'Mis tareas');
         if (editing) { const o = listById(l.id); o.name = l.name; o.icon = l.icon; o.color = l.color; } else S.lists.push(l);
-        save('lists'); s.close(); UI.view = 'listas'; UI.openList = l.id; render();
+        save('lists'); s.close(); if (o.fromPin && !editing) { renderView(); return; } UI.view = 'listas'; UI.openList = l.id; render();
         if (!editing) setTimeout(() => { const a = $('#liAdd'); a && a.focus(); }, 60);
       };
       setTimeout(() => el.querySelector('#lN').focus(), 50);
@@ -1030,7 +1030,7 @@ function dayLists(box) {
   });
   box.querySelectorAll('[data-qtk]').forEach(b => b.onclick = () => { const x = S.tasks.find(y => y.id === b.dataset.qtk); x.status = isDone(x) ? 'Pendiente' : 'Completada'; x.completedAt = isDone(x) ? Date.now() : null; save('tasks'); b.classList.toggle('done'); setTimeout(redraw, 180); });
   box.querySelectorAll('[data-qli]').forEach(b => b.onclick = () => { const l = S.lists.find(y => y.id === UI.popTab), i = l.items.find(y => y.id === b.dataset.qli); i.done = !i.done; save('lists'); b.classList.toggle('done'); setTimeout(redraw, 180); });
-  const inp = $('#dlAdd', box);
+  const inp = $('#dlAdd', box); micFor(inp);
   const add = () => {
     const raw = inp.value.trim(); if (!raw) { inp.focus(); return; }
     if (UI.popTab === 'hoy') { const g = guess(raw); S.tasks.push({id: uid(), title: raw, date: t, time: g.time, typeId: g.typeId, areaId: g.areaId, priority: 'Media', details: '', steps: [], status: 'Pendiente', obs: '', reminder: null, noCal: true, createdAt: Date.now()}); save('tasks'); }
@@ -2310,10 +2310,35 @@ function pinCalendar(box) {
   box.querySelectorAll('[data-pctk]').forEach(r => r.onclick = () => { const x = S.tasks.find(y => y.id === r.dataset.pctk); setDone(x.id, !isDone(x)); setTimeout(redraw, 120); });
   box.querySelectorAll('[data-pcev]').forEach(r => r.onclick = () => openEventDetail(r.dataset.pcev));
   const add = () => { const raw = q('#pcAdd').value.trim(); if (!raw) { q('#pcAdd').focus(); return; } const g = guess(raw); S.tasks.push({id: uid(), title: raw, date: d, time: g.time, typeId: g.typeId, areaId: g.areaId, priority: 'Media', details: '', steps: [], status: 'Pendiente', obs: '', reminder: null, createdAt: Date.now()}); save('tasks'); toast('Añadido'); redraw(); };
-  q('#pcBtn').onclick = add; q('#pcAdd').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
+  micFor(q('#pcAdd')); q('#pcBtn').onclick = add; q('#pcAdd').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
   q('#pcGo').onclick = () => { UI.calDate = UI.selDate = d; go('calendario'); };
   const pop = box.closest('.qcard .sh-body > div'); if (pop) addUnpin(pop);
 }
+/* Dictado: botón 🎙 junto a la caja para escribir hablando */
+function micFor(input) {
+  if (!input || input.dataset.mic) return; input.dataset.mic = 1;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'micbtn'; b.textContent = '🎙'; b.setAttribute('aria-label', 'Dictar');
+  input.insertAdjacentElement('afterend', b);
+  b.onclick = e => {
+    e.preventDefault();
+    if (!SR) { toast('El dictado no está disponible en este teléfono'); return; }
+    if (b._rec) { b._rec.stop(); return; }
+    const rec = new SR(); rec.lang = 'es-PR'; rec.interimResults = true; rec.continuous = false; b._rec = rec;
+    const base = input.value ? input.value.trim() + ' ' : '';
+    rec.onresult = ev => { input.value = base + Array.from(ev.results).map(r => r[0].transcript).join(' ').trim(); };
+    rec.onend = () => { b._rec = null; b.classList.remove('rec'); input.focus(); };
+    rec.onerror = () => { b._rec = null; b.classList.remove('rec'); toast('No pude escuchar. Intenta otra vez'); };
+    try { rec.start(); b.classList.add('rec'); toast('Habla ahora… toca 🎙 para terminar'); } catch (err) { b._rec = null; toast('No pude iniciar el dictado'); }
+  };
+}
+/* Selectores de ícono y color: se ven contraídos y al tocar se despliegan */
+document.addEventListener('click', e => {
+  const b = e.target.closest('.emojis button, .colors button'); if (!b) return;
+  const box = b.parentElement; if (!box.querySelector('button.on')) return;
+  if (!box.classList.contains('open')) { if (b.classList.contains('on')) { e.preventDefault(); e.stopPropagation(); box.classList.add('open'); } return; }
+  setTimeout(() => box.classList.remove('open'), 0);
+}, true);
 function openPinManager(done) {
   const P = pins(), retos = (S.habits || []).filter(h => h.challenge && h.challenge.vals);
   const row = (key, icon, name, on, sub = '') => `<label class="wrsw pinrow"><span><b>${icon} ${esc(name)}</b>${sub ? `<small>${sub}</small>` : ''}</span><input type="checkbox" data-pk="${key}" ${on ? 'checked' : ''}><i></i></label>`;
@@ -2321,14 +2346,18 @@ function openPinManager(done) {
     <div class="pingrp"><b>Básicos</b>${row('hoy', '☀️', 'Hoy', P.hoy !== false, 'Tareas de hoy')}${row('cal', '📅', 'Calendario', !!P.cal, 'Mes y cosas del día')}</div>
     <div class="pingrp"><b>Crear</b><button class="btn sec" id="pmNew" type="button">＋ Lista de tareas nueva</button></div>
     ${S.lists.length ? `<div class="pingrp"><b>Listas</b>${S.lists.map(l => row('list:' + l.id, l.icon, l.name, !l.hideOnDay)).join('')}</div>` : ''}
+    ${S.tasks.filter(t => !isDone(t)).length ? `<div class="pingrp"><b>Tareas</b>${S.tasks.filter(t => !isDone(t)).slice(0, 40).map(t => row('tk:' + t.id, '✔️', t.title, isPinnedKey('tk:' + t.id), fmtShort(t.date))).join('')}</div>` : ''}
+    ${S.notes.length ? `<div class="pingrp"><b>Notas</b>${S.notes.slice(0, 40).map(n => row('nt:' + n.id, '📝', noteTitle(n), isPinnedKey('nt:' + n.id), fmtShort(n.date))).join('')}</div>` : ''}
+    ${(S.settings.countdowns || []).length ? `<div class="pingrp"><b>Cuentas</b>${S.settings.countdowns.map(c => row('cd:' + c.id, c.icon || '⏳', c.name, isPinnedKey('cd:' + c.id), fmtShort(c.date))).join('')}</div>` : ''}
     ${(S.habits || []).length ? `<div class="pingrp"><b>Hábitos</b>${S.habits.map(h => row('hab:' + h.id, h.icon, h.name, (P.habs || []).includes(h.id))).join('')}</div>` : ''}
     ${retos.length ? `<div class="pingrp"><b>Retos de ahorro</b>${retos.map(h => row('reto:' + h.id, '🏆', h.challenge.name, !(P.noReto || []).includes(h.id))).join('')}</div>` : ''}`,
     foot: '<button class="btn" data-close>Listo</button>',
     onClose: () => { done && done(); },
-    onMount: el => { el.querySelector('#pmNew').onclick = () => { s.close(); openListForm(null); }; el.querySelectorAll('[data-pk]').forEach(c => c.onchange = () => {
+    onMount: el => { el.querySelector('#pmNew').onclick = () => { s.close(); openListForm(null, {fromPin: true}); }; el.querySelectorAll('[data-pk]').forEach(c => c.onchange = () => {
       const k = c.dataset.pk, on = c.checked, P2 = pins();
       if (k === 'hoy') P2.hoy = on; else if (k === 'cal') P2.cal = on;
       else if (k.startsWith('list:')) { const l = S.lists.find(x => 'list:' + x.id === k); if (l) { l.hideOnDay = !on; save('lists'); } }
+      else if (/^(tk|nt|cd):/.test(k)) { if (on !== isPinnedKey(k)) togglePinKey(k, true); }
       else if (k.startsWith('hab:')) { const id = k.slice(4); P2.habs = (P2.habs || []).filter(x => x !== id); if (on) P2.habs.push(id); }
       else if (k.startsWith('reto:')) { const id = k.slice(5); P2.noReto = (P2.noReto || []).filter(x => x !== id); if (!on) P2.noReto.push(id); }
       save('meta'); toast(on ? 'Fijado' : 'Quitado del acceso rápido');
@@ -2387,6 +2416,7 @@ function habPill(h) {
 }
 // Botón para quitar de fijados desde la misma ventana
 function addUnpin(box) {
+  if (box.dataset.fixkey) return;
   const f = box.querySelector('.qtop'); if (!f || f.querySelector('[data-unpin]')) return;
   const b = document.createElement('button'); b.className = 'pinplus qunpin on'; b.textContent = '+'; b.dataset.unpin = UI.popTab;
   f.insertBefore(b, f.querySelector('[data-close]'));
