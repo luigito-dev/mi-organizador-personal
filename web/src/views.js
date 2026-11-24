@@ -107,7 +107,7 @@ function render() {
   $$('#bnav [data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === UI.view || (b.dataset.go === 'mas' && !bottomItems().includes(UI.view))));
   $('#sbox').classList.toggle('hidden', UI.view === 'enfoque'); $('#sOpen').classList.toggle('hidden', UI.view === 'enfoque');
   $('#q').placeholder = UI.view === 'listas' ? 'Buscar en listas…' : UI.view === 'tareas' ? 'Buscar en tareas…' : UI.view === 'notas' ? 'Buscar en notas…' : 'Buscar en toda la app…';
-  $('#fab').classList.toggle('hidden', ['enfoque', 'progreso', 'config'].includes(UI.view));
+  $('#fab').classList.toggle('hidden', ['enfoque', 'progreso', 'config', 'dia'].includes(UI.view));
   renderView(); renderMini(); setStoreLabel(); listBadge();
 }
 function renderView() {
