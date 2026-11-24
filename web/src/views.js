@@ -2406,8 +2406,9 @@ function addUnpin(box) {
 /* Fijados en Mi Día: una tarjeta a la vez, se pasan de lado */
 function pinCardsHTML() {
   const keys = popKeys();
-  if (!keys.length) return '<div class="pinhd"><span class="sp"></span><button class="pinplus on" data-pinmgr aria-label="Añadir fijados" title="Añadir fijados">+</button></div>';
-  return `<div class="pincards" id="pinCards">${keys.map(k => `<div class="pincard"><div class="pinbox" data-fixkey="${esc(k)}"></div></div>`).join('')}</div>
+  const head = '<div class="pinhd"><span class="sp"></span><button class="pinplus on" data-pinmgr aria-label="Añadir o quitar fijados" title="Añadir o quitar fijados">+</button></div>';
+  if (!keys.length) return head;
+  return `${head}<div class="pincards" id="pinCards">${keys.map(k => `<div class="pincard"><div class="pinbox" data-fixkey="${esc(k)}"></div></div>`).join('')}</div>
     ${keys.length > 1 ? `<div class="pindots">${keys.map((k, i) => `<i data-pdi="${i}"></i>`).join('')}</div>` : ''}`;
 }
 function wirePinCards(v) {
