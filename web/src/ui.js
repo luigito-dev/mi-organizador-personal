@@ -130,7 +130,7 @@ function pickReminder(current) {
 // Campanita: estado en obj.reminder (null = apagado). onSave opcional para guardar al instante.
 function bellHTML(val) {
   const on = val != null;
-  return `<button type="button" class="bellrow ${on ? 'on' : ''}" data-bell aria-label="Recordatorio"><span class="b">🔔</span><span class="switch ${on ? 'on' : ''}"></span></button>`;
+  return `<button type="button" class="bellrow ${on ? 'on' : ''}" data-bell aria-label="Recordatorio"><span class="switch ${on ? 'on' : ''}"></span></button>`;
 }
 function wireBell(root, obj, onSave) {
   const btn = root.querySelector('[data-bell]'); if (!btn) return;
@@ -167,7 +167,7 @@ function openTaskForm(task, preset = {}) {
     <div class="fld row" id="tTimeRow" style="flex-wrap:nowrap"></div>
     <div class="fld"><label>Tipo</label><div class="opts hscroll" id="tTypes"></div></div>
     <div class="fld"><label>Área</label><div class="opts hscroll" id="tAreas"></div></div>
-<div class="fld"><label>Sticker en el calendario</label><div class="opts hscroll stk" id="tStk"></div></div>
+<div class="fld"><label>Sticker en el calendario</label><div class="emojis" id="tStk"></div></div>
     <div class="fld"><label>Prioridad</label><div class="seg full" id="tPrio">${PRIOS.map(p => `<button type="button" class="opt" data-p="${p}">${p}</button>`).join('')}</div></div>
     <details class="fold" ${t.details ? 'open' : ''}><summary>Añadir más detalles</summary>
       <div class="fld"><label>¿De qué se trata?</label><textarea class="inp" id="tDet" placeholder="Escribe aquí… Usa “+ Añadir” para crear pasos con •">${esc(t.details)}</textarea>
@@ -513,7 +513,7 @@ function addCustom(kind, cb) {
 function wireStickers(box, obj) {
   if (!box) return;
   const paint = () => {
-    box.innerHTML = `<button type="button" class="opt ${!obj.sticker ? 'on' : ''}" data-stk="">Ninguno</button>` + allStickers().map(s => `<button type="button" class="opt stkb ${obj.sticker === s ? 'on' : ''}" data-stk="${s}">${s}</button>`).join('');
+    box.innerHTML = `<button type="button" class="${!obj.sticker ? 'on' : ''}" data-stk="">Ninguno</button>` + allStickers().map(s => `<button type="button" class="${obj.sticker === s ? 'on' : ''}" data-stk="${s}">${s}</button>`).join('');
     box.querySelectorAll('[data-stk]').forEach(b => b.onclick = () => { obj.sticker = b.dataset.stk || null; paint(); });
   };
   paint();
