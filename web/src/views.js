@@ -725,18 +725,10 @@ function paintFullscreen() {
 }
 /* ========== NOTAS ========== */
 function startVoiceNote(btn) {
-  if (btn._rec) return;
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { toast('El dictado no está disponible en este teléfono'); return; }
-  const rec = new SR(); rec.lang = 'es-PR'; rec.interimResults = true; rec.continuous = true;
-  let text = '';
-  rec.onresult = e => { text = Array.from(e.results).map(r => r[0].transcript).join(' ').trim(); };
-  rec.onerror = () => { btn._rec = null; btn.classList.remove('rec'); toast('No pude escuchar. Intenta de nuevo'); };
-  rec.onend = () => { btn._rec = null; btn.classList.remove('rec'); if (!text) return; S.notes.push({id: uid(), text, date: todayISO(), created: String(Date.now()), hidden: false, category: '', areaId: null}); save('notes'); UI.showHiddenNotes = false; renderView(); toast('Nota guardada ✓'); };
-  btn._rec = rec; btn.classList.add('rec');
-  try { rec.start(); } catch (err) { btn._rec = null; btn.classList.remove('rec'); toast('No se pudo iniciar el micrófono'); }
+  if (btn._rec || quick.active) return; btn._rec = true; btn.classList.add('rec'); startQuick();
+  return;
 }
-function stopVoiceNote(btn) { if (btn._rec) btn._rec.stop(); }
+function stopVoiceNote(btn) { btn._rec = null; btn.classList.remove('rec'); stopQuick(); }
 function vNotas(v) {
   const q = norm(UI.q.trim());
   let list = S.notes.filter(n => q ? (norm(n.text).includes(q) || norm(n.category || '').includes(q)) : true);
@@ -2379,20 +2371,20 @@ async function startQuick() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!native && !SR) { toast('El dictado no está disponible en este teléfono'); return; }
   quick.active = true; quick.parts = []; quick.live = ''; setQuickUI(true);
-  toast('Escuchando… toca + para terminar');
+  toast(native ? 'Escuchando… habla y toca + para terminar' : 'Escuchando… toca + para terminar');
   if (native) {
     try {
       const perm = await NP.checkPermissions();
       if (perm.speechRecognition !== 'granted') { const r = await NP.requestPermissions(); if (r.speechRecognition !== 'granted') { quick.active = false; setQuickUI(false); toast('Permite el micrófono en Ajustes del teléfono'); return; } }
-      quick.h = await NP.addListener('partialResults', d => { if (d && d.matches && d.matches.length) quick.live = d.matches[0]; });
+      let empty = 0;
       while (quick.active) {
-        quick.live = '';
-        const r = await NP.start({language: 'es-PR', maxResults: 1, partialResults: true, popup: false});
-        const t = (r && r.matches && r.matches[0]) || quick.live;
-        if (t) quick.parts.push(t);
+        const t0 = Date.now();
+        const r = await NP.start({language: 'es-PR', maxResults: 1, partialResults: false, popup: false});
+        const t = r && r.matches && r.matches[0];
+        if (t) { quick.parts.push(t); empty = 0; }
+        else if (Date.now() - t0 < 1500) { if (++empty >= 3) break; }
       }
-    } catch (err) { /* se termina abajo */ }
-    if (quick.h) { quick.h.remove(); quick.h = null; }
+    } catch (err) { toast('No pude usar el micrófono: ' + (err && err.message || 'error')); }
     quick.active = false; setQuickUI(false); quickSave(); renderView();
     return;
   }
@@ -2418,6 +2410,7 @@ document.addEventListener('pointerdown', e => {
   lpTimer = setTimeout(() => { lpFired = true; if (navigator.vibrate) navigator.vibrate(40); if (quick.active) stopQuick(); else startQuick(); }, 3000);
 }, true);
 ['pointerup', 'pointercancel'].forEach(t => document.addEventListener(t, () => clearTimeout(lpTimer), true));
+document.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('[data-pinmgr],#dlBtn')) e.preventDefault(); }, true);
 document.addEventListener('click', e => {
   const b = e.target.closest && e.target.closest('[data-pinmgr]'); if (!b) return;
   if (lpFired) { lpFired = false; e.stopPropagation(); e.preventDefault(); return; }
@@ -2509,10 +2502,13 @@ function wirePinCards(v) {
   wrap.querySelectorAll('.pinbox').forEach(b => dayLists(b));
   UI.popTab = keep;
   const n = wrap.children.length, dots = [...v.querySelectorAll('[data-pdi]')];
+  const keyList = [...wrap.querySelectorAll('.pinbox')].map(b => b.dataset.fixkey);
+  if (UI.pinKey && keyList.indexOf(UI.pinKey) >= 0) UI.pinIdx = keyList.indexOf(UI.pinKey);
   UI.pinIdx = Math.min(UI.pinIdx || 0, n - 1);
+  wrap.addEventListener('pointerdown', e => { const bx = e.target.closest && e.target.closest('.pinbox'); if (bx) UI.pinKey = bx.dataset.fixkey; }, true);
   const mark = () => dots.forEach((d, i) => d.classList.toggle('on', i === UI.pinIdx));
   const fit = () => { const c = wrap.children[UI.pinIdx || 0]; if (c) wrap.style.height = c.offsetHeight + 'px'; };
-  requestAnimationFrame(() => { wrap.scrollLeft = UI.pinIdx * wrap.clientWidth; mark(); fit(); });
-  let t; wrap.addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(() => { UI.pinIdx = Math.round(wrap.scrollLeft / wrap.clientWidth); mark(); fit(); }, 80); }, {passive: true});
+  requestAnimationFrame(() => { wrap._hold = true; wrap.scrollLeft = UI.pinIdx * wrap.clientWidth; mark(); fit(); setTimeout(() => { wrap._hold = false; }, 400); });
+  let t; wrap.addEventListener('scroll', () => { if (wrap._hold) return; clearTimeout(t); t = setTimeout(() => { if (wrap._hold) return; UI.pinIdx = Math.round(wrap.scrollLeft / wrap.clientWidth); UI.pinKey = keyList[UI.pinIdx] || UI.pinKey; mark(); fit(); }, 80); }, {passive: true});
   dots.forEach((d, i) => d.onclick = () => wrap.scrollTo({left: i * wrap.clientWidth, behavior: 'smooth'}));
 }
