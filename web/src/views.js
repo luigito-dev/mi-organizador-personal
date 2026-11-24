@@ -2319,40 +2319,8 @@ function pinCalendar(box) {
   const pop = box.closest('.qcard .sh-body > div'); if (pop) addUnpin(pop);
 }
 /* Dictado: botón 🎙 junto a la caja para escribir hablando */
-function micFor(input) {
-  if (!input || input.dataset.mic) return; input.dataset.mic = 1;
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const NP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition;
-  const b = document.createElement('button'); b.type = 'button'; b.className = 'micbtn'; b.textContent = '🎙'; b.setAttribute('aria-label', 'Dictar');
-  input.insertAdjacentElement('afterend', b);
-  const fail = msg => { b._rec = null; b.classList.remove('rec'); input.focus(); toast(msg || 'Toca el micrófono del teclado para dictar'); };
-  const base = () => input.value ? input.value.trim() + ' ' : '';
-  b.onclick = async e => {
-    e.preventDefault();
-    if (NP && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-      if (b._rec) { b._rec = null; b.classList.remove('rec'); try { await NP.stop(); } catch (_) {} input.focus(); return; }
-      try {
-        const perm = await NP.checkPermissions();
-        if (perm.speechRecognition !== 'granted') { const r = await NP.requestPermissions(); if (r.speechRecognition !== 'granted') return fail('Permite el micrófono en Ajustes del teléfono'); }
-        const start = base(); b._rec = true; b.classList.add('rec'); toast('Habla ahora… toca 🎙 para terminar');
-        const h = await NP.addListener('partialResults', d => { if (d && d.matches && d.matches.length) input.value = start + d.matches[0]; });
-        b._h = h;
-        const res = await NP.start({ language: 'es-PR', maxResults: 1, partialResults: true, popup: false });
-        if (res && res.matches && res.matches.length) input.value = start + res.matches[0];
-        if (b._h) { b._h.remove(); b._h = null; }
-        b._rec = null; b.classList.remove('rec'); input.focus();
-      } catch (err) { if (b._h) { b._h.remove(); b._h = null; } fail(); }
-      return;
-    }
-    if (!SR) { input.focus(); toast('Toca el micrófono del teclado para dictar'); return; }
-    if (b._rec) { b._rec.stop(); return; }
-    const rec = new SR(); rec.lang = 'es-PR'; rec.interimResults = true; rec.continuous = false; b._rec = rec;
-    rec.onresult = ev => { input.value = base() + Array.from(ev.results).map(r => r[0].transcript).join(' ').trim(); };
-    rec.onend = () => { b._rec = null; b.classList.remove('rec'); input.focus(); };
-    rec.onerror = () => fail();
-    try { rec.start(); b.classList.add('rec'); toast('Habla ahora… toca 🎙 para terminar'); } catch (err) { b._rec = null; toast('No pude iniciar el dictado'); }
-  };
-}
+// El 🎙 de los campos se quitó; el dictado ahora es con el + mantenido (ver quickNote)
+function micFor() {}
 /* Selectores de ícono y color: se ven contraídos y al tocar se despliegan */
 document.addEventListener('click', e => {
   const b = e.target.closest('.emojis button, .colors button'); if (!b) return;
@@ -2365,7 +2333,8 @@ function openPinManager(done) {
   const row = (key, icon, name, on, sub = '') => `<label class="wrsw pinrow"><span><b>${icon} ${esc(name)}</b>${sub ? `<small>${sub}</small>` : ''}</span><input type="checkbox" data-pk="${key}" ${on ? 'checked' : ''}><i></i></label>`;
   const s = openSheet({title: 'Fijar en el acceso rápido', body: `<p class="hint" style="margin-top:0">
     <div class="pingrp"><b>Básicos</b>${row('hoy', '☀️', 'Hoy', P.hoy !== false, 'Tareas de hoy')}${row('cal', '📅', 'Calendario', !!P.cal, 'Mes y cosas del día')}</div>
-    <div class="pingrp"><b>Listas</b>${S.lists.map(l => row('list:' + l.id, l.icon, l.name, !l.hideOnDay)).join('')}<button class="btn sec pinnew" id="pmNew" type="button">＋ Lista de tareas nueva</button></div>
+    <div class="pingrp"><button class="btn sec pinnew" id="pmNew" type="button">＋ Crear lista</button></div>
+    <div class="pingrp"><b>Listas</b>${S.lists.map(l => row('list:' + l.id, l.icon, l.name, !l.hideOnDay)).join('')}</div>
     ${S.tasks.filter(t => !isDone(t)).length ? `<div class="pingrp"><b>Tareas</b>${S.tasks.filter(t => !isDone(t)).slice(0, 40).map(t => row('tk:' + t.id, '✔️', t.title, isPinnedKey('tk:' + t.id), fmtShort(t.date))).join('')}</div>` : ''}
     ${S.notes.length ? `<div class="pingrp"><b>Notas</b>${S.notes.slice(0, 40).map(n => row('nt:' + n.id, '📝', noteTitle(n), isPinnedKey('nt:' + n.id), fmtShort(n.date))).join('')}</div>` : ''}
     ${(S.settings.countdowns || []).length ? `<div class="pingrp"><b>Cuentas</b>${S.settings.countdowns.map(c => row('cd:' + c.id, c.icon || '⏳', c.name, isPinnedKey('cd:' + c.id), fmtShort(c.date))).join('')}</div>` : ''}
@@ -2384,6 +2353,67 @@ function openPinManager(done) {
       save('meta'); toast(on ? 'Fijado' : 'Quitado del acceso rápido');
     }); }});
 }
+/* Mantener el + 3 segundos: dictar una nota. Otra vez el + (toque o mantener) la guarda */
+const quick = {active: false, parts: [], live: '', h: null, rec: null};
+let lpTimer = null, lpFired = false;
+function quickSave() {
+  const tx = quick.parts.concat(quick.live ? [quick.live] : []).join(' ').replace(/\s+/g, ' ').trim();
+  quick.parts = []; quick.live = '';
+  if (!tx) { toast('No escuché nada'); return; }
+  S.notes.unshift({id: uid(), text: tx, date: todayISO(), created: String(Date.now()), hidden: false, category: '', areaId: null});
+  save('notes'); toast('Nota guardada ✓');
+}
+function setQuickUI(on) { document.querySelectorAll('[data-pinmgr]').forEach(b => b.classList.toggle('rec', on)); }
+async function startQuick() {
+  const NP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition;
+  const native = NP && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!native && !SR) { toast('El dictado no está disponible en este teléfono'); return; }
+  quick.active = true; quick.parts = []; quick.live = ''; setQuickUI(true);
+  toast('Escuchando… toca + para terminar');
+  if (native) {
+    try {
+      const perm = await NP.checkPermissions();
+      if (perm.speechRecognition !== 'granted') { const r = await NP.requestPermissions(); if (r.speechRecognition !== 'granted') { quick.active = false; setQuickUI(false); toast('Permite el micrófono en Ajustes del teléfono'); return; } }
+      quick.h = await NP.addListener('partialResults', d => { if (d && d.matches && d.matches.length) quick.live = d.matches[0]; });
+      while (quick.active) {
+        quick.live = '';
+        const r = await NP.start({language: 'es-PR', maxResults: 1, partialResults: true, popup: false});
+        const t = (r && r.matches && r.matches[0]) || quick.live;
+        if (t) quick.parts.push(t);
+      }
+    } catch (err) { /* se termina abajo */ }
+    if (quick.h) { quick.h.remove(); quick.h = null; }
+    quick.active = false; setQuickUI(false); quickSave(); renderView();
+    return;
+  }
+  const loop = () => {
+    const rec = new SR(); rec.lang = 'es-PR'; rec.interimResults = true; rec.continuous = true; quick.rec = rec;
+    rec.onresult = ev => { quick.live = Array.from(ev.results).map(r => r[0].transcript).join(' ').trim(); };
+    rec.onend = () => { if (quick.live) quick.parts.push(quick.live); quick.live = ''; if (quick.active) loop(); else { quick.rec = null; setQuickUI(false); quickSave(); renderView(); } };
+    rec.onerror = () => { quick.active = false; };
+    try { rec.start(); } catch (err) { quick.active = false; }
+  };
+  loop();
+}
+function stopQuick() {
+  if (!quick.active) return;
+  quick.active = false;
+  const NP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition;
+  if (quick.rec) { try { quick.rec.stop(); } catch (_) {} }
+  else if (NP) { try { NP.stop(); } catch (_) {} }
+}
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest && e.target.closest('[data-pinmgr]'); if (!b) return;
+  lpFired = false; clearTimeout(lpTimer);
+  lpTimer = setTimeout(() => { lpFired = true; if (navigator.vibrate) navigator.vibrate(40); if (quick.active) stopQuick(); else startQuick(); }, 3000);
+}, true);
+['pointerup', 'pointercancel'].forEach(t => document.addEventListener(t, () => clearTimeout(lpTimer), true));
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-pinmgr]'); if (!b) return;
+  if (lpFired) { lpFired = false; e.stopPropagation(); e.preventDefault(); return; }
+  if (quick.active) { e.stopPropagation(); e.preventDefault(); stopQuick(); }
+}, true);
 // Deslizar desde el borde derecho abre los fijados
 (function edgeSwipe() {
   let sx = null, sy = 0, st = 0;
