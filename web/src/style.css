@@ -1400,3 +1400,10 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 
 .voicebig{width:100%;margin-bottom:10px;padding:12px;font-size:15px;font-weight:700}
 .voicebig.rec{background:#dc2626;color:#fff;border-color:#dc2626}
+
+/* Punto rojo dentro del campo, a la derecha: tocar graba, tocar otra vez para */
+.qadd{position:relative}
+.qadd input{padding-right:34px}
+.qadd .micbtn{position:absolute;right:62px;top:50%;transform:translateY(-50%);width:14px;height:14px;margin:0;padding:0;border:0;border-radius:50%;background:#dc2626;font-size:0;cursor:pointer;z-index:1}
+.qadd .micbtn.rec{animation:recpulse 1s ease-in-out infinite}
+@keyframes recpulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.6)}50%{box-shadow:0 0 0 6px rgba(220,38,38,0)}}

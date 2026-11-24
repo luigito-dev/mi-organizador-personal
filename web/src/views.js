@@ -2321,7 +2321,7 @@ function pinCalendar(box) {
 // El 🎙 de los campos se quitó; el dictado ahora es con el + mantenido (ver quickNote)
 function micFor(input) {
   if (!input || input.dataset.mic) return; input.dataset.mic = 1;
-  const b = document.createElement('button'); b.type = 'button'; b.className = 'micbtn'; b.textContent = quick.active ? 'Parar' : 'Grabar'; b.setAttribute('aria-label', 'Grabar por voz');
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'micbtn' + (quick.active ? ' rec' : ''); b.setAttribute('aria-label', 'Grabar por voz'); b.title = 'Grabar por voz';
   input.insertAdjacentElement('afterend', b);
   b.onclick = e => { e.preventDefault(); if (quick.active) stopQuick(); else startQuick(input); };
 }
@@ -2368,7 +2368,7 @@ function quickSave() {
   S.notes.unshift({id: uid(), text: tx, date: todayISO(), created: String(Date.now()), hidden: false, category: '', areaId: null});
   save('notes'); toast('Nota guardada ✓'); return false;
 }
-function setQuickUI(on) { document.querySelectorAll('[data-pinmgr]').forEach(b => b.classList.toggle('rec', on)); const nv = document.querySelector('#nVoice'); if (nv) { nv.textContent = on ? 'Parar' : 'Tocar para grabar'; nv.classList.toggle('rec', on); } document.querySelectorAll('.micbtn').forEach(b => { b.textContent = on ? 'Parar' : 'Grabar'; b.classList.toggle('rec', on); }); }
+function setQuickUI(on) { document.querySelectorAll('[data-pinmgr]').forEach(b => b.classList.toggle('rec', on)); const nv = document.querySelector('#nVoice'); if (nv) { nv.textContent = on ? 'Parar' : 'Tocar para grabar'; nv.classList.toggle('rec', on); } document.querySelectorAll('.micbtn').forEach(b => b.classList.toggle('rec', on)); }
 async function startQuick(target) {
   const el = target && target.nodeType === 1 ? target : null;
   const NP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition;
