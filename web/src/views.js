@@ -735,15 +735,14 @@ function vNotas(v) {
   const hidden = list.filter(n => n.hidden);
   list = UI.showHiddenNotes ? hidden : list.filter(n => !n.hidden);
   list.sort((a, b) => (b.date + (b.created || '')).localeCompare(a.date + (a.created || '')));
-  v.innerHTML = `<div class="row" style="justify-content:flex-end;align-items:center;gap:8px;margin-bottom:6px"><span class="small muted">Mantén para grabar</span><button type="button" class="voicebtn" id="nVoice" aria-label="Mantén presionado para grabar una nota" title="Mantén presionado para grabar"><i class="rdot"></i></button></div><div class="card"><div class="note-new"><textarea class="inp" id="nNew" placeholder="Escribe una nota…"></textarea><button class="btn" id="nSave">Guardar</button></div></div>
+  v.innerHTML = `<div class="card"><button type="button" class="btn voicebig" id="nVoice">${quick.active ? 'Parar' : 'Tocar para grabar'}</button><div class="note-new"><textarea class="inp" id="nNew" placeholder="Escribe una nota…"></textarea><button class="btn" id="nSave">Guardar</button></div></div>
     <div class="row" style="margin:14px 0 8px"><b>${UI.showHiddenNotes ? 'Notas ocultas' : 'Mis notas'}</b><span class="sp"></span>${hidden.length || UI.showHiddenNotes ? `<button class="btn ghost sm" id="nHid">${UI.showHiddenNotes ? '‹ Volver a mis notas' : `Ver ocultas (${hidden.length})`}</button>` : ''}</div>
     ${list.length ? list.map(n => { const a = areaById(n.areaId); return `<div class="nitem" data-note="${n.id}"><div class="body"><div class="t">${esc(noteTitle(n))}</div>${noteSnippet(n) ? `<div class="s">${esc(noteSnippet(n))}</div>` : ''}<div class="xs muted row" style="margin-top:3px"><span>${fmtShort(n.date)}</span>${n.category ? `<span class="tag">${esc(n.category)}</span>` : ''}${a ? `<span class="tag"><span class="dot" style="background:${a.color}"></span>${esc(a.name)}</span>` : ''}</div></div>
       <div class="acts"><button data-nh="${n.id}" title="${n.hidden ? 'Mostrar' : 'Ocultar'}" aria-label="${n.hidden ? 'Mostrar' : 'Ocultar'}">${n.hidden ? '👁‍🗨' : '👁'}</button><button data-nd="${n.id}" title="Eliminar" aria-label="Eliminar"><i class="xdel"></i></button></div></div>`; }).join('')
       : `<div class="empty">${q ? 'No hay notas que coincidan con “' + esc(UI.q) + '”.' : UI.showHiddenNotes ? 'No hay notas ocultas.' : '<div class="big">🗒️</div>Escribe arriba tu primera nota.'}</div>`}`;
   const nn = $('#nNew', v);
   const vb = $('#nVoice', v);
-  vb.addEventListener('pointerdown', e => { e.preventDefault(); startVoiceNote(vb); });
-  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => vb.addEventListener(ev, () => stopVoiceNote(vb)));
+  vb.onclick = () => { if (quick.active) stopQuick(); else startQuick('nNew'); };
   $('#nSave', v).onclick = () => { const tx = nn.value.trim(); if (!tx) { nn.focus(); return; } S.notes.push({id: uid(), text: tx, date: todayISO(), created: String(Date.now()), hidden: false, category: '', areaId: null}); save('notes'); UI.showHiddenNotes = false; renderView(); toast('Nota guardada ✓'); };
   nn.onkeydown = e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('#nSave', v).click(); };
   const hb = $('#nHid', v); if (hb) hb.onclick = () => { UI.showHiddenNotes = !UI.showHiddenNotes; renderView(); };
@@ -2358,19 +2357,21 @@ function openPinManager(done) {
 const quick = {active: false, parts: [], live: '', h: null, rec: null};
 let lpTimer = null, lpFired = false;
 function quickSave() {
+  const target = quick.target; quick.target = null;
   const tx = quick.parts.concat(quick.live ? [quick.live] : []).join(' ').replace(/\s+/g, ' ').trim();
   quick.parts = []; quick.live = '';
-  if (!tx) { toast('No escuché nada'); return; }
+  if (target === 'nNew') { const nn = document.querySelector('#nNew'); if (tx && nn) { nn.value = (nn.value.trim() ? nn.value.trim() + ' ' : '') + tx; nn.focus(); toast('Revisa el texto y toca Guardar'); } else if (!tx) toast('No escuché nada'); return true; }
+  if (!tx) { toast('No escuché nada'); return false; }
   S.notes.unshift({id: uid(), text: tx, date: todayISO(), created: String(Date.now()), hidden: false, category: '', areaId: null});
-  save('notes'); toast('Nota guardada ✓');
+  save('notes'); toast('Nota guardada ✓'); return false;
 }
-function setQuickUI(on) { document.querySelectorAll('[data-pinmgr]').forEach(b => b.classList.toggle('rec', on)); }
-async function startQuick() {
+function setQuickUI(on) { document.querySelectorAll('[data-pinmgr]').forEach(b => b.classList.toggle('rec', on)); const nv = document.querySelector('#nVoice'); if (nv) { nv.textContent = on ? 'Parar' : 'Tocar para grabar'; nv.classList.toggle('rec', on); } }
+async function startQuick(target) {
   const NP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition;
   const native = NP && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!native && !SR) { toast('El dictado no está disponible en este teléfono'); return; }
-  quick.active = true; quick.parts = []; quick.live = ''; setQuickUI(true);
+  quick.active = true; quick.parts = []; quick.live = ''; quick.target = target || null; setQuickUI(true);
   toast(native ? 'Escuchando… habla y toca + para terminar' : 'Escuchando… toca + para terminar');
   if (native) {
     try {
@@ -2385,13 +2386,13 @@ async function startQuick() {
         else if (++empty >= 4 && quick.active) { toast('No te escuché. Toca + para terminar o intenta de nuevo'); break; }
       }
     } catch (err) { toast('No pude usar el micrófono'); }
-    quick.active = false; setQuickUI(false); quickSave(); renderView();
+    quick.active = false; setQuickUI(false); if (!quickSave()) renderView();
     return;
   }
   const loop = () => {
     const rec = new SR(); rec.lang = 'es-PR'; rec.interimResults = true; rec.continuous = true; quick.rec = rec;
     rec.onresult = ev => { quick.live = Array.from(ev.results).map(r => r[0].transcript).join(' ').trim(); };
-    rec.onend = () => { if (quick.live) quick.parts.push(quick.live); quick.live = ''; if (quick.active) loop(); else { quick.rec = null; setQuickUI(false); quickSave(); renderView(); } };
+    rec.onend = () => { if (quick.live) quick.parts.push(quick.live); quick.live = ''; if (quick.active) loop(); else { quick.rec = null; setQuickUI(false); if (!quickSave()) renderView(); } };
     rec.onerror = () => { quick.active = false; };
     try { rec.start(); } catch (err) { quick.active = false; }
   };

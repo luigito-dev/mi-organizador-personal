@@ -1397,3 +1397,6 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .fx-verano .fxp{top:auto;bottom:4%;font-size:26px;animation:fxWave ease-in-out infinite alternate}
 @keyframes fxWave{from{transform:translateX(-14px)}to{transform:translateX(14px)}}
 .pinnew{width:100%;margin-top:8px}
+
+.voicebig{width:100%;margin-bottom:10px;padding:12px;font-size:15px;font-weight:700}
+.voicebig.rec{background:#dc2626;color:#fff;border-color:#dc2626}
