@@ -986,16 +986,6 @@ function dayLists(box) {
   if (/^(tk|nt|cd):/.test(String(UI.popTab))) { const it = pinItemView(UI.popTab); if (it) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:var(--blue)"><span class="qtitle ${it.title.length > 9 ? 'long' : ''}">${esc(it.title.toUpperCase())}</span><span class="qcount">${esc(it.pill)}</span></div><div class="pinhost">${it.html}</div><div class="row qfoot"><button class="btn ghost sm" id="qOpenIt">Abrir ›</button></div>`; box.querySelector('#qOpenIt').onclick = it.open; wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
   if (String(UI.popTab).startsWith('hab:')) { const h = S.habits.find(x => 'hab:' + x.id === UI.popTab); if (h) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:${h.color}"><span class="qtitle ${h.name.length > 9 ? 'long' : ''}">${esc(h.name.toUpperCase())}</span><span class="qcount">${habPill(h)}</span></div><div class="pinhost" id="pinHost"></div><div class="row qfoot"><span class="sp"></span><button class="btn ghost sm" id="qHab">Abrir hábito ›</button></div>`; box.querySelector('#qHab').onclick = () => { go('habitos'); }; pinHabit(h, box.querySelector('#pinHost'), () => dayLists(box)); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
   if (UI.popTab === 'cal') { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:var(--teal,#0f9d8f)"><span class="qtitle">CALENDARIO</span><span class="qcount">${sortedDay(todayISO()).length} hoy</span></div><div id="pinCal"></div>`; pinCalendar(box.querySelector('#pinCal')); wireTabs(); return; }
-  if (UI.popTab === 'newlist') {
-    box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:#10b981"><span class="qtitle">＋ Crear lista (To do)</span></div><div class="row" style="gap:8px;margin-top:10px"><input class="inp" id="nlT" placeholder="Título (opcional)" maxlength="40" style="flex:1"><button class="btn" id="nlGo" type="button">Crear</button></div><p class="hint">Si no escribes título, se llama "Mis tareas". Esta tarjeta es solo para crear listas.</p>`;
-    wireTabs();
-    box.querySelector('#nlGo').onclick = () => {
-      const name = box.querySelector('#nlT').value.trim() || 'Mis tareas';
-      const l = {id: uid(), name, icon: '📝', color: AREA_COLORS[S.lists.length % AREA_COLORS.length], items: []};
-      S.lists.push(l); save('lists'); UI.popTab = l.id; toast('Lista creada'); renderView();
-    };
-    return;
-  }
   if (String(UI.popTab).startsWith('reto:')) { const h = S.habits.find(x => 'reto:' + x.id === UI.popTab); if (h && h.challenge) { challengeBox(box, h, tabs, null); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
   let head, rows, addPh, foot;
   if (UI.popTab === 'hoy') {
@@ -2446,7 +2436,7 @@ function wirePinBar(v) {
 // Orden de lo fijado en la ventana flotante (se pasa de uno a otro deslizando de lado)
 function popKeys() {
   const P = pins();
-  return [...(P.hoy === false ? [] : ['hoy']), ...S.lists.filter(l => !l.hideOnDay).map(l => l.id), 'newlist', ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(P.cal ? ['cal'] : []), ...pinItems().filter(itemExists)];
+  return [...(P.hoy === false ? [] : ['hoy']), ...S.lists.filter(l => !l.hideOnDay).map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(P.cal ? ['cal'] : []), ...pinItems().filter(itemExists)];
 }
 function popSwipe(box) {
   if (box._sw) return; box._sw = 1;
