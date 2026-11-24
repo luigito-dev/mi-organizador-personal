@@ -1012,7 +1012,7 @@ function dayLists(box) {
   }
   box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div>${head}<div class="qrows">${rows}</div>
     <div class="qadd"><input id="dlAdd" placeholder="${esc(addPh)}" maxlength="300" autocomplete="off"><button class="btn" id="dlBtn" aria-label="Añadir">+</button></div>
-    <div class="row qfoot">${foot}${UI.popTab === 'hoy' && !lists.length ? '<span class="sp"></span><button class="btn ghost sm" id="qNewList">+ Nueva lista</button>' : ''}</div>`;
+    <div class="row qfoot">${foot}${UI.popTab === 'hoy' ? '<span class="sp"></span><button type="button" class="voicebtn" id="qVoice" aria-label="Mantén presionado para grabar una nota" title="Mantén presionado para grabar"><i class="rdot"></i></button><span class="sp"></span>' : '<span class="sp"></span>'}${UI.popTab === 'hoy' && !lists.length ? '<button class="btn ghost sm" id="qNewList">+ Nueva lista</button>' : ''}</div>`;
   const redraw = () => { dayLists(box); listBadge(); };
   box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; redraw(); });
   box.querySelectorAll('[data-qpins]').forEach(b => b.onclick = () => openPinManager(() => dayLists(box)));
@@ -1040,6 +1040,7 @@ function dayLists(box) {
   $('#dlBtn', box).onclick = add; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
   const q = id => $(id, box);
   if (q('#qGo')) q('#qGo').onclick = () => go('dia');
+  const qv = q('#qVoice'); if (qv) { qv.addEventListener('pointerdown', e => { e.preventDefault(); startVoiceNote(qv); }); ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => qv.addEventListener(ev, () => stopVoiceNote(qv))); }
   if (q('#qOpen')) q('#qOpen').onclick = () => { const id = UI.popTab; go('listas'); UI.openList = id; render(); };
   if (q('#qUndo')) q('#qUndo').onclick = () => { S.lists.find(y => y.id === UI.popTab).items.forEach(i => i.done = false); save('lists'); redraw(); };
   if (q('#qNewList')) q('#qNewList').onclick = () => { go('listas'); render(); openListForm(); };
@@ -1050,12 +1051,10 @@ function heroHTML() {
   const [wd, wt] = weekProgress(), dt = new Date();
   return `<div class="hero"><div class="hero-main"><div class="hero-top"><div><div class="date">${cap(DIAS[dt.getDay()])}, ${dt.getDate()} de ${MESES[dt.getMonth()]}</div><div class="hi">${greeting()} 👋</div></div>
     <div class="ring" title="Avance de la semana">${ringSVG(wd, wt)}<div class="lbl">${wd}/${wt}<small>semana</small></div></div></div>
-    ${UI.motivHidden ? '' : `<div class="hero-msg" id="motiv"><button class="x" id="mX" aria-label="Cerrar mensaje">✕</button><p>✨ ${esc(UI.motiv)}</p><div class="hscroll"><button class="btn sm hb1" id="m1">Organizar mi día</button><button class="btn sm hb2" id="m2">Planificar mi semana</button><button class="btn sm hb2" id="m3">Modo enfoque</button></div></div>`}</div></div>`;
+    ${UI.motivHidden ? '' : `<div class="hero-msg" id="motiv"><p>✨ ${esc(UI.motiv)}</p><div class="hscroll"><button class="btn sm hb1" id="m1">Organizar mi día</button><button class="btn sm hb2" id="m2">Planificar mi semana</button><button class="btn sm hb2" id="m3">Modo enfoque</button></div></div>`}</div></div>`;
 }
 function wireHero(v) {
   if (UI.motivHidden) return;
-  if (!motivTimer) motivTimer = setTimeout(() => { UI.motivHidden = true; const m = $('#motiv'); if (m) m.remove(); }, 60000);
-  $('#mX', v).onclick = () => { UI.motivHidden = true; $('#motiv').remove(); };
   $('#m1', v).onclick = () => { UI.daySel = todayISO(); renderView(); setTimeout(() => { const q = $('#qIn'); q && (q.scrollIntoView({block: 'center', behavior: 'smooth'}), q.focus()); }, 50); };
   $('#m2', v).onclick = () => { S.settings.calView = 'week'; UI.calDate = todayISO(); save('meta'); go('calendario'); setTimeout(() => { const p = $('#planner'); p && p.scrollIntoView({behavior: 'smooth'}); }, 80); };
   $('#m3', v).onclick = () => go('enfoque');
@@ -2383,7 +2382,7 @@ function habPill(h) {
 // Botón para quitar de fijados desde la misma ventana
 function addUnpin(box) {
   const f = box.querySelector('.qtop'); if (!f || f.querySelector('[data-unpin]')) return;
-  const b = document.createElement('button'); b.className = 'pinplus on qunpin'; b.textContent = '+'; b.dataset.unpin = UI.popTab; b.setAttribute('aria-label', 'Quitar de fijados'); b.title = 'Quitar de fijados';
+  const b = document.createElement('button'); b.className = 'pinplus qunpin on'; b.textContent = '+'; b.dataset.unpin = UI.popTab; b.setAttribute('aria-label', 'Quitar de fijados'); b.title = 'Quitar de fijados';
   f.insertBefore(b, f.querySelector('[data-close]'));
   b.onclick = () => {
     const k = b.dataset.unpin, P = pins();
