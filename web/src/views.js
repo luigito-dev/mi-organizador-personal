@@ -2363,10 +2363,10 @@ function popKeys() {
 function popSwipe(box) {
   if (box._sw) return; box._sw = 1;
   let x0 = null, y0 = 0, t0 = 0, ok = true;
-  box.addEventListener('touchstart', e => { const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); ok = !e.target.closest('input,textarea,.wbot,.hscroll,.pcalg'); }, {passive: true});
+  box.addEventListener('touchstart', e => { const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); ok = !e.target.closest('input,textarea,button,.wbot,.hscroll,.pcalg,.pincards,.qrow,.hlrow,.item'); }, {passive: true});
   box.addEventListener('touchend', e => {
     if (x0 == null || !ok) return; const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
-    if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.7 || Date.now() - t0 > 700) return;
+    if (Math.abs(dx) < 110 || Math.abs(dy) > Math.abs(dx) * 0.5 || Date.now() - t0 > 500) return;
     const keys = popKeys(); if (keys.length < 2) return;
     const i = Math.max(0, keys.indexOf(UI.popTab)); UI.popTab = keys[(i + (dx < 0 ? 1 : -1) + keys.length) % keys.length];
     box.classList.remove('slideL', 'slideR'); void box.offsetWidth; box.classList.add(dx < 0 ? 'slideL' : 'slideR');
