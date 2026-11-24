@@ -2420,7 +2420,8 @@ function wirePinCards(v) {
   const n = wrap.children.length, dots = [...v.querySelectorAll('[data-pdi]')];
   UI.pinIdx = Math.min(UI.pinIdx || 0, n - 1);
   const mark = () => dots.forEach((d, i) => d.classList.toggle('on', i === UI.pinIdx));
-  requestAnimationFrame(() => { wrap.scrollLeft = UI.pinIdx * wrap.clientWidth; mark(); });
-  let t; wrap.addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(() => { UI.pinIdx = Math.round(wrap.scrollLeft / wrap.clientWidth); mark(); }, 80); }, {passive: true});
+  const fit = () => { const c = wrap.children[UI.pinIdx || 0]; if (c) wrap.style.height = c.offsetHeight + 'px'; };
+  requestAnimationFrame(() => { wrap.scrollLeft = UI.pinIdx * wrap.clientWidth; mark(); fit(); });
+  let t; wrap.addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(() => { UI.pinIdx = Math.round(wrap.scrollLeft / wrap.clientWidth); mark(); fit(); }, 80); }, {passive: true});
   dots.forEach((d, i) => d.onclick = () => wrap.scrollTo({left: i * wrap.clientWidth, behavior: 'smooth'}));
 }
