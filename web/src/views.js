@@ -189,6 +189,14 @@ const CD_ICONS = ['🎂', '💰', '🎤', '🎆', '✈️', '💍', '👶', '�
 function cdList() { return (S.settings.countdowns || []).slice().sort((a, b) => a.date.localeCompare(b.date)); }
 const CD_THEMES = [['', '✨', 'Normal'], ['aniversario', '💞', 'Aniversario'], ['navidad', '🎄', 'Navidad'], ['reyes', '👑', 'Reyes Magos (PR)'], ['const', '🇵🇷', 'Constitución de PR'], ['carnaval', '🎭', 'Carnaval (PR)'], ['anio', '🎆', 'Año nuevo'], ['indep', '🇺🇸', 'Independencia (EE. UU.)'], ['gracias', '🦃', 'Acción de Gracias (EE. UU.)'], ['halloween', '🎃', 'Halloween'], ['valentin', '💘', 'San Valentín'], ['cumple', '🎈', 'Cumpleaños'], ['verano', '🌴', 'Verano']];
 const CD_FX = {aniversario: '💗', navidad: '❄️', reyes: '⭐', const: '⭐', carnaval: '🎊', anio: '✨', indep: '🎆', gracias: '🍂', halloween: '🦇', valentin: '💗', cumple: '🎈', verano: '🌊'};
+// Capa animada del escenario: Reyes (3 reyes siguiendo una estrella) y Navidad (trineo con Santa y nieve)
+function cdFxLayer(th) {
+  if (!th) return '';
+  if (th === 'reyes') return '<div class="fxlayer"><i class="sc-star">⭐</i><i class="sc-k k1">🧔</i><i class="sc-k k2">🧔</i><i class="sc-k k3">🧔</i></div>';
+  const sleigh = th === 'navidad' ? '<i class="sc-sleigh">🦌🛷🎅</i>' : '';
+  const snow = Array.from({length: 14}, (_, i) => `<i class="fxp" style="left:${(i * 37) % 100}%;top:${(i * 29) % 70}%;animation-delay:${((i * 0.41) % 3).toFixed(2)}s;animation-duration:${(3 + (i % 4)).toFixed(1)}s">${CD_FX[th]}</i>`).join('');
+  return `<div class="fxlayer">${sleigh}${snow}</div>`;
+}
 const CD_COLORS = ['#f5c842', '#7dd3c0', '#f08a8a', '#9bb8f0', '#f4a6d0', '#b6e388', '#ffb36b'];
 function calCuentas(body) {
   const t = todayISO(), list = cdList();
@@ -197,7 +205,7 @@ function calCuentas(body) {
   const next = list.find(c => c.date >= t) || list.find(c => c.date < t);
   const row = c => { const n = diff(c), since = n < 0, hl = sel && c.id === sel.id; return `<button class="cdrow ${hl ? 'hl' : ''}" data-cd="${c.id}"><span class="cdi" style="background:${colorOf(c)}">${c.icon}</span><span class="cdn">${esc(c.name)}</span><span class="cdv"><b class="${since ? 'since' : ''}">${n === 0 ? 'Hoy' : Math.abs(n)}</b><small class="${since ? 'since' : ''}">${n === 0 ? '' : since ? 'Days Since' : 'Days Until'}</small></span></button>`; };
   const sel = list.find(c => c.id === UI.cdSel) || next;
-  const feat = sel ? (() => { const next = sel; const n = diff(next), since = n < 0, th = next.theme && CD_FX[next.theme] ? next.theme : ''; const fxCls = th ? `fx fx-${th}${next.photo ? ' ph' : ''}` : ''; const fxLayer = th ? `<div class="fxlayer">${Array.from({length: 14}, (_, i) => `<i class="fxp" style="left:${(i * 37) % 100}%;top:${(i * 29) % 70}%;animation-delay:${((i * 0.41) % 3).toFixed(2)}s;animation-duration:${(3 + (i % 4)).toFixed(1)}s">${CD_FX[th]}</i>`).join('')}</div>` : ''; return `<div class="cdfeat ${fxCls}" style="${next.photo ? `background-image:url(${next.photo})` : `background:${colorOf(next)}`}">${next.photo ? '<div class="cdfshade"></div>' : ''}${fxLayer}<div class="cdfbody"><b>${n === 0 ? 'Hoy' : Math.abs(n)}${n === 0 ? '' : '<small>D</small>'}</b><span>${esc(next.name)}</span><small class="cdfdate">${since ? 'Días desde' : 'Días para'} ${fmtShort(next.date)}</small></div></div>`; })() : '';
+  const feat = sel ? (() => { const next = sel; const n = diff(next), since = n < 0, th = next.theme && CD_FX[next.theme] ? next.theme : ''; const fxCls = th ? `fx fx-${th}${next.photo ? ' ph' : ''}` : ''; const fxLayer = cdFxLayer(th); return `<div class="cdfeat ${fxCls}" style="${next.photo ? `background-image:url(${next.photo})` : `background:${colorOf(next)}`}">${next.photo ? '<div class="cdfshade"></div>' : ''}${fxLayer}<div class="cdfbody"><b>${n === 0 ? 'Hoy' : Math.abs(n)}${n === 0 ? '' : '<small>D</small>'}</b><span>${esc(next.name)}</span><small class="cdfdate">${since ? 'Días desde' : 'Días para'} ${fmtShort(next.date)}</small></div></div>`; })() : '';
   body.innerHTML = `<div class="cdspace"><div class="row" style="margin-bottom:10px"><span class="sp"></span><button class="btn sm" id="cdNew">+ Nueva cuenta</button></div>
     ${feat}${sel ? `<div class="row" style="justify-content:flex-end;margin:-4px 0 10px"><button class="btn ghost sm" id="cdEdit">Editar cuenta</button></div>` : ''}
     ${list.length ? list.map(row).join('') : '<div class="card empty"><div class="big">⏳</div>Aún no tienes cuentas. Toca “+ Nueva cuenta”.</div>'}</div>`;
@@ -2248,7 +2256,7 @@ const pinItems = () => { const P = pins(); P.items = P.items || []; return P.ite
 function cdFeatBox(c) {
   const n = dayDiff(todayISO(), c.date), since = n < 0, th = c.theme && CD_FX[c.theme] ? c.theme : '';
   const fxCls = th ? `fx fx-${th}${c.photo ? ' ph' : ''}` : '';
-  const fxLayer = th ? `<div class="fxlayer">${Array.from({length: 14}, (_, i) => `<i class="fxp" style="left:${(i * 37) % 100}%;top:${(i * 29) % 70}%;animation-delay:${((i * 0.41) % 3).toFixed(2)}s;animation-duration:${(3 + (i % 4)).toFixed(1)}s">${CD_FX[th]}</i>`).join('')}</div>` : '';
+  const fxLayer = cdFxLayer(th);
   return `<div class="cdfeat ${fxCls}" style="${c.photo ? `background-image:url(${c.photo})` : `background:${c.color || CD_COLORS[0]}`}">${c.photo ? '<div class="cdfshade"></div>' : ''}${fxLayer}<div class="cdfbody"><b>${n === 0 ? 'Hoy' : Math.abs(n)}${n === 0 ? '' : '<small>D</small>'}</b><span>${esc(c.name)}</span><small class="cdfdate">${since ? 'Días desde' : 'Días para'} ${fmtShort(c.date)}</small></div></div>`;
 }
 const itemExists = k => { const id = k.slice(3); if (k.startsWith('tk:')) return S.tasks.some(x => x.id === id); if (k.startsWith('nt:')) return S.notes.some(x => x.id === id); if (k.startsWith('cd:')) return (S.settings.countdowns || []).some(x => x.id === id); return false; };

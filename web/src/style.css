@@ -1422,3 +1422,20 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .fx-aniversario .fxp,.fx-cumple .fxp,.fx-valentin .fxp{top:auto;bottom:-10%;animation:fxRise linear infinite}
 .fx-anio .fxp,.fx-indep .fxp{top:auto;font-size:22px;animation:fxPop ease-out infinite}
 .fx-verano .fxp,.fx-halloween .fxp{top:auto;bottom:4%;font-size:24px;animation:fxWave ease-in-out infinite alternate}
+
+/* Escena Reyes: una estrella guía a los 3 reyes caminando */
+.sc-star,.sc-k,.sc-sleigh{position:absolute;font-style:normal;line-height:1;white-space:nowrap}
+.sc-star{top:12%;font-size:22px;animation:scStar 9s linear infinite;filter:drop-shadow(0 0 6px #ffe680)}
+@keyframes scStar{from{left:-10%}to{left:105%}}
+.sc-k{bottom:4%;font-size:30px;animation:scKingWalk 9s linear infinite}
+.sc-k::before{content:'👑';position:absolute;left:18%;top:-62%;font-size:.55em}
+.sc-k.k1{animation-delay:-.5s}
+.sc-k.k2{animation-delay:-.9s}
+.sc-k.k3{animation-delay:-1.3s}
+@keyframes scKingWalk{0%{left:-14%;bottom:4%}12.5%{bottom:9%}25%{bottom:4%}37.5%{bottom:9%}50%{bottom:4%}62.5%{bottom:9%}75%{bottom:4%}87.5%{bottom:9%}100%{left:104%;bottom:4%}}
+@keyframes scStarBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.sc-star{animation:scStar 9s linear infinite,scStarBob 1.2s ease-in-out infinite}
+
+/* Escena Navidad: trineo con Santa y renos volando por el cielo */
+.sc-sleigh{top:20%;font-size:30px;letter-spacing:-4px;animation:scSleigh 10s linear infinite}
+@keyframes scSleigh{0%{left:-35%;top:24%}50%{top:12%}100%{left:110%;top:24%}}
