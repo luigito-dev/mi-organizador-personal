@@ -1093,8 +1093,6 @@ function vDia2(v) {
       ${pinCardsHTML()}
       <div class="dhead"><div><b>${dayName}</b><span class="muted"> · ${parseISO(d).getDate()} de ${MESES[parseISO(d).getMonth()]}</span>${ho.map(h => ` <span class="tag" style="background:var(--holi);color:var(--holiText)">🎉 ${esc(h.name)}</span>`).join('')}</div>
         <div class="muted small">${[nPend ? `${nPend} por hacer` : '', nDone ? `${nDone} hecha${nDone === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ')}</div></div>
-      <div class="qadd daddbar"><input id="qIn" placeholder="Añadir a ${isToday ? 'hoy' : dayName.toLowerCase()}… (ej. dentista a las 3 pm)" maxlength="140" autocomplete="off"><button class="btn" id="qAdd" aria-label="Añadir">+</button></div>
-      <div class="hint" id="qHint"></div>
       ${late.length ? `<div class="lateb"><div class="lateh">⚠️ Atrasadas (${late.length})<span class="sp"></span><button class="btn ghost sm" id="allToday">Traer todas a hoy</button></div>${late.map(x => `<div class="tlrow late" data-tk="${x.id}"><span class="tltime">${parseISO(x.date).getDate()} ${MESES[parseISO(x.date).getMonth()].slice(0, 3)}</span><div class="tlcard"><button class="check" data-chk="${x.id}" aria-label="Completar"></button><span class="em">${typeById(x.typeId).icon}</span><div class="body"><div class="t">${esc(x.title)}</div></div><button class="btn sec sm" data-totoday="${x.id}">A hoy</button></div></div>`).join('')}</div>` : ''}
       <div class="timeline" id="tline">${tl || (freeMsgOn(d) ? `<div class="tlempty" id="freeMsg">${isToday ? '✓ Día libre. Añade algo arriba o disfruta 🌿' : 'Nada para este día todavía.'}</div>` : '')}</div>
       ${doneItems.length ? `<div class="donesec"><div class="sec-title">Hechas (${doneItems.length})</div>${doneItems.map(i => tlRow(i, false)).join('')}</div>` : ''}
@@ -1116,6 +1114,7 @@ function vDia2(v) {
   wireSwipes(v);
   // añadir al día elegido
   const qIn = $('#qIn', v), hint = $('#qHint', v);
+  if (!qIn) return;
   qIn.oninput = () => { const tx = qIn.value.trim(); if (!tx) { hint.textContent = ''; return; } const g = guess(tx), a = areaById(g.areaId), ty = typeById(g.typeId); hint.textContent = `Se guardará como ${ty.icon} ${ty.name}${a ? ' en ' + a.name : ''}${g.time ? ' a las ' + fmtTime(g.time) : ''}`; };
   const addQ = () => {
     const tx = qIn.value.trim(); if (!tx) { qIn.focus(); return; }
