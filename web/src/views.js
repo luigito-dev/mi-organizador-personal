@@ -720,18 +720,34 @@ function paintFullscreen() {
   $('#fsX').onclick = closeFullscreen; wireControls(ov, 'fs');
 }
 /* ========== NOTAS ========== */
+function startVoiceNote(btn) {
+  if (btn._rec) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { toast('El dictado no está disponible en este teléfono'); return; }
+  const rec = new SR(); rec.lang = 'es-PR'; rec.interimResults = true; rec.continuous = true;
+  let text = '';
+  rec.onresult = e => { text = Array.from(e.results).map(r => r[0].transcript).join(' ').trim(); };
+  rec.onerror = () => { btn._rec = null; btn.classList.remove('rec'); toast('No pude escuchar. Intenta de nuevo'); };
+  rec.onend = () => { btn._rec = null; btn.classList.remove('rec'); if (!text) return; S.notes.push({id: uid(), text, date: todayISO(), created: String(Date.now()), hidden: false, category: '', areaId: null}); save('notes'); UI.showHiddenNotes = false; renderView(); toast('Nota guardada ✓'); };
+  btn._rec = rec; btn.classList.add('rec');
+  try { rec.start(); } catch (err) { btn._rec = null; btn.classList.remove('rec'); toast('No se pudo iniciar el micrófono'); }
+}
+function stopVoiceNote(btn) { if (btn._rec) btn._rec.stop(); }
 function vNotas(v) {
   const q = norm(UI.q.trim());
   let list = S.notes.filter(n => q ? (norm(n.text).includes(q) || norm(n.category || '').includes(q)) : true);
   const hidden = list.filter(n => n.hidden);
   list = UI.showHiddenNotes ? hidden : list.filter(n => !n.hidden);
   list.sort((a, b) => (b.date + (b.created || '')).localeCompare(a.date + (a.created || '')));
-  v.innerHTML = `<div class="card"><div class="note-new"><textarea class="inp" id="nNew" placeholder="Escribe una nota…"></textarea><button class="btn" id="nSave">Guardar</button></div></div>
+  v.innerHTML = `<div class="row" style="justify-content:flex-end;margin-bottom:6px"><button type="button" class="voicebtn" id="nVoice" aria-label="Mantén presionado para grabar una nota" title="Mantén presionado para grabar">🎙️</button></div><div class="card"><div class="note-new"><textarea class="inp" id="nNew" placeholder="Escribe una nota…"></textarea><button class="btn" id="nSave">Guardar</button></div></div>
     <div class="row" style="margin:14px 0 8px"><b>${UI.showHiddenNotes ? 'Notas ocultas' : 'Mis notas'}</b><span class="sp"></span>${hidden.length || UI.showHiddenNotes ? `<button class="btn ghost sm" id="nHid">${UI.showHiddenNotes ? '‹ Volver a mis notas' : `Ver ocultas (${hidden.length})`}</button>` : ''}</div>
     ${list.length ? list.map(n => { const a = areaById(n.areaId); return `<div class="nitem" data-note="${n.id}"><div class="body"><div class="t">${esc(noteTitle(n))}</div>${noteSnippet(n) ? `<div class="s">${esc(noteSnippet(n))}</div>` : ''}<div class="xs muted row" style="margin-top:3px"><span>${fmtShort(n.date)}</span>${n.category ? `<span class="tag">${esc(n.category)}</span>` : ''}${a ? `<span class="tag"><span class="dot" style="background:${a.color}"></span>${esc(a.name)}</span>` : ''}</div></div>
       <div class="acts"><button data-nh="${n.id}" title="${n.hidden ? 'Mostrar' : 'Ocultar'}" aria-label="${n.hidden ? 'Mostrar' : 'Ocultar'}">${n.hidden ? '👁‍🗨' : '👁'}</button><button data-nd="${n.id}" title="Eliminar" aria-label="Eliminar"><i class="xdel"></i></button></div></div>`; }).join('')
       : `<div class="empty">${q ? 'No hay notas que coincidan con “' + esc(UI.q) + '”.' : UI.showHiddenNotes ? 'No hay notas ocultas.' : '<div class="big">🗒️</div>Escribe arriba tu primera nota.'}</div>`}`;
   const nn = $('#nNew', v);
+  const vb = $('#nVoice', v);
+  vb.addEventListener('pointerdown', e => { e.preventDefault(); startVoiceNote(vb); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => vb.addEventListener(ev, () => stopVoiceNote(vb)));
   $('#nSave', v).onclick = () => { const tx = nn.value.trim(); if (!tx) { nn.focus(); return; } S.notes.push({id: uid(), text: tx, date: todayISO(), created: String(Date.now()), hidden: false, category: '', areaId: null}); save('notes'); UI.showHiddenNotes = false; renderView(); toast('Nota guardada ✓'); };
   nn.onkeydown = e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('#nSave', v).click(); };
   const hb = $('#nHid', v); if (hb) hb.onclick = () => { UI.showHiddenNotes = !UI.showHiddenNotes; renderView(); };
@@ -1785,7 +1801,7 @@ function openTimer(h, d, host) {
   const draw = el => {
     const u = h.unitD || 'mi', ds = actDist(h, d), md = actMode(h, d);
     el.querySelector('#tmBody').innerHTML = `
-      <div class="pinsw-row"><button type="button" class="pinsw ${isHabPinned(h.id) ? 'on' : ''}" id="pinSw" aria-pressed="${isHabPinned(h.id)}"><span>Fijar en Mi Día</span><span class="switch blue ${isHabPinned(h.id) ? 'on' : ''}"></span></button></div>
+      <div class="pinsw-row"><button type="button" class="pinor ${isHabPinned(h.id) ? 'on' : ''}" id="pinSw" aria-pressed="${isHabPinned(h.id)}" aria-label="${isHabPinned(h.id) ? 'Quitar de fijados' : 'Fijar en Mi Día'}" title="${isHabPinned(h.id) ? 'Quitar de fijados' : 'Fijar en Mi Día'}"></button></div>
       ${act ? `<div class="seg acmode">${[['caminar', '🚶 Caminar'], ['correr', '🏃 Correr']].map(([k, n]) => `<button data-am="${k}" class="${md === k ? 'on' : ''}">${n}</button>`).join('')}</div>` : ''}
       <div id="tmRing"></div>
       <div class="bkq tmq"><button data-tq="-5">−5</button><button data-tq="5">+5</button><button data-tq="10">+10</button><button data-tq="15">+15</button></div>
@@ -2346,7 +2362,7 @@ function habPill(h) {
 // Botón para quitar de fijados desde la misma ventana
 function addUnpin(box) {
   const f = box.querySelector('.qfoot'); if (!f || f.querySelector('[data-unpin]')) return;
-  const b = document.createElement('button'); b.className = 'btn ghost sm qunpin'; b.dataset.unpin = UI.popTab; b.textContent = 'Quitar de fijados';
+  const b = document.createElement('button'); b.className = 'pinor on qunpin'; b.dataset.unpin = UI.popTab; b.setAttribute('aria-label', 'Quitar de fijados'); b.title = 'Quitar de fijados';
   f.prepend(b);
   b.onclick = () => {
     const k = b.dataset.unpin, P = pins();
