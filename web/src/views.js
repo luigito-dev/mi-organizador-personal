@@ -951,7 +951,7 @@ function openListForm(list) {
       pe(); pc();
       el.querySelectorAll('[data-tpl]').forEach(b => b.onclick = () => { const [i, n] = b.dataset.tpl.split('|'); l.icon = i; el.querySelector('#lN').value = n; pe(); });
       el.querySelector('#lS').onclick = () => {
-        l.name = el.querySelector('#lN').value.trim(); if (!l.name) { toast('Escribe el nombre de la lista'); el.querySelector('#lN').focus(); return; }
+        l.name = el.querySelector('#lN').value.trim() || (editing ? l.name : 'Mis tareas');
         if (editing) { const o = listById(l.id); o.name = l.name; o.icon = l.icon; o.color = l.color; } else S.lists.push(l);
         save('lists'); s.close(); UI.view = 'listas'; UI.openList = l.id; render();
         if (!editing) setTimeout(() => { const a = $('#liAdd'); a && a.focus(); }, 60);
@@ -2319,19 +2319,20 @@ function openPinManager(done) {
   const row = (key, icon, name, on, sub = '') => `<label class="wrsw pinrow"><span><b>${icon} ${esc(name)}</b>${sub ? `<small>${sub}</small>` : ''}</span><input type="checkbox" data-pk="${key}" ${on ? 'checked' : ''}><i></i></label>`;
   const s = openSheet({title: 'Fijar en el acceso rápido', body: `<p class="hint" style="margin-top:0">
     <div class="pingrp"><b>Básicos</b>${row('hoy', '☀️', 'Hoy', P.hoy !== false, 'Tareas de hoy')}${row('cal', '📅', 'Calendario', !!P.cal, 'Mes y cosas del día')}</div>
+    <div class="pingrp"><b>Crear</b><button class="btn sec" id="pmNew" type="button">＋ Lista de tareas nueva</button></div>
     ${S.lists.length ? `<div class="pingrp"><b>Listas</b>${S.lists.map(l => row('list:' + l.id, l.icon, l.name, !l.hideOnDay)).join('')}</div>` : ''}
     ${(S.habits || []).length ? `<div class="pingrp"><b>Hábitos</b>${S.habits.map(h => row('hab:' + h.id, h.icon, h.name, (P.habs || []).includes(h.id))).join('')}</div>` : ''}
     ${retos.length ? `<div class="pingrp"><b>Retos de ahorro</b>${retos.map(h => row('reto:' + h.id, '🏆', h.challenge.name, !(P.noReto || []).includes(h.id))).join('')}</div>` : ''}`,
     foot: '<button class="btn" data-close>Listo</button>',
     onClose: () => { done && done(); },
-    onMount: el => el.querySelectorAll('[data-pk]').forEach(c => c.onchange = () => {
+    onMount: el => { el.querySelector('#pmNew').onclick = () => { s.close(); openListForm(null); }; el.querySelectorAll('[data-pk]').forEach(c => c.onchange = () => {
       const k = c.dataset.pk, on = c.checked, P2 = pins();
       if (k === 'hoy') P2.hoy = on; else if (k === 'cal') P2.cal = on;
       else if (k.startsWith('list:')) { const l = S.lists.find(x => 'list:' + x.id === k); if (l) { l.hideOnDay = !on; save('lists'); } }
       else if (k.startsWith('hab:')) { const id = k.slice(4); P2.habs = (P2.habs || []).filter(x => x !== id); if (on) P2.habs.push(id); }
       else if (k.startsWith('reto:')) { const id = k.slice(5); P2.noReto = (P2.noReto || []).filter(x => x !== id); if (!on) P2.noReto.push(id); }
       save('meta'); toast(on ? 'Fijado' : 'Quitado del acceso rápido');
-    })});
+    }); }});
 }
 // Deslizar desde el borde derecho abre los fijados
 (function edgeSwipe() {
