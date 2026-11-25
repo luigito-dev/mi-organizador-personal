@@ -55,6 +55,12 @@
         const at = reminderTime(e.date, e.allDay ? null : e.start, e.reminder);
         if (at > now + 3000 && at < horizon) out.push({at, kind: 'e', id: e.id, title: evType(e.evType).icon + ' ' + e.title, body: relDay(e.date) + (e.allDay ? ' · todo el día' : ' a las ' + fmtTime(e.start)) + (e.place ? ' · ' + e.place : '')});
       });
+      // Cuentas: aviso a las 9:00 a.m. del día, con el sonido elegido
+      (S.settings.countdowns || []).forEach(c => {
+        const snd = c.cdSound || 'campana'; if (snd === 'none' || !c.date) return;
+        const d = parseISO(c.date), at = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 9, 0).getTime();
+        if (at > now + 3000 && at < horizon) out.push({at, kind: 'c', id: c.id, title: '🎉 ' + c.name, body: 'Hoy se cumple esta cuenta', channel: snd === 'telefono' ? 'recordatorios' : 'cuenta_' + snd});
+      });
       if (typeof waterReminderList === 'function') waterReminderList(3).filter(x => x.at > now + 3000).forEach(x => out.push({at: x.at, kind: x.kind, id: x.id, title: x.title, body: x.body}));
       this.snoozes.filter(z => z.at > now + 1000).forEach(z => out.push(z));
       return out.sort((a, b) => a.at - b.at).slice(0, 60);
@@ -67,7 +73,7 @@
         if (!(await this.ensurePermission(true))) return;
         await LN.schedule({notifications: list.map(x => ({
           id: this.idOf(x.kind + x.id + x.at), title: x.title, body: x.body,
-          schedule: {at: new Date(x.at), allowWhileIdle: true}, channelId: 'recordatorios',
+          schedule: {at: new Date(x.at), allowWhileIdle: true}, channelId: x.channel || 'recordatorios',
           actionTypeId: x.kind === 't' ? 'TAREA' : x.kind === 'h' ? 'AGUA' : 'EVENTO', extra: {kind: x.kind, id: x.id},
           smallIcon: 'ic_stat_notify', iconColor: '#1F5FBF'
         }))});
@@ -154,6 +160,8 @@
       try { const z = await Pref.get({key: 'pospuestos'}); if (z && z.value) this.snoozes = JSON.parse(z.value).filter(x => x.at > Date.now()); } catch (e) {}
       try {
         await LN.createChannel({id: 'recordatorios', name: 'Recordatorios', description: 'Avisos de tus tareas y eventos', importance: 5, visibility: 1, vibration: true});
+        // Un canal por sonido de cuenta (en Android el sonido se fija al crear el canal)
+        for (const s of ['campana', 'arpa', 'fanfarria']) await LN.createChannel({id: 'cuenta_' + s, name: 'Cuentas: ' + s, description: 'Aviso de cuentas', importance: 5, visibility: 1, vibration: true, sound: 'sonido_' + s});
         await LN.registerActionTypes({types: [
           {id: 'TAREA', actions: [{id: 'hecha', title: '✓ Completar'}, {id: 'posponer', title: 'Posponer 10 min'}]},
           {id: 'EVENTO', actions: [{id: 'posponer', title: 'Posponer 10 min'}]},

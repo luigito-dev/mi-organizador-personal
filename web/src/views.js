@@ -207,7 +207,9 @@ function cdFxLayer(th) {
   const snow = Array.from({length: 14}, (_, i) => `<i class="fxp" style="left:${(i * 37) % 100}%;top:${(i * 29) % 70}%;animation-delay:${((i * 0.41) % 3).toFixed(2)}s;animation-duration:${(3 + (i % 4)).toFixed(1)}s">${CD_FX[th]}</i>`).join('');
   return `<div class="fxlayer">${sleigh}${snow}</div>`;
 }
-const CD_COLORS = ['#f5c842', '#7dd3c0', '#f08a8a', '#9bb8f0', '#f4a6d0', '#b6e388', '#ffb36b'];
+// Sonido aviso al cumplirse una cuenta (el teléfono usa el archivo de android/app/src/main/res/raw)
+const CD_SOUNDS = [['campana', '🔔 Campana'], ['arpa', '🎶 Arpa'], ['fanfarria', '🎺 Fanfarria'], ['telefono', '📱 Del teléfono'], ['none', '🔕 Sin aviso']];
+const CD_COLORS =['#f5c842', '#7dd3c0', '#f08a8a', '#9bb8f0', '#f4a6d0', '#b6e388', '#ffb36b'];
 function calCuentas(body) {
   const t = todayISO(), list = cdList();
   const diff = c => dayDiff(t, c.date);
@@ -224,25 +226,27 @@ function calCuentas(body) {
   const ce = body.querySelector('#cdEdit'); if (ce) ce.onclick = () => openCountdownForm(sel);
 }
 function openCountdownForm(c) {
-  const editing = !!c; let icon = c ? c.icon : CD_ICONS[0], photo = c ? c.photo || null : null, theme = c ? c.theme || '' : '';
+  const editing = !!c; let icon = c ? c.icon : CD_ICONS[0], photo = c ? c.photo || null : null, theme = c ? c.theme || '' : '', snd = c && c.cdSound ? c.cdSound : 'campana';
   const s = openSheet({pin: editing ? 'cd:' + c.id : null, title: editing ? 'Editar cuenta' : 'Nueva cuenta', body: `
     <div class="fld"><label>Nombre</label><input class="inp" id="cdN" maxlength="40" value="${esc(c ? c.name : '')}" placeholder="Ej.: Cumpleaños de mamá"></div>
     <div class="fld"><label>Fecha</label><input class="inp" type="date" id="cdD" value="${c ? c.date : todayISO()}"></div>
     <div class="fld"><label>Ícono</label><div class="emojis" id="cdI">${CD_ICONS.map(x => `<button type="button" class="opt ${x === icon ? 'on' : ''}" data-ci="${x}">${x}</button>`).join('')}</div></div>
     <div class="fld"><label>Ambiente</label><div class="emojis" id="cdT">${CD_THEMES.map(([k, i, n]) => `<button type="button" class="opt ${(c && c.theme || '') === k ? 'on' : ''}" data-th="${k}" title="${n}">${i}</button>`).join('')}</div></div>
+    <div class="fld"><label>Aviso el día de la cuenta (9:00 a.m.)</label><div class="emojis" id="cdSnd">${CD_SOUNDS.map(([k, n]) => `<button type="button" class="opt ${snd === k ? 'on' : ''}" data-snd="${k}">${n}</button>`).join('')}</div></div>
     <div class="fld"><label>Foto (opcional)</label><input class="inp" type="file" accept="image/*" id="cdP"><img id="cdPi" class="nfimg" alt="" ${photo ? `src="${photo}"` : 'hidden'}></div>`,
     foot: `${editing ? '<button class="btn sec" id="cdDel" aria-label="Eliminar" title="Eliminar"><i class="xdel"></i></button>' : ''}<button class="btn" id="cdS">Guardar</button>`,
     onMount: el => {
       const q = x => el.querySelector(x);
       el.querySelectorAll('[data-ci]').forEach(b => b.onclick = () => { icon = b.dataset.ci; el.querySelectorAll('[data-ci]').forEach(x => x.classList.toggle('on', x === b)); });
       el.querySelectorAll('[data-th]').forEach(b => b.onclick = () => { theme = b.dataset.th; el.querySelectorAll('[data-th]').forEach(x => x.classList.toggle('on', x === b)); });
+      el.querySelectorAll('[data-snd]').forEach(b => b.onclick = () => { snd = b.dataset.snd; el.querySelectorAll('[data-snd]').forEach(x => x.classList.toggle('on', x === b)); });
       q('#cdP').onchange = async e => { const f = e.target.files[0]; if (!f) return; const img = new Image(), url = URL.createObjectURL(f); img.onload = () => { const sc = Math.min(1, 320 / Math.max(img.width, img.height)), cv = document.createElement('canvas'); cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(url); photo = cv.toDataURL('image/jpeg', .6); q('#cdPi').src = photo; q('#cdPi').hidden = false; }; img.src = url; };
       q('#cdS').onclick = () => {
         const name = (q('#cdN').value || '').trim(), date = q('#cdD').value;
         if (!name || !date) { toast('Pon un nombre y una fecha'); return; }
         S.settings.countdowns = S.settings.countdowns || [];
-        if (editing) Object.assign(c, {name, date, icon, photo: photo || undefined, theme: theme || undefined});
-        else S.settings.countdowns.push({id: uid(), name, date, icon, photo: photo || undefined, theme: theme || undefined});
+        if (editing) Object.assign(c, {name, date, icon, photo: photo || undefined, theme: theme || undefined, cdSound: snd});
+        else S.settings.countdowns.push({id: uid(), name, date, icon, photo: photo || undefined, theme: theme || undefined, cdSound: snd});
         save('meta'); s.close(); renderView(); toast('Cuenta guardada');
       };
       const d = q('#cdDel'); if (d) d.onclick = async () => { if (await ask(`¿Eliminar “${esc(c.name)}”?`, {yes: 'Eliminar'})) { S.settings.countdowns = S.settings.countdowns.filter(x => x.id !== c.id); save('meta'); s.close(); renderView(); } };
@@ -279,7 +283,7 @@ const wdHeaders = () => [0,1,2,3,4,5,6].map(i => DCORTO[(i + S.settings.weekStar
 function vCal(v) {
   const view = S.settings.calView || 'month', d = UI.calDate;
   v.innerHTML = `<div class="cal-wrap"><div class="cal-side"><div class="card mini" id="mini1"></div><div class="card" style="margin-top:12px"><h3>Mis áreas</h3><div class="areas-list" id="aList"></div></div></div>
-    <div><div class="calbar"><button class="iconbtn" id="cPrev" aria-label="Anterior">‹</button><button class="iconbtn" id="cNext" aria-label="Siguiente">›</button><button class="btn sec sm" id="cToday">Hoy</button><h2>${calTitle(view, d)}</h2><span class="sp"></span>
+    <div><div class="calbar"><button class="iconbtn" id="cPrev" aria-label="Anterior">‹</button><button class="iconbtn" id="cNext" aria-label="Siguiente">›</button><button class="btn sec sm" id="cToday">Hoy</button>${view === 'month' ? `<button class="mtitle" id="mTitle" aria-label="Elegir mes y año">${cap(MESES[parseISO(d).getMonth()])} <small>${parseISO(d).getFullYear()}</small><span>▾</span></button>` : `<h2>${calTitle(view, d)}</h2>`}<span class="sp"></span>
       <div class="seg">${[['month', 'Mes'], ['week', 'Semana'], ['day', 'Día'], ['forecast', 'Próximos'], ['eventos', 'Eventos'], ['cuentas', 'Cuentas']].map(([k, n]) => `<button data-cv="${k}" class="${view === k ? 'on' : ''}">${n}</button>`).join('')}</div>${view === 'month' ? '<button class="iconbtn" id="calBg" aria-label="Fondo del calendario" title="Fondo del calendario"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="9.5" r="1.8"/><path d="M21 16l-5-5-8 9"/></svg></button>' : ''}</div>
       <div id="calBody"></div><div id="calExtra"></div></div></div>`;
   // Minicalendario
@@ -294,6 +298,13 @@ function vCal(v) {
   const step = n => { const x = parseISO(d); if (view === 'month') x.setMonth(x.getMonth() + n, 1); else x.setDate(x.getDate() + (view === 'week' ? 7 : view === 'forecast' ? 14 : 1) * n); UI.calDate = iso(x); if (view === 'day') UI.selDate = UI.calDate; renderView(); };
   $('#cPrev', v).onclick = () => step(-1); $('#cNext', v).onclick = () => step(1);
   $('#cToday', v).onclick = () => { UI.calDate = UI.selDate = todayISO(); renderView(); };
+  const mt = $('#mTitle', v); if (mt) mt.onclick = () => openMonthPicker(d);
+  // Deslizar sobre el mes (a la izquierda: siguiente; a la derecha: anterior), sin límite
+  if (view === 'month') {
+    const calB = $('#calBody', v); let sx = null, sy = null;
+    calB.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive: true});
+    calB.addEventListener('touchend', e => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; sx = null; if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1); }, {passive: true});
+  }
   const cb = $('#calBg', v); if (cb) cb.onclick = openCalBg;
   v.querySelectorAll('[data-cv]').forEach(b => b.onclick = () => { S.settings.calView = b.dataset.cv; if (b.dataset.cv !== 'month') UI.calDate = UI.selDate; save('meta'); renderView(); });
   const body = $('#calBody', v), extra = $('#calExtra', v);
@@ -1315,6 +1326,19 @@ async function loadCustomBg() {
   if (!url) { try { if (Store.db && Store.uid) { const snap = await Store.db.doc('data/users/' + Store.uid + '/calbg').get(); if (snap.exists) url = snap.data().img; } } catch (e) {} }
   UI.bgLoading = false;
   if (url) { UI.bgUrl = url; if (UI.view === 'calendario') renderView(); }
+}
+// Elegir mes y año de un tiro: se cambia el año con ‹ › y se toca el mes
+function openMonthPicker(d) {
+  const cur = parseISO(d), curM = cur.getMonth(), curY = cur.getFullYear();
+  let y = curY;
+  const s = openSheet({title: 'Elegir mes', cls: 'small', body: `<div class="mpyear"><button type="button" class="iconbtn" id="mpPrev" aria-label="Año anterior">‹</button><b id="mpY">${y}</b><button type="button" class="iconbtn" id="mpNext" aria-label="Año siguiente">›</button></div>
+    <div class="mpgrid">${MESES.map((m, i) => `<button type="button" data-mm="${i}" class="${i === curM && y === curY ? 'on' : ''}">${cap(m).slice(0, 3)}</button>`).join('')}</div>`,
+    onMount: el => {
+      const paint = () => { el.querySelector('#mpY').textContent = y; el.querySelectorAll('[data-mm]').forEach(b => b.classList.toggle('on', +b.dataset.mm === curM && y === curY)); };
+      el.querySelector('#mpPrev').onclick = () => { y--; paint(); };
+      el.querySelector('#mpNext').onclick = () => { y++; paint(); };
+      el.querySelectorAll('[data-mm]').forEach(b => b.onclick = () => { UI.calDate = UI.selDate = iso(new Date(y, +b.dataset.mm, 1)); s.close(); renderView(); });
+    }});
 }
 function openCalBg() {
   const cur = S.settings.calBg || 'auto';
