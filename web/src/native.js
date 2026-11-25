@@ -68,14 +68,21 @@
       try {
         const pend = await LN.getPending();
         if (pend.notifications && pend.notifications.length) await LN.cancel({notifications: pend.notifications.map(n => ({id: n.id}))});
-        const list = this.upcoming(); if (!list.length) return;
+        const base = this.upcoming(); if (!base.length) return;
         if (!(await this.ensurePermission(true))) return;
+        // Tareas y eventos con aviso se repiten: el aviso y 2 repeticiones más, cada 2 minutos.
+        // Una tarea deja de avisar al marcarla como hecha. Los eventos avisan 3 veces aunque no se marquen.
+        const now = Date.now(), list = [];
+        base.forEach(x => {
+          list.push(x);
+          if (x.kind === 't' || x.kind === 'e') [1, 2].forEach(n => { const at = x.at + n * 120000; if (at > now + 3000) list.push({...x, at, rep: n}); });
+        });
         // Uno por uno: si un aviso falla, los demás igual se programan
         let fallos = 0;
         for (const x of list) {
           try {
             await LN.schedule({notifications: [{
-              id: this.idOf(x.kind + x.id + x.at), title: x.title, body: x.body || ' ',
+              id: this.idOf(x.kind + x.id + x.at + (x.rep || '')), title: x.title, body: x.body || ' ',
               schedule: {at: new Date(x.at), allowWhileIdle: true}, channelId: x.channel || 'recordatorios',
               actionTypeId: x.kind === 't' ? 'TAREA' : x.kind === 'h' ? 'AGUA' : 'EVENTO', extra: {kind: x.kind, id: x.id},
               smallIcon: 'ic_stat_notify', iconColor: '#1F5FBF'
