@@ -2366,7 +2366,7 @@ function pinCalendar(box) {
     <div class="pcalg">${wdHeaders().map(w => `<span class="wd">${w.slice(0, 1)}</span>`).join('')}${cells.map(c => { const n = sortedDay(c).length, st = daySticker(c), out = parseISO(c).getMonth() !== m.getMonth(); return `<button data-pcd="${c}" class="${c === d ? 'sel' : ''} ${c === t ? 'today' : ''} ${out ? 'out' : ''}">${parseISO(c).getDate()}${st ? `<i class="st">${st}</i>` : n ? '<i class="dt"></i>' : ''}</button>`; }).join('')}</div>
     ${d === t ? '' : `    <div class="pcald"><b>${d === t ? 'Hoy' : cap(fmtLong(d))}</b><span>${its.length ? its.length + ' cosas' : 'Libre'}</span></div>
     <div class="qrows">${its.map(i => { const x = i.x, title = i.k === 'rt' ? x.name : x.title, tm = i.k === 'ev' ? (x.allDay || x.date !== d ? 'Todo el día' : fmtTime(x.start)) : i.k === 'tk' ? (x.time ? fmtTime(x.time) : '') : fmtTime(x.start); return `<div class="qrow ${i.k === 'tk' && isDone(x) ? 'done' : ''}" ${i.k === 'tk' ? `data-pctk="${x.id}"` : i.k === 'ev' ? `data-pcev="${x.id}"` : ''} role="button" tabindex="0">${i.k === 'tk' ? '<span class="qbox"></span>' : `<span class="pcdot" style="background:${colorOf(i.k, x)}"></span>`}<span class="qtx">${esc(title)}${tm ? ` <span class="qtime">${tm}</span>` : ''}</span></div>`; }).join('') || '<div class="qempty">✓ Nada para este día</div>'}</div>`}
-    <div class="qadd"><input id="pcAdd" placeholder="Añadir a este día…" maxlength="200" autocomplete="off"><button class="btn" id="pcBtn" aria-label="Añadir">+</button></div>
+    <div class="qadd"><input id="pcAdd" placeholder="Añadir al calendario este día…" maxlength="200" autocomplete="off"><button class="btn" id="pcBtn" aria-label="Añadir">+</button></div>
     <div class="row qfoot"><span class="sp"></span><button class="btn ghost sm" id="pcGo">Abrir calendario ›</button></div></div>`;
   const q = x => box.querySelector(x), redraw = () => pinCalendar(box);
   q('#pcP').onclick = () => { const x = parseISO(d); x.setMonth(x.getMonth() - 1, 1); UI.pinDay = iso(x); redraw(); };
@@ -2375,13 +2375,11 @@ function pinCalendar(box) {
   box.querySelectorAll('[data-pcd]').forEach(b => b.onclick = () => {
     const c = b.dataset.pcd; UI.pinDay = c;
     const pick = openSheet({title: `${cap(fmtLong(c))}`, cls: 'small', body: `<div class="daypick">
-      <button type="button" class="btn" data-dp="tarea">✅ Añadir tarea</button>
-      <button type="button" class="btn sec" data-dp="evento">📅 Añadir evento</button>
+      <button type="button" class="btn" data-dp="evento">📅 Añadir al calendario</button>
       <button type="button" class="btn sec" data-dp="ver">📋 Ver el día en el calendario</button></div>`,
       onMount: pel => pel.querySelectorAll('[data-dp]').forEach(x => x.onclick = () => {
         const a = x.dataset.dp; pick.close();
-        if (a === 'tarea') openTaskForm(null, {date: c});
-        else if (a === 'evento') openEventForm(null, {date: c, allDay: true}, 'month');
+        if (a === 'evento') openEventForm(null, {date: c, allDay: true}, 'month');
         else { UI.calDate = UI.selDate = c; go('calendario'); return; }
         setTimeout(() => redraw(), 0);
       }),
@@ -2397,7 +2395,8 @@ function pinCalendar(box) {
   }, {passive: true});
   box.querySelectorAll('[data-pctk]').forEach(r => r.onclick = () => { const x = S.tasks.find(y => y.id === r.dataset.pctk); setDone(x.id, !isDone(x)); setTimeout(redraw, 120); });
   box.querySelectorAll('[data-pcev]').forEach(r => r.onclick = () => openEventDetail(r.dataset.pcev));
-  const add = () => { const raw = q('#pcAdd').value.trim(); if (!raw) { q('#pcAdd').focus(); return; } const g = guess(raw); S.tasks.push({id: uid(), title: raw, date: d, time: g.time, typeId: g.typeId, areaId: g.areaId, priority: 'Media', details: '', steps: [], status: 'Pendiente', obs: '', reminder: null, createdAt: Date.now()}); save('tasks'); toast('Añadido'); redraw(); };
+  // Lo que se añade desde el calendario es un evento del calendario, no una tarea
+  const add = () => { const raw = q('#pcAdd').value.trim(); if (!raw) { q('#pcAdd').focus(); return; } const g = guess(raw); S.events.push({id: uid(), title: raw, date: d, allDay: true, start: '09:00', end: null, evType: 'evento', place: '', areaId: g.areaId, reminder: null, note: ''}); save('events'); toast('Añadido al calendario'); redraw(); };
   micFor(q('#pcAdd')); q('#pcBtn').onclick = add; q('#pcAdd').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
   q('#pcGo').onclick = () => { UI.calDate = UI.selDate = d; go('calendario'); };
   const pop = box.closest('.qcard .sh-body > div'); if (pop) addUnpin(pop);
