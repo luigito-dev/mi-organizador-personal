@@ -46,14 +46,13 @@
     upcoming() {
       const now = Date.now(), horizon = now + 60 * 86400000, out = [];
       S.tasks.forEach(t => {
-        if (t.reminder == null || isDone(t) || !t.date) return;
-        const at = reminderTime(t.date, t.time, t.reminder);
-        if (at > now + 3000 && at < horizon) { const a = areaById(t.areaId); out.push({at, kind: 't', id: t.id, title: '🔔 ' + t.title, body: relDay(t.date) + (t.time ? ' a las ' + fmtTime(t.time) : '') + (a ? ' · ' + a.name : '')}); }
+        if (isDone(t) || !t.date) return;
+        remsOf(t).forEach(r => { const at = reminderTime(t.date, t.time, r);
+          if (at > now + 3000 && at < horizon) { const a = areaById(t.areaId); out.push({at, kind: 't', id: t.id, title: '🔔 ' + t.title, body: relDay(t.date) + (t.time ? ' a las ' + fmtTime(t.time) : '') + (a ? ' · ' + a.name : '')}); } });
       });
       S.events.forEach(e => {
-        if (e.reminder == null) return;
-        const at = reminderTime(e.date, e.allDay ? null : e.start, e.reminder);
-        if (at > now + 3000 && at < horizon) out.push({at, kind: 'e', id: e.id, title: evType(e.evType).icon + ' ' + e.title, body: relDay(e.date) + (e.allDay ? ' · todo el día' : ' a las ' + fmtTime(e.start)) + (e.place ? ' · ' + e.place : '')});
+        remsOf(e).forEach(r => { const at = reminderTime(e.date, e.allDay ? null : e.start, r);
+          if (at > now + 3000 && at < horizon) out.push({at, kind: 'e', id: e.id, title: evType(e.evType).icon + ' ' + e.title, body: relDay(e.date) + (e.allDay ? ' · todo el día' : ' a las ' + fmtTime(e.start)) + (e.place ? ' · ' + e.place : '')}); });
       });
       // Cuentas: aviso a las 9:00 a.m. del día, con el sonido elegido
       (S.settings.countdowns || []).forEach(c => {

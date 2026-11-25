@@ -127,7 +127,34 @@ function pickReminder(current) {
       }});
   });
 }
-// Campanita: estado en obj.reminder (null = apagado). onSave opcional para guardar al instante.
+// Varios avisos por tarea o evento: obj.reminders = [minutos antes, …]. obj.reminder queda con el primero (compatibilidad).
+function remsOf(obj) {
+  if (Array.isArray(obj.reminders)) return obj.reminders.slice();
+  return obj.reminder != null ? [obj.reminder] : [];
+}
+function setRems(obj, arr) {
+  const list = [...new Set(arr)].sort((a, b) => b - a);
+  obj.reminders = list; obj.reminder = list.length ? list[0] : null;
+}
+// Lista de avisos: se añaden o quitan varios antes de tocar Listo
+function pickReminders(current) {
+  return new Promise(res => {
+    let done = false, list = current.slice();
+    const s = openSheet({title: 'Avisos', cls: 'small', body: `<div class="remlist" id="remL"></div><button type="button" class="btn sec full" id="remAdd">+ Añadir aviso</button>`,
+      foot: `<button class="btn sec" data-close>Cancelar</button><button class="btn" id="remOk">Listo</button>`,
+      onClose: () => { if (!done) res(undefined); },
+      onMount: el => {
+        const paint = () => {
+          el.querySelector('#remL').innerHTML = list.length ? list.map(m => `<span class="chip on remchip">🔔 ${esc(remLabel(m))}<button type="button" class="remx" data-rm="${m}" aria-label="Quitar aviso">✕</button></span>`).join('') : '<p class="muted small" style="margin:4px 0">Sin avisos. Toca “+ Añadir aviso”.</p>';
+          el.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { list = list.filter(x => x !== +b.dataset.rm); paint(); });
+        };
+        paint();
+        el.querySelector('#remAdd').onclick = async () => { const v = await pickReminder(0); if (v === undefined) return; if (!list.includes(v)) list.push(v); paint(); };
+        el.querySelector('#remOk').onclick = () => { done = true; res(list); s.close(); };
+      }});
+  });
+}
+// Campanita: estado en obj (null = sin avisos). Al tocar abre la lista de avisos. onSave opcional para guardar al instante.
 function bellHTML(val) {
   const on = val != null;
   return `<button type="button" class="bellrow ${on ? 'on' : ''}" data-bell aria-label="Recordatorio"><span class="switch ${on ? 'on' : ''}"></span></button>`;
@@ -137,11 +164,11 @@ function wireBell(root, obj, onSave) {
   const paint = () => { btn.outerHTML = bellHTML(obj.reminder); wireBell(root, obj, onSave); };
   btn.onclick = async e => {
     const onSwitch = e.target.closest('.switch');
-    if (obj.reminder != null && onSwitch) { obj.reminder = null; paint(); onSave && onSave(); return; }
-    const v = await pickReminder(obj.reminder ?? 0);
+    if (remsOf(obj).length && onSwitch) { setRems(obj, []); paint(); onSave && onSave(); return; }
+    const v = await pickReminders(remsOf(obj));
     if (v === undefined) return;
-    obj.reminder = v; paint(); onSave && onSave();
-    if (window.NATIVE) NATIVE.ensurePermission();
+    setRems(obj, v); paint(); onSave && onSave();
+    if (window.NATIVE && v.length) NATIVE.ensurePermission();
   };
 }
 
@@ -249,7 +276,7 @@ function openTaskDetail(id) {
   const s = openSheet({pin: 'tk:' + t.id, title: 'Tarea', body,
     foot: `<button class="btn sec" id="dDel" aria-label="Eliminar" title="Eliminar"><i class="xdel"></i></button><button class="btn sec" id="dEdit">✎ Editar</button><button class="btn" id="dDone">${isDone(t) ? '↺ Reabrir' : '✓ Completar'}</button>`,
     onMount: el => {
-      wireBell(el.querySelector('#dBell'), t, () => { save('tasks'); render(); toast(t.reminder == null ? 'Recordatorio apagado' : 'Recordatorio: ' + remLabel(t.reminder)); });
+      wireBell(el.querySelector('#dBell'), t, () => { save('tasks'); render(); toast(!remsOf(t).length ? 'Recordatorios apagados' : remsOf(t).length + (remsOf(t).length === 1 ? ' aviso' : ' avisos')); });
       el.querySelectorAll('[data-step]').forEach(c => c.onchange = () => { t.steps[+c.dataset.step].done = c.checked; c.nextElementSibling.classList.toggle('done', c.checked); save('tasks'); render(); });
       el.querySelector('#dDone').onclick = () => { s.close(); setDone(t.id, !isDone(t)); };
       el.querySelector('#dEdit').onclick = () => { s.close(); openTaskForm(t); };
@@ -331,7 +358,7 @@ function openEventDetail(id) {
     ${calLinks({title: e.title, date: e.date, start: e.start, end: e.end, allDay: e.allDay, details: e.note, place: e.place})}`;
   const s = openSheet({title: 'Evento', body, foot: `<button class="btn sec" id="dDel" aria-label="Eliminar" title="Eliminar"><i class="xdel"></i></button><button class="btn" id="dEdit">✎ Editar</button>`,
     onMount: el => {
-      wireBell(el.querySelector('#dBell'), e, () => { save('events'); render(); toast(e.reminder == null ? 'Recordatorio apagado' : 'Recordatorio: ' + remLabel(e.reminder)); });
+      wireBell(el.querySelector('#dBell'), e, () => { save('events'); render(); toast(!remsOf(e).length ? 'Recordatorios apagados' : remsOf(e).length + (remsOf(e).length === 1 ? ' aviso' : ' avisos')); });
       el.querySelector('#dEdit').onclick = () => { s.close(); openEventForm(e); };
       el.querySelector('#dDel').onclick = async () => { if (await ask('¿Eliminar el evento “' + esc(e.title) + '”?')) { S.events = S.events.filter(x => x.id !== e.id); save('events'); s.close(); render(); toast('Evento eliminado'); } };
     }});

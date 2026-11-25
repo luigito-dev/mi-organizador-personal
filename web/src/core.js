@@ -443,8 +443,8 @@ function checkReminders() {
       if (S.settings.notif && 'Notification' in window && Notification.permission === 'granted') { try { new Notification('Mi Organizador Personal', {body: title}); } catch (e) {} }
     }
   };
-  S.tasks.forEach(t => { if (t.reminder != null && !isDone(t) && t.date) fire('t' + t.id + t.date + (t.time || '') + t.reminder, t.title, reminderTime(t.date, t.time, t.reminder)); });
-  S.events.forEach(e => { if (e.reminder != null) fire('e' + e.id + e.date + (e.start || '') + e.reminder, e.title, reminderTime(e.date, e.allDay ? null : e.start, e.reminder)); });
+  S.tasks.forEach(t => { if (!isDone(t) && t.date) remsOf(t).forEach(r => fire('t' + t.id + t.date + (t.time || '') + r, t.title, reminderTime(t.date, t.time, r))); });
+  S.events.forEach(e => remsOf(e).forEach(r => fire('e' + e.id + e.date + (e.start || '') + r, e.title, reminderTime(e.date, e.allDay ? null : e.start, r))));
   if (typeof waterReminderList === 'function') waterReminderList(1).forEach(x => fire('h' + x.id + x.d + x.r.time, x.title.replace('💧 ', '') + ' 💧', x.at));
   if (changed) { const keys = Object.keys(S.notified); if (keys.length > 400) keys.slice(0, keys.length - 300).forEach(k => delete S.notified[k]); Store.quiet = true; save('meta'); Store.quiet = false; }
 }
