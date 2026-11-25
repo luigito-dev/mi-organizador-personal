@@ -1504,3 +1504,5 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 
 .cdsall{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;-webkit-overflow-scrolling:touch}
 .cdsall>.cdfeat{flex:0 0 100%;scroll-snap-align:start;min-width:0}
+
+.pcaltoday{border:1.5px solid var(--blue);color:var(--blue);background:transparent;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;cursor:pointer;margin:0 4px}

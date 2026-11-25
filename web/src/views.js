@@ -2400,6 +2400,7 @@ function cdFeatBox(c) {
 }
 const itemExists = k => { if (k === 'cds:all') return (S.settings.countdowns || []).length > 0; if (k.startsWith('cd:')) return false; const id = k.slice(3); if (k.startsWith('tk:')) return S.tasks.some(x => x.id === id); if (k.startsWith('nt:')) return S.notes.some(x => x.id === id); if (k.startsWith('cd:')) return (S.settings.countdowns || []).some(x => x.id === id); return false; };
 function isPinnedKey(k) {
+  if (k === 'cds:all') return pins().cdsOff !== true && (S.settings.countdowns || []).length > 0;
   if (k.startsWith('hab:')) return (pins().habs || []).includes(k.slice(4));
   if (k.startsWith('list:')) { const l = S.lists.find(x => x.id === k.slice(5)); return !!l && !l.hideOnDay; }
   return pinItems().includes(k);
@@ -2408,6 +2409,7 @@ function togglePinKey(k, quiet = false) {
   const was = isPinnedKey(k), P = pins();
   if (k.startsWith('hab:')) { const id = k.slice(4); P.habs = (P.habs || []).filter(x => x !== id); if (!was) P.habs.push(id); save('meta'); }
   else if (k.startsWith('list:')) { const l = S.lists.find(x => x.id === k.slice(5)); if (l) { l.hideOnDay = was; save('lists'); } }
+  else if (k === 'cds:all') { P.cdsOff = was; save('meta'); }
   else { P.items = pinItems().filter(x => x !== k); if (!was) P.items.push(k); save('meta'); }
   if (!quiet) toast(was ? 'Quitado de fijados' : 'Fijado');
   listBadge();
@@ -2440,7 +2442,7 @@ function pinCalendar(box) {
   const d = UI.pinDay, m = parseISO(d), cells = monthCells(iso(new Date(m.getFullYear(), m.getMonth(), 1))), t = todayISO();
   const its = sortedDay(d, {withDone: true});
   box.innerHTML = `<div class="pcal">
-    <div class="pcalh"><button class="iconbtn" id="pcP" aria-label="Mes anterior">‹</button><b>${cap(MESES[m.getMonth()])} ${m.getFullYear()}</b><button class="iconbtn" id="pcN" aria-label="Mes siguiente">›</button></div>
+    <div class="pcalh"><button class="iconbtn" id="pcP" aria-label="Mes anterior">‹</button><b>${cap(MESES[m.getMonth()])} ${m.getFullYear()}</b><button class="pcaltoday" id="pcT" aria-label="Ir a hoy">Hoy</button><button class="iconbtn" id="pcN" aria-label="Mes siguiente">›</button></div>
     <div class="pcalg">${wdHeaders().map(w => `<span class="wd">${w.slice(0, 1)}</span>`).join('')}${cells.map(c => { const n = sortedDay(c).length, st = daySticker(c), out = parseISO(c).getMonth() !== m.getMonth(); return `<button data-pcd="${c}" class="${c === d ? 'sel' : ''} ${c === t ? 'today' : ''} ${out ? 'out' : ''}">${parseISO(c).getDate()}${st ? `<i class="st">${st}</i>` : n ? '<i class="dt"></i>' : ''}</button>`; }).join('')}</div>
     ${d === t ? '' : `    <div class="pcald"><b>${d === t ? 'Hoy' : cap(fmtLong(d))}</b><span>${its.length ? its.length + ' cosas' : 'Libre'}</span></div>
     <div class="qrows">${its.map(i => { const x = i.x, title = i.k === 'rt' ? x.name : x.title, tm = i.k === 'ev' ? (x.allDay || x.date !== d ? 'Todo el día' : fmtTime(x.start)) : i.k === 'tk' ? (x.time ? fmtTime(x.time) : '') : fmtTime(x.start); return `<div class="qrow ${i.k === 'tk' && isDone(x) ? 'done' : ''}" ${i.k === 'tk' ? `data-pctk="${x.id}"` : i.k === 'ev' ? `data-pcev="${x.id}"` : ''} role="button" tabindex="0">${i.k === 'tk' ? '<span class="qbox"></span>' : `<span class="pcdot" style="background:${colorOf(i.k, x)}"></span>`}<span class="qtx">${esc(title)}${tm ? ` <span class="qtime">${tm}</span>` : ''}</span></div>`; }).join('') || '<div class="qempty">✓ Nada para este día</div>'}</div>`}
@@ -2449,6 +2451,7 @@ function pinCalendar(box) {
   const q = x => box.querySelector(x), redraw = () => pinCalendar(box);
   q('#pcP').onclick = () => { const x = parseISO(d); x.setMonth(x.getMonth() - 1, 1); UI.pinDay = iso(x); redraw(); };
   q('#pcN').onclick = () => { const x = parseISO(d); x.setMonth(x.getMonth() + 1, 1); UI.pinDay = iso(x); redraw(); };
+  q('#pcT').onclick = () => { UI.pinDay = todayISO(); redraw(); };
   // Tocar un día: se selecciona y se ofrece qué añadir ese día
   box.querySelectorAll('[data-pcd]').forEach(b => b.onclick = () => {
     const c = b.dataset.pcd; UI.pinDay = c;
@@ -2622,7 +2625,7 @@ function wirePinBar(v) {
 // Orden de lo fijado en la ventana flotante (se pasa de uno a otro deslizando de lado)
 function popKeys() {
   const P = pins();
-  return [...(P.hoy === false ? [] : ['hoy']), ...S.lists.filter(l => !l.hideOnDay).map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(P.cal ? ['cal'] : []), ...pinItems().filter(itemExists)];
+  return [...(P.hoy === false ? [] : ['hoy']), ...(P.cdsOff !== true && (S.settings.countdowns || []).length ? ['cds:all'] : []), ...S.lists.filter(l => !l.hideOnDay).map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(P.cal ? ['cal'] : []), ...pinItems().filter(k => k !== 'cds:all' && itemExists(k))];
 }
 function popSwipe(box) {
   if (box._sw) return; box._sw = 1;
