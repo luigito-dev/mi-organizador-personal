@@ -1145,12 +1145,8 @@ function vDia2(v) {
     <div class="card daycard">
       <div class="dstrip hscroll" id="dstrip">${strip.map(x => { const it = sortedDay(x, {all: true}); const hol = holidaysOn(x).length; return `<button class="dpill ${x === d ? 'on' : ''} ${x === t ? 'today' : ''} ${hol ? 'holi' : ''}" data-dd="${x}"><span class="dw">${x === t ? 'Hoy' : DCORTO[dow(x)]}</span><span class="dn">${parseISO(x).getDate()}</span>${daySticker(x) ? `<span class="dstk">${daySticker(x)}</span>` : `<span class="ddots">${it.slice(0, 3).map(i => `<i style="background:${colorOf(i.k, i.x)}"></i>`).join('')}${hol ? '<i style="background:var(--red)"></i>' : ''}</span>`}</button>`; }).join('')}<button class="dpill more" id="dMore"><span class="dw">Otra</span><span class="dn">📅</span><span class="ddots"></span></button></div>
       ${pinCardsHTML()}
-      <div class="dhead"><div><b>${dayName}</b><span class="muted"> · ${parseISO(d).getDate()} de ${MESES[parseISO(d).getMonth()]}</span>${ho.map(h => ` <span class="tag" style="background:var(--holi);color:var(--holiText)">🎉 ${esc(h.name)}</span>`).join('')}</div>
-        <div class="muted small">${[nPend ? `${nPend} por hacer` : '', nDone ? `${nDone} hecha${nDone === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ')}</div></div>
+      ${ho.length ? `<div class="hol-only">${ho.map(h => `<span class="tag" style="background:var(--holi);color:var(--holiText)">🎉 ${esc(h.name)}</span>`).join(' ')}</div>` : ''}
       ${late.length ? `<div class="lateb"><div class="lateh">⚠️ Atrasadas (${late.length})<span class="sp"></span><button class="btn ghost sm" id="allToday">Traer todas a hoy</button></div>${late.map(x => `<div class="tlrow late" data-tk="${x.id}"><span class="tltime">${parseISO(x.date).getDate()} ${MESES[parseISO(x.date).getMonth()].slice(0, 3)}</span><div class="tlcard"><button class="check" data-chk="${x.id}" aria-label="Completar"></button><span class="em">${typeById(x.typeId).icon}</span><div class="body"><div class="t">${esc(x.title)}</div></div><button class="btn sec sm" data-totoday="${x.id}">A hoy</button></div></div>`).join('')}</div>` : ''}
-      <div class="timeline" id="tline">${tl || (freeMsgOn(d) ? `<div class="tlempty" id="freeMsg">${isToday ? '✓ Día libre. Añade algo arriba o disfruta 🌿' : 'Nada para este día todavía.'}</div>` : '')}</div>
-      ${doneItems.length ? `<div class="donesec"><div class="sec-title">Hechas (${doneItems.length})</div>${doneItems.map(i => tlRow(i, false)).join('')}</div>` : ''}
-      ${pendItems.some(i => i.k === 'tk') ? `<div class="xs muted swipehint">${isMobile() ? 'Desliza una tarea → para completarla, ← para pasarla a mañana.' : 'Pasa el ratón sobre una tarea para completarla o pasarla a mañana.'}</div>` : ''}
     </div>`;
   wireHero(v);
   wireItems(v);
