@@ -26,7 +26,7 @@ public class MainActivity extends BridgeActivity {
         String a = intent.getStringExtra("widgetAction");
         if (a == null) return null;
         // solo valores conocidos
-        if (a.equals("nueva") || a.equals("dia") || a.equals("listas")) return a;
+        if (a.equals("nueva") || a.equals("dia") || a.equals("listas") || a.equals("calendario")) return a;
         return null;
     }
 }

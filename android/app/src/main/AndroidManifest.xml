@@ -36,6 +36,22 @@
                 android:resource="@xml/widget_hoy_info" />
         </receiver>
 
+        <receiver
+            android:name=".CalWidget"
+            android:label="Mi Organizador · Calendario"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.luigito.miorganizador.CAL_TOGGLE" />
+                <action android:name="com.luigito.miorganizador.CAL_SELECT" />
+                <action android:name="com.luigito.miorganizador.CAL_MONTH" />
+                <action android:name="com.luigito.miorganizador.CAL_TODAY" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_cal_info" />
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

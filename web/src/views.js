@@ -37,7 +37,43 @@ function shell() {
     if (g.dataset.go === 'mas') { openMore(); return; }
     go(g.dataset.go);
   });
-  $('#fab').onclick = () => {
+  /* Botón + movible: se arrastra a cualquier lado y se recuerda la posición */
+  const fab = $('#fab');
+  try { const fp = JSON.parse(localStorage.getItem('fabPos') || 'null'); if (fp) placeFab(fp.x, fp.y); } catch (e) {}
+  function placeFab(x, y) {
+    const w = fab.offsetWidth || 58, h = fab.offsetHeight || 58;
+    x = Math.max(4, Math.min(window.innerWidth - w - 4, x));
+    y = Math.max(4, Math.min(window.innerHeight - h - 4, y));
+    fab.style.left = x + 'px'; fab.style.top = y + 'px'; fab.style.right = 'auto'; fab.style.bottom = 'auto';
+    return {x, y};
+  }
+  let fabDrag = null, fabMoved = false;
+  fab.addEventListener('pointerdown', e => {
+    const r = fab.getBoundingClientRect();
+    fabDrag = {id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, sx: e.clientX, sy: e.clientY};
+    fabMoved = false;
+  });
+  fab.addEventListener('pointermove', e => {
+    if (!fabDrag || e.pointerId !== fabDrag.id) return;
+    if (!fabMoved && Math.hypot(e.clientX - fabDrag.sx, e.clientY - fabDrag.sy) < 8) return;
+    fabMoved = true; fab.setPointerCapture(e.pointerId);
+    fab.classList.add('dragging');
+    placeFab(e.clientX - fabDrag.dx, e.clientY - fabDrag.dy);
+  });
+  const fabEnd = e => {
+    if (!fabDrag || e.pointerId !== fabDrag.id) return;
+    if (fabMoved) {
+      const r = fab.getBoundingClientRect();
+      try { localStorage.setItem('fabPos', JSON.stringify({x: r.left, y: r.top})); } catch (err) {}
+    }
+    fab.classList.remove('dragging');
+    fabDrag = null;
+  };
+  fab.addEventListener('pointerup', fabEnd);
+  fab.addEventListener('pointercancel', fabEnd);
+  window.addEventListener('resize', () => { try { const fp = JSON.parse(localStorage.getItem('fabPos') || 'null'); if (fp) placeFab(fp.x, fp.y); } catch (e) {} });
+  fab.onclick = () => {
+    if (fabMoved) { fabMoved = false; return; }
     if (UI.view === 'calendario') openEventForm(null, {date: UI.selDate});
     else if (UI.view === 'notas') { const t = $('#nNew'); if (t) t.focus(); }
     else if (UI.view === 'areas' && !UI.openArea) openAreaForm();
@@ -2324,7 +2360,7 @@ function openFood(h, d, host) {
 
 const durTxt = m => m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}`;
 
-const retoHabits = () => (S.habits || []).filter(h => h.challenge && h.challenge.vals && Object.keys(h.challenge.marked || {}).length < h.challenge.vals.length && !(pins().noReto || []).includes(h.id));
+const retoHabits = () => (S.habits || []).filter(h => h.challenge && h.challenge.vals && Object.keys(h.challenge.marked || {}).length < h.challenge.vals.length && (pins().reto || []).includes(h.id));
 
 const ENV_SVG = '<svg class="envi" viewBox="0 0 40 28" aria-hidden="true"><rect x="1.5" y="1.5" width="37" height="25" rx="3" fill="var(--envf,none)" stroke="currentColor" stroke-width="2.4"/><path d="M2.5 3l17.5 13 17.5-13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg>';
 const rng = (a, b, f = x => x) => Array.from({length: b - a + 1}, (_, i) => f(a + i));
@@ -2462,7 +2498,7 @@ function openPinManager(done) {
     ${S.notes.length ? `<div class="pingrp"><b>Notas</b>${S.notes.slice(0, 40).map(n => row('nt:' + n.id, '📝', noteTitle(n), isPinnedKey('nt:' + n.id), fmtShort(n.date))).join('')}</div>` : ''}
     ${(S.settings.countdowns || []).length ? `<div class="pingrp"><b>Cuentas</b>${S.settings.countdowns.map(c => row('cd:' + c.id, c.icon || '⏳', c.name, isPinnedKey('cd:' + c.id), fmtShort(c.date))).join('')}</div>` : ''}
     <div class="pingrp"><b>Hábitos</b>${S.habits.map(h => row('hab:' + h.id, h.icon, h.name, (P.habs || []).includes(h.id))).join('')}${HAB_SUG.map((x, i) => S.habits.some(h => h.name === x[1]) ? '' : row('sug:' + i, x[0], x[1], false, 'Crear y fijar')).join('')}</div>
-    ${retos.length ? `<div class="pingrp"><b>Retos de ahorro</b>${retos.map(h => row('reto:' + h.id, '🏆', h.challenge.name, !(P.noReto || []).includes(h.id))).join('')}</div>` : ''}`,
+    ${retos.length ? `<div class="pingrp"><b>Retos de ahorro</b>${retos.map(h => row('reto:' + h.id, '🏆', h.challenge.name, (P.reto || []).includes(h.id))).join('')}</div>` : ''}`,
     foot: '<button class="btn" data-close>Listo</button>',
     onClose: () => { done && done(); },
     onMount: el => { el.querySelectorAll('[data-pk]').forEach(c => c.onchange = () => {
@@ -2472,7 +2508,7 @@ function openPinManager(done) {
       else if (k.startsWith('sug:')) { if (on) { const x = HAB_SUG[+k.slice(4)]; const id = uid(); S.habits.push({id, icon: x[0], name: x[1], goal: x[2], unit: '', kind: HAB_KINDS.some(kk => kk[0] === x[3]) ? x[3] : '', wakeAt: x[3] === 'despertar' ? '06:00' : undefined, goalOz: x[3] === 'agua' ? 64 : undefined, migA: 1, migO: 1, migW: 1, unitD: 'mi', color: HL_PASTEL[S.habits.length % HL_PASTEL.length], days: [], log: {}, created: todayISO()}); save('habits'); P2.habs = (P2.habs || []).concat(id); c.disabled = true; } }
       else if (/^(tk|nt|cd):/.test(k)) { if (on !== isPinnedKey(k)) togglePinKey(k, true); }
       else if (k.startsWith('hab:')) { const id = k.slice(4); P2.habs = (P2.habs || []).filter(x => x !== id); if (on) P2.habs.push(id); }
-      else if (k.startsWith('reto:')) { const id = k.slice(5); P2.noReto = (P2.noReto || []).filter(x => x !== id); if (!on) P2.noReto.push(id); }
+      else if (k.startsWith('reto:')) { const id = k.slice(5); P2.reto = (P2.reto || []).filter(x => x !== id); if (on) P2.reto.push(id); }
       save('meta'); toast(on ? 'Fijado' : 'Quitado del acceso rápido');
     }); }});
 }
@@ -2617,7 +2653,7 @@ function addUnpin(box) {
   b.onclick = () => {
     const k = b.dataset.unpin, P = pins();
     if (k === 'hoy') P.hoy = false; else if (k === 'cal') P.cal = false;
-    else if (k.startsWith('reto:')) { P.noReto = (P.noReto || []).filter(x => x !== k.slice(5)); P.noReto.push(k.slice(5)); }
+    else if (k.startsWith('reto:')) { P.reto = (P.reto || []).filter(x => x !== k.slice(5)); }
     else if (/^(hab|tk|nt|cd):/.test(k)) togglePinKey(k, true);
     else { const l = S.lists.find(x => x.id === k); if (l) { l.hideOnDay = true; save('lists'); } }
     save('meta'); toast('Quitado de fijados'); if (box.dataset.fixkey) { UI.pinIdx = Math.max(0, (UI.pinIdx || 0) - 1); renderView(); return; } if (UI.view === 'dia') renderView();

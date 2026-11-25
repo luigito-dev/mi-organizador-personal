@@ -6,6 +6,7 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -31,10 +32,21 @@ public class OrganizadorPlugin extends Plugin {
         Context ctx = getContext();
         ctx.getSharedPreferences(HoyWidget.PREFS, Context.MODE_PRIVATE).edit().putString(HoyWidget.KEY, data).apply();
         HoyWidget.refreshAll(ctx);
+        CalWidget.refreshAll(ctx);
         call.resolve();
     }
 
     /** Acción con la que se abrió la app desde la widget (nueva, dia, listas). */
+    @PluginMethod
+    public void takeWidgetChanges(PluginCall call) {
+        SharedPreferences p = getContext().getSharedPreferences(CalWidget.PREFS, Context.MODE_PRIVATE);
+        String q = p.getString(CalWidget.QUEUE, "[]");
+        p.edit().remove(CalWidget.QUEUE).remove(CalWidget.OVERRIDES).apply();
+        JSObject r = new JSObject();
+        r.put("changes", q);
+        call.resolve(r);
+    }
+
     @PluginMethod
     public void getPendingAction(PluginCall call) {
         JSObject r = new JSObject();

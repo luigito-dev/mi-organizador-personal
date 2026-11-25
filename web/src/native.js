@@ -103,13 +103,34 @@
         }));
       }
       const stats = {}; Object.keys(days).forEach(d => { const tk = S.tasks.filter(x => x.date === d); stats[d] = [tk.filter(isDone).length, tk.length]; });
-      return Org.updateWidget({data: JSON.stringify({days, stats})}).catch(() => {});
+      // Pendientes de TAREAS (no eventos) para el widget de calendario, desde 31 días atrás hasta 70 días adelante
+      const pend = {};
+      for (let i = -31; i <= 70; i++) {
+        const d = addDays(todayISO(), i);
+        const L = S.tasks.filter(t => t.date === d && !isDone(t)).map(t => ({id: t.id, n: t.title || '', h: t.time ? fmtTime(t.time) : ''}));
+        if (L.length) pend[d] = L;
+      }
+      return Org.updateWidget({data: JSON.stringify({days, stats, pend})}).catch(() => {});
+    },
+    /* Aplica los cambios hechos desde el widget (marcar tareas) */
+    async applyWidgetChanges() {
+      try {
+        const r = await Org.takeWidgetChanges();
+        const ch = JSON.parse((r && r.changes) || '[]');
+        let changed = false;
+        ch.forEach(c => {
+          const t = S.tasks.find(x => x.id === c.id);
+          if (t) { t.status = c.done ? 'Completada' : 'Pendiente'; t.completedAt = c.done ? Date.now() : null; changed = true; }
+        });
+        if (changed) { save('tasks'); render(); }
+      } catch (e) {}
     },
     handleAction(a) {
       whenReady(() => {
         if (a === 'nueva') { go('dia'); setTimeout(() => openTaskForm(), 150); }
         else if (a === 'listas') { go('listas'); render(); }
         else if (a === 'dia') go('dia');
+        else if (a === 'calendario') go('calendario');
       });
     },
 
@@ -186,7 +207,7 @@
         else App.minimizeApp();
       });
       App.addListener('pause', () => this.persist());
-      App.addListener('resume', () => { if (!sheets.length) render(); this.pushWidget(); this.reschedule(); });
+      App.addListener('resume', async () => { await this.applyWidgetChanges(); if (!sheets.length) render(); this.pushWidget(); this.reschedule(); });
       window.addEventListener('widgetAction', e => this.handleAction(e.action));
       // Enlaces a Google Calendar / Outlook: abrir fuera de la app
       document.addEventListener('click', e => { const a = e.target.closest('a[target=_blank]'); if (a) { e.preventDefault(); Browser.open({url: a.href}); } }, true);
