@@ -1503,39 +1503,51 @@ function vHabitos(v) {
         <span class="habbot">${bottleSVG(h, c)}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : `<b class="ozn">${cur} de ${OZ} oz</b> · ${nb} de ${gb} botellas`}${(h.reminders || []).some(r => r.on !== false) && h.remOn !== false ? ' · ⏰' : ''}${st > 1 ? ` · 🔥 ${st}` : ''}</small><span class="botrow">${[...Array(Math.max(gb, nb))].map((_, i) => `<i class="${i < nb ? 'on' : ''}"></i>`).join('')}</span></span>
         <span class="habtot"><b>${c}</b><small>oz hoy</small></span>
-        <span class="habside"><button class="habmore" data-hed="${h.id}" aria-label="Editar">✏️ Editar</button>${c ? `<button class="habminus" data-hmin="${h.id}" aria-label="Quitar 1 onza">−1</button>` : ''}</span></div>`; }
+        <span class="habside"><button class="habmore" data-hed="${h.id}" aria-label="Editar">Editar</button>${c ? `<button class="habminus" data-hmin="${h.id}" aria-label="Quitar 1 onza">−1</button>` : ''}</span></div>`; }
       if (['ahorro', 'despertar', 'comida', 'oracion'].includes(kd)) { const info = habRowInfo(h, d);
         return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${info.p * 100}%">${h.icon}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : info.sub}${st > 1 ? ` · 🔥 ${st}` : ''}</small>${info.pill ? `<span class="calpill ${info.pc || ''}">${info.pill}</span>` : ''}</span>
         <span class="habtot"><b>${info.big}</b><small>${info.bigl}</small></span>
-        <button class="habmore" data-hed="${h.id}" aria-label="Editar">✏️ Editar</button></div>`; }
+        <button class="habmore" data-hed="${h.id}" aria-label="Editar">Editar</button></div>`; }
       if (kd === 'actividad') { const run = UI.habTimer && UI.habTimer.id === h.id, ds = actDist(h, d), u = h.unitD || 'mi', cal = actCalories(h, d);
         return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${Math.min(1, Math.max(c / g, +h.goalDist ? ds / h.goalDist : 0)) * 100}%">${actMode(h, d) === 'correr' ? '🏃' : h.icon}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : run ? '⏱ Contando tiempo…' : `${c}/${g} min${+h.goalDist || ds ? ` · ${fmtD(ds)}${+h.goalDist ? '/' + fmtD(h.goalDist) : ''} ${u}` : ''}${+h.goalSteps || actSteps(h, d) ? ` · 👣 ${fmtPasos(actSteps(h, d))}${+h.goalSteps ? '/' + fmtPasos(h.goalSteps) : ''}` : ''}`}${st > 1 ? ` · 🔥 ${st}` : ''}</small>${cal ? `<span class="calpill">🔥 ~${cal} cal</span>` : ''}</span>
         <span class="habtot"><b>${c}</b><small>min hoy</small></span>
-        <button class="habmore" data-hed="${h.id}" aria-label="Editar">✏️ Editar</button></div>`; }
+        <button class="habmore" data-hed="${h.id}" aria-label="Editar">Editar</button></div>`; }
       if (kd === 'tiempo') { const run = UI.habTimer && UI.habTimer.id === h.id;
         return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${Math.min(1, c / g) * 100}%">${h.icon}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : run ? '⏱ Contando tiempo…' : `${c} de ${g} min`}${st > 1 ? ` · 🔥 ${st}` : ''}</small></span>
         <span class="habtot"><b>${c}</b><small>min hoy</small></span>
-        <button class="habmore" data-hed="${h.id}" aria-label="Editar">✏️ Editar</button></div>`; }
+        <button class="habmore" data-hed="${h.id}" aria-label="Editar">Editar</button></div>`; }
       if (kd === 'lectura') return `<div class="habrow read ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${ok ? 100 : 0}%">${h.icon}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : c ? `${c} páginas ${d === t ? 'hoy' : 'ese día'}` : 'Toca para anotar páginas'}${st > 1 ? ` · 🔥 ${st}` : ''}</small>${h.bookmark || h.book ? `<span class="bkpill">🔖 ${h.bookmark ? `pág. ${h.bookmark}` : ''}${h.book ? `${h.bookmark ? ' · ' : ''}${esc(h.book)}` : ''}</span>` : ''}</span>
         <span class="habtot"><b>${habPages(h)}</b><small>páginas leídas</small></span>
-        <button class="habmore" data-hed="${h.id}" aria-label="Editar">✏️ Editar</button></div>`;
+        <button class="habmore" data-hed="${h.id}" aria-label="Editar">Editar</button></div>`;
       return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${Math.min(1, c / g) * 100}%">${h.icon}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : g > 1 ? `${c}/${g} ${esc(h.unit || '')}` : ok ? '¡Hecho!' : 'Toca para marcar'}${st > 1 ? ` · 🔥 ${st} días seguidos` : ''}</small></span>
         <span class="habtot"><b>${habTotal(h)}</b><small>días en total</small></span>
-        <button class="habmore" data-hed="${h.id}" aria-label="Editar">✏️ Editar</button></div>`;
+        <button class="habmore" data-hed="${h.id}" aria-label="Editar">Editar</button></div>`;
     }).join('')}</div>
     ${d > t ? '<p class="hint">Este día todavía no llega: podrás marcarlo cuando sea el día.</p>' : ''}</div>
     ${HAB_SUG.some(x => !S.habits.some(h => h.name === x[1])) ? `<div class="habideas"><span>Ideas:</span>${HAB_SUG.map((x, i) => S.habits.some(h => h.name === x[1]) ? '' : `<button data-sug="${i}">${x[0]} ${x[1]}</button>`).join('')}</div>` : ''}`;
   body.querySelectorAll('[data-hd]').forEach(b => b.onclick = () => { UI.habDay = b.dataset.hd; renderView(); });
+  // Deslizar una fila a la izquierda para eliminar el hábito (con confirmación)
+  body.querySelectorAll('.habrow[data-hab]').forEach(row => {
+    let sx = null, sy = null;
+    row.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive: true});
+    row.addEventListener('touchend', async e => {
+      if (sx == null) return; const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; sx = null;
+      if (dx < -80 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        const h = S.habits.find(x => x.id === row.dataset.hab); if (!h) return;
+        if (await ask(`¿Eliminar “${esc(h.name)}” y todo su historial?`, {yes: 'Eliminar'})) { S.habits = S.habits.filter(x => x.id !== h.id); save('habits'); renderView(); }
+      }
+    }, {passive: true});
+  });
   wireHabSug(body);
   body.querySelectorAll('[data-hed]').forEach(b => b.onclick = e => { e.stopPropagation(); openHabitForm(S.habits.find(h => h.id === b.dataset.hed)); });
   body.querySelectorAll('[data-hmin]').forEach(b => b.onclick = e => { e.stopPropagation(); habUndo(S.habits.find(h => h.id === b.dataset.hmin), d); renderView(); });
@@ -1545,7 +1557,8 @@ function habReport(body) {
   UI.habRep = UI.habRep || 'semana'; UI.habRef = UI.habRef || todayISO();
   const t = todayISO(), ref = UI.habRef, rp = UI.habRep, r = parseISO(ref);
   let days, title;
-  if (rp === 'semana') { days = weekDays(ref); const a = parseISO(days[0]), b = parseISO(days[6]); title = `${a.getDate()} ${MESES[a.getMonth()].slice(0, 3)} – ${b.getDate()} ${MESES[b.getMonth()].slice(0, 3)}`; }
+  if (rp === 'dia') { days = [ref]; title = cap(fmtLong(ref)); }
+  else if (rp === 'semana') { days = weekDays(ref); const a = parseISO(days[0]), b = parseISO(days[6]); title = `${a.getDate()} ${MESES[a.getMonth()].slice(0, 3)} – ${b.getDate()} ${MESES[b.getMonth()].slice(0, 3)}`; }
   else if (rp === 'mes') { const n = new Date(r.getFullYear(), r.getMonth() + 1, 0).getDate(); days = [...Array(n)].map((_, i) => iso(new Date(r.getFullYear(), r.getMonth(), i + 1))); title = cap(MESES[r.getMonth()]) + ' ' + r.getFullYear(); }
   else { days = []; for (let x = iso(new Date(r.getFullYear(), 0, 1)); parseISO(x).getFullYear() === r.getFullYear(); x = addDays(x, 1)) days.push(x); title = String(r.getFullYear()); }
   const past = days.filter(x => x <= t);
@@ -1556,9 +1569,11 @@ function habReport(body) {
   const pct = due ? Math.round(ok / due * 100) : 0;
   const cell = (h, x) => { if (!habDue(h, x)) return '<span class="hq rest"></span>'; const dn = habDone(h, x), part = !dn && habCount(h, x) > 0; return `<span class="hq ${dn ? 'on' : ''} ${x > t ? 'fut' : ''}" style="--hc:${h.color};--hl:${hexA(h.color, part ? .45 : .18)}" title="${fmtShort(x)}"></span>`; };
   let grid;
-  if (rp === 'semana') {
+  if (rp === 'dia') {
+    grid = `<div class="hdaily">${S.habits.map(h => { const x = ref; if (!habDue(h, x)) return `<div class="hdrow off"><span class="hdic">${h.icon}</span><div class="hdtx"><b>${esc(h.name)}</b><small>Descanso hoy</small></div></div>`; const c = habCount(h, x), g = habGoal(h) || 1, p = Math.min(1, c / g); return `<div class="hdrow ${habDone(h, x) ? 'ok' : ''}"><span class="hdic" style="--hc:${hexA(h.color, .28)}">${h.icon}${habDone(h, x) ? '<em>✓</em>' : ''}</span><div class="hdtx"><b>${esc(h.name)}</b><small>${habValTxt(h, x)}</small><i class="hdbar"><u style="width:${p * 100}%;background:${h.color}"></u></i></div><em class="hdpct">${Math.round(p * 100)}%</em></div>`; }).join('')}</div>`;
+  } else if (rp === 'semana') {
     grid = `<table class="hgrid"><thead><tr><th></th>${days.map(x => `<th><span class="hwd">${DCORTO[parseISO(x).getDay()].slice(0, 1).toUpperCase()}</span></th>`).join('')}<th></th></tr></thead><tbody>
-      ${S.habits.map(h => { const dd = days.filter(x => habDue(h, x) && x <= t), perf = dd.length && dd.length === days.filter(x => habDue(h, x)).length && dd.every(x => habDone(h, x)); return `<tr><td class="hname"><span>${h.icon}</span>${esc(h.name)}</td>${days.map(x => `<td>${cell(h, x)}</td>`).join('')}<td>${perf ? '<span class="hbadge" title="¡Perfecto!">🏅</span>' : ''}</td></tr>`; }).join('')}
+      ${S.habits.map(h => { const dd = days.filter(x => habDue(h, x) && x <= t), perf = dd.length && dd.length === days.filter(x => habDue(h, x)).length && dd.every(x => habDone(h, x)); return `<tr><td class="hname"><span>${h.icon}</span>${esc(h.name)}</td>${days.map(x => `<td>${cell(h, x)}<small class="hqv">${habShort(h, x)}</small></td>`).join('')}<td>${perf ? '<span class="hbadge" title="¡Perfecto!">🏅</span>' : ''}</td></tr>`; }).join('')}
       <tr class="hbest"><td class="hname">Día perfecto</td>${days.map(x => `<td>${perfect.includes(x) ? '🏵️' : ''}</td>`).join('')}<td>${perfect.length === 7 ? '👑' : ''}</td></tr></tbody></table>`;
   } else if (rp === 'mes') {
     grid = `<div class="hmonth">${S.habits.map(h => `<div class="hmrow"><div class="hname"><span>${h.icon}</span>${esc(h.name)}<small>${days.filter(x => habDone(h, x)).length} días</small></div><div class="hmcells">${days.map(x => cell(h, x)).join('')}</div></div>`).join('')}</div>`;
@@ -1566,7 +1581,7 @@ function habReport(body) {
     grid = `<div class="hmonth">${S.habits.map(h => `<div class="hmrow"><div class="hname"><span>${h.icon}</span>${esc(h.name)}<small>${days.filter(x => habDone(h, x)).length} días</small></div><div class="hyear">${MESES.map((m, i) => { const md = days.filter(x => parseISO(x).getMonth() === i && x <= t && habDue(h, x)), n = md.filter(x => habDone(h, x)).length, p = md.length ? n / md.length : 0; return `<span style="--hl:${hexA(h.color, md.length ? .12 + p * .88 : .06)}" title="${cap(m)}: ${n} días"><b>${m.slice(0, 1).toUpperCase()}</b></span>`; }).join('')}</div></div>`).join('')}</div>`;
   }
   body.innerHTML = `<div class="card habrep">
-    <div class="seg hrseg">${[['semana', 'Semanal'], ['mes', 'Mensual'], ['año', 'Anual']].map(([k, n]) => `<button data-hr="${k}" class="${rp === k ? 'on' : ''}">${n}</button>`).join('')}</div>
+    <div class="seg hrseg">${[['dia', 'Diario'], ['semana', 'Semanal'], ['mes', 'Mensual'], ['año', 'Anual']].map(([k, n]) => `<button data-hr="${k}" class="${rp === k ? 'on' : ''}">${n}</button>`).join('')}</div>
     <div class="hrtitle"><span class="hrsun">☀️</span><h2>Mis hábitos</h2><span class="hrsun">🌙</span></div>
     <div class="hrnav"><button class="hrarr" id="hrP" aria-label="Anterior">‹</button><span class="hl" style="--hlbg:#fff27a">${title}</span><button class="hrarr" id="hrN" aria-label="Siguiente">›</button></div>
     ${grid}
@@ -1574,8 +1589,29 @@ function habReport(body) {
     ${habAchieveHTML(days, t)}
   </div>`;
   body.querySelectorAll('[data-hr]').forEach(b => b.onclick = () => { UI.habRep = b.dataset.hr; renderView(); });
-  const mv = n => { const x = parseISO(UI.habRef); if (rp === 'semana') x.setDate(x.getDate() + 7 * n); else if (rp === 'mes') x.setMonth(x.getMonth() + n, 1); else x.setFullYear(x.getFullYear() + n, 0, 1); UI.habRef = iso(x); renderView(); };
+  const mv = n => { const x = parseISO(UI.habRef); if (rp === 'dia') x.setDate(x.getDate() + n); else if (rp === 'semana') x.setDate(x.getDate() + 7 * n); else if (rp === 'mes') x.setMonth(x.getMonth() + n, 1); else x.setFullYear(x.getFullYear() + n, 0, 1); UI.habRef = iso(x); renderView(); };
   $('#hrP', body).onclick = () => mv(-1); $('#hrN', body).onclick = () => mv(1);
+}
+// Texto corto del progreso de un día (para la tabla semanal) y texto completo (vista diaria)
+function habShort(h, x) {
+  const k = habKind(h), c = habCount(h, x);
+  if (k === 'despertar') { const w = (h.woke || {})[x]; return w ? (wakeOnTime(h, x) ? '✓' : '·') : ''; }
+  if (!c) return '';
+  if (k === 'agua') return `${c}oz`;
+  if (k === 'actividad' || k === 'tiempo' || k === 'oracion') return `${c}′`;
+  if (k === 'lectura') return `${c}p`;
+  if (k === 'ahorro') return money(c);
+  return String(c);
+}
+function habValTxt(h, x) {
+  const k = habKind(h), c = habCount(h, x), g = habGoal(h);
+  if (k === 'despertar') { const w = (h.woke || {})[x]; return w && w !== 'ok' ? `Levantado a las ${fmtTime(w)} ${wakeOnTime(h, x) ? '✓ a tiempo' : '· tarde'}` : 'Sin registrar'; }
+  if (k === 'agua') return `${c} de ${g} oz · ${Math.floor(c / OZ)} botellas`;
+  if (k === 'lectura') return `${c} páginas`;
+  if (k === 'ahorro') return `${money(c)} ahorrado`;
+  if (k === 'actividad') { const ds = actDist(h, x), kc = actCalories(h, x); return `${c} de ${g} min${ds ? ` · ${fmtD(ds)} ${h.unitD || 'mi'}` : ''}${kc ? ` · 🔥 ${Math.round(kc)} cal` : ''}`; }
+  if (k === 'tiempo' || k === 'oracion') return `${c} de ${g} min`;
+  return `${c} de ${g}${h.unit ? ' ' + esc(h.unit) : ''}`;
 }
 // Lo logrado en el periodo, según el tipo de cada hábito (botellas, km/millas, calorías, páginas…)
 function habAchieveHTML(days, t) {

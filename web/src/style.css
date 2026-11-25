@@ -1481,3 +1481,18 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .remlist{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 .remchip{padding-right:6px}
 .remx{width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.08);font-size:12px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+
+/* Informe diario de hábitos */
+.hqv{display:block;font-size:10px;color:var(--muted);font-weight:600;min-height:12px;white-space:nowrap}
+.hdaily{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px}
+.hdrow{display:flex;align-items:center;gap:10px;padding:10px;border-radius:14px;background:var(--soft)}
+.hdrow.off{opacity:.55}
+.hdrow.ok{box-shadow:inset 0 0 0 1.5px #4cc46b}
+.hdic{position:relative;width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:20px;background:var(--hc,#eef2f8);flex:none}
+.hdic em{position:absolute;right:-4px;bottom:-4px;font-style:normal;font-size:11px;background:#4cc46b;color:#fff;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center}
+.hdtx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.hdtx b{font-size:14px}
+.hdtx small{font-size:12px;color:var(--muted)}
+.hdbar{display:block;height:6px;border-radius:4px;background:rgba(0,0,0,.08);overflow:hidden;margin-top:4px}
+.hdbar u{display:block;height:100%;border-radius:4px}
+.hdpct{font-style:normal;font-weight:800;font-size:14px;min-width:42px;text-align:right}
