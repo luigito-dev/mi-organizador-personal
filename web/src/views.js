@@ -187,12 +187,22 @@ let motivTimer = null;
 // Cuenta regresiva: días que faltan (o que pasaron) para fechas importantes
 const CD_ICONS = ['🎂', '💰', '🎤', '🎆', '✈️', '💍', '👶', '🎓', '🏖️', '💼', '❤️', '🎄', '🏥', '⭐'];
 function cdList() { return (S.settings.countdowns || []).slice().sort((a, b) => a.date.localeCompare(b.date)); }
-const CD_THEMES = [['', '✨', 'Normal'], ['aniversario', '💞', 'Aniversario'], ['navidad', '🎄', 'Navidad'], ['reyes', '👑', 'Reyes Magos (PR)'], ['const', '🇵🇷', 'Constitución de PR'], ['carnaval', '🎭', 'Carnaval (PR)'], ['anio', '🎆', 'Año nuevo'], ['indep', '🇺🇸', 'Independencia (EE. UU.)'], ['gracias', '🦃', 'Acción de Gracias (EE. UU.)'], ['halloween', '🎃', 'Halloween'], ['valentin', '💘', 'San Valentín'], ['cumple', '🎈', 'Cumpleaños'], ['verano', '🌴', 'Verano']];
-const CD_FX = {aniversario: '💗', navidad: '❄️', reyes: '⭐', const: '⭐', carnaval: '🎊', anio: '✨', indep: '🎆', gracias: '🍂', halloween: '🦇', valentin: '💗', cumple: '🎈', verano: '🌊'};
+const CD_THEMES = [['', '✨', 'Normal'], ['aniversario', '💞', 'Aniversario'], ['navidad', '🎄', 'Navidad'], ['reyes', '👑', 'Reyes Magos (PR)'], ['const', '🇵🇷', 'Constitución de PR'], ['carnaval', '🎭', 'Carnaval (PR)'], ['anio', '🎆', 'Año nuevo'], ['a2027', '🎇', 'Año nuevo 2027'],['indep', '🇺🇸', 'Independencia (EE. UU.)'], ['gracias', '🦃', 'Acción de Gracias (EE. UU.)'], ['halloween', '🎃', 'Halloween'], ['valentin', '💘', 'San Valentín'], ['cumple', '🎈', 'Cumpleaños'], ['verano', '🌴', 'Verano']];
+const CD_FX = {aniversario: '💗', navidad: '❄️', reyes: '⭐', const: '⭐', carnaval: '🎊', anio: '✨', a2027: '✨', indep: '🎆', gracias: '🍂', halloween: '🦇', valentin: '💗', cumple: '🎈', verano: '🌊'};
 // Capa animada del escenario: Reyes (3 reyes siguiendo una estrella) y Navidad (trineo con Santa y nieve)
 function cdFxLayer(th) {
   if (!th) return '';
   if (th === 'reyes') return '<div class="fxlayer"><i class="sc-star">⭐</i><i class="sc-k k1">🧔</i><i class="sc-k k2">🧔</i><i class="sc-k k3">🧔</i></div>';
+  if (th === 'anio' || th === 'a2027') {
+    // Fuegos artificiales: cada ráfaga tiene chispas que salen en círculo y se apagan
+    const cols = ['#ffd166', '#ef476f', '#06d6a0', '#4cc9f0', '#f72585', '#ffffff'];
+    const bursts = [[18, 26], [70, 18], [42, 58], [84, 52], [22, 74]].map(([x, y], b) => {
+      const sparks = Array.from({length: 14}, (_, s) => `<i class="fwspk" style="--a:${s * 360 / 14}deg;--d:${34 + (s % 3) * 8}px;background:${cols[(s + b) % cols.length]};color:${cols[(s + b) % cols.length]};animation-delay:${(b * 0.9).toFixed(1)}s"></i>`).join('');
+      return `<div class="fwb" style="left:${x}%;top:${y}%">${sparks}</div>`;
+    }).join('');
+    const year = th === 'a2027' ? '<b class="fwyear">2027</b>' : '';
+    return `<div class="fxlayer">${bursts}${year}</div>`;
+  }
   const sleigh = th === 'navidad' ? '<i class="sc-sleigh">🦌🛷🎅</i>' : '';
   const snow = Array.from({length: 14}, (_, i) => `<i class="fxp" style="left:${(i * 37) % 100}%;top:${(i * 29) % 70}%;animation-delay:${((i * 0.41) % 3).toFixed(2)}s;animation-duration:${(3 + (i % 4)).toFixed(1)}s">${CD_FX[th]}</i>`).join('');
   return `<div class="fxlayer">${sleigh}${snow}</div>`;
@@ -1401,7 +1411,9 @@ function calForecast(body, d) {
 function fcColor(i) { if (i.x.areaId && S.areas.some(a => a.id === i.x.areaId)) return colorOf(i.k, i.x); const id = String(i.x.id || i.x.title || ''); let h = 0; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) | 0; return HL_PASTEL[Math.abs(h) % HL_PASTEL.length]; }
 
 /* ========== HÁBITOS ========== */
-const HAB_ICONS = ['😊','💧','🍳','🍌','☀️','😴','📖','📘','💪','🧘','🌈','🧹','💬','🤸','🧖','👁️','🌳','🚶','🏃','💵','⚖️','🌱','🍎','🥗','🙏','💊','🦷','🛏️','📵','🍦','🍷','🍭','🎮','📺','🎸','📷','✍️','🚴','🏊','🐶'];
+const HAB_ICONS = ['😊','💧','🍳','🍌','☀️','😴','📖','📘','💪','🧘','🌈','🧹','💬','🤸','🧖','👁️','🌳','🚶','🏃','💵','⚖️','🌱','🍎','🥗','🙏','💊','🦷','🛏️','📵','🍦','🍷','🍭','🎮','📺','🎸','📷','✍️','🚴','🏊','🐶',
+  '🥤','🍵','☕','🧃','🏋️','🤾','🚲','🌙','💤','🧠','📝','🗣️','🎨','🎵','🎤','🧽','🚿','🪥','🥦','🍇','🥕','🐟','🐕','🌻','🌸','✈️','📚','🖊️','🏠','🧺','🎯','⏰','📅','🙌','❤️','😄','🌟','🔥','🎉','🍚','🥚','🍗','🥜','🧀','🍞','🫖','🧼','🪴','🧑‍🍳','👣','🛁','🎂','🧩','✂️','🧾'];
+const HAB_COLORS = ['#ff6b8a', '#ffb627', '#4cc46b', '#4a90ff', '#a46bff', '#ff8a3d', '#22c1c3', '#e63946', '#f4a261', '#2a9d8f', '#264653', '#e9c46a', '#8ac926', '#1982c4', '#6a4c93', '#ff595e', '#ffca3a', '#8d99ae', '#c9ada7', '#9b5de5'];
 const HAB_SUG = [['💧', 'Tomar agua', 8, 'agua'], ['🚶', 'Caminar', 30, 'actividad'], ['📖', 'Leer', 1, 'lectura'], ['🧘', 'Meditar', 10, 'tiempo'], ['☀️', 'Levantarme temprano', 1, 'despertar'], ['🥗', 'Comer saludable', 5, 'comida'], ['💵', 'Ahorrar dinero', 1, 'ahorro'], ['🙏', 'Orar', 10, 'oracion']];
 const OZ = 16; // onzas por botella
 const habKind = h => h.kind || (h.unit === 'agua' ? 'agua' : h.unit === 'lectura' ? 'lectura' : h.unit === 'tiempo' ? 'tiempo' : '');
@@ -1467,35 +1479,35 @@ function vHabitos(v) {
         <span class="habbot">${bottleSVG(h, c)}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : `<b class="ozn">${cur} de ${OZ} oz</b> · ${nb} de ${gb} botellas`}${(h.reminders || []).some(r => r.on !== false) && h.remOn !== false ? ' · ⏰' : ''}${st > 1 ? ` · 🔥 ${st}` : ''}</small><span class="botrow">${[...Array(Math.max(gb, nb))].map((_, i) => `<i class="${i < nb ? 'on' : ''}"></i>`).join('')}</span></span>
         <span class="habtot"><b>${c}</b><small>oz hoy</small></span>
-        <span class="habside"><button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button>${c ? `<button class="habminus" data-hmin="${h.id}" aria-label="Quitar 1 onza">−1</button>` : ''}</span></div>`; }
+        <span class="habside"><button class="habmore" data-hed="${h.id}" aria-label="Editar">✏️ Editar</button>${c ? `<button class="habminus" data-hmin="${h.id}" aria-label="Quitar 1 onza">−1</button>` : ''}</span></div>`; }
       if (['ahorro', 'despertar', 'comida', 'oracion'].includes(kd)) { const info = habRowInfo(h, d);
         return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${info.p * 100}%">${h.icon}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : info.sub}${st > 1 ? ` · 🔥 ${st}` : ''}</small>${info.pill ? `<span class="calpill ${info.pc || ''}">${info.pill}</span>` : ''}</span>
         <span class="habtot"><b>${info.big}</b><small>${info.bigl}</small></span>
-        <button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`; }
+        <button class="habmore" data-hed="${h.id}" aria-label="Editar">✏️ Editar</button></div>`; }
       if (kd === 'actividad') { const run = UI.habTimer && UI.habTimer.id === h.id, ds = actDist(h, d), u = h.unitD || 'mi', cal = actCalories(h, d);
         return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${Math.min(1, Math.max(c / g, +h.goalDist ? ds / h.goalDist : 0)) * 100}%">${actMode(h, d) === 'correr' ? '🏃' : h.icon}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : run ? '⏱ Contando tiempo…' : `${c}/${g} min${+h.goalDist || ds ? ` · ${fmtD(ds)}${+h.goalDist ? '/' + fmtD(h.goalDist) : ''} ${u}` : ''}${+h.goalSteps || actSteps(h, d) ? ` · 👣 ${fmtPasos(actSteps(h, d))}${+h.goalSteps ? '/' + fmtPasos(h.goalSteps) : ''}` : ''}`}${st > 1 ? ` · 🔥 ${st}` : ''}</small>${cal ? `<span class="calpill">🔥 ~${cal} cal</span>` : ''}</span>
         <span class="habtot"><b>${c}</b><small>min hoy</small></span>
-        <button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`; }
+        <button class="habmore" data-hed="${h.id}" aria-label="Editar">✏️ Editar</button></div>`; }
       if (kd === 'tiempo') { const run = UI.habTimer && UI.habTimer.id === h.id;
         return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${Math.min(1, c / g) * 100}%">${h.icon}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : run ? '⏱ Contando tiempo…' : `${c} de ${g} min`}${st > 1 ? ` · 🔥 ${st}` : ''}</small></span>
         <span class="habtot"><b>${c}</b><small>min hoy</small></span>
-        <button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`; }
+        <button class="habmore" data-hed="${h.id}" aria-label="Editar">✏️ Editar</button></div>`; }
       if (kd === 'lectura') return `<div class="habrow read ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${ok ? 100 : 0}%">${h.icon}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : c ? `${c} páginas ${d === t ? 'hoy' : 'ese día'}` : 'Toca para anotar páginas'}${st > 1 ? ` · 🔥 ${st}` : ''}</small>${h.bookmark || h.book ? `<span class="bkpill">🔖 ${h.bookmark ? `pág. ${h.bookmark}` : ''}${h.book ? `${h.bookmark ? ' · ' : ''}${esc(h.book)}` : ''}</span>` : ''}</span>
         <span class="habtot"><b>${habPages(h)}</b><small>páginas leídas</small></span>
-        <button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`;
+        <button class="habmore" data-hed="${h.id}" aria-label="Editar">✏️ Editar</button></div>`;
       return `<div class="habrow ${ok ? 'ok' : ''} ${isDue ? '' : 'off'}" data-hab="${h.id}" role="button" tabindex="0">
         <span class="habic" style="--hc:${hexA(h.color, .28)};--hr:${h.color};--hp:${Math.min(1, c / g) * 100}%">${h.icon}${ok ? '<em>✓</em>' : ''}</span>
         <span class="habtx"><b>${esc(h.name)}</b><small>${!isDue ? 'Descanso hoy' : g > 1 ? `${c}/${g} ${esc(h.unit || '')}` : ok ? '¡Hecho!' : 'Toca para marcar'}${st > 1 ? ` · 🔥 ${st} días seguidos` : ''}</small></span>
         <span class="habtot"><b>${habTotal(h)}</b><small>días en total</small></span>
-        <button class="habmore" data-hed="${h.id}" aria-label="Editar">⋯</button></div>`;
+        <button class="habmore" data-hed="${h.id}" aria-label="Editar">✏️ Editar</button></div>`;
     }).join('')}</div>
     ${d > t ? '<p class="hint">Este día todavía no llega: podrás marcarlo cuando sea el día.</p>' : ''}</div>
     ${HAB_SUG.some(x => !S.habits.some(h => h.name === x[1])) ? `<div class="habideas"><span>Ideas:</span>${HAB_SUG.map((x, i) => S.habits.some(h => h.name === x[1]) ? '' : `<button data-sug="${i}">${x[0]} ${x[1]}</button>`).join('')}</div>` : ''}`;
@@ -1535,17 +1547,37 @@ function habReport(body) {
     <div class="hrnav"><button class="hrarr" id="hrP" aria-label="Anterior">‹</button><span class="hl" style="--hlbg:#fff27a">${title}</span><button class="hrarr" id="hrN" aria-label="Siguiente">›</button></div>
     ${grid}
     <div class="hstats"><div><b style="color:#ff4d5e">${pct}<small>%</small></b><span>Cumplido</span></div><div><b style="color:#4a90ff">${perfect.length}<small>d</small></b><span>Días perfectos</span></div><div><b style="color:#2bc48a">${ok}</b><span>Total hechos</span></div><div><b style="color:#ff9a3d">${best}<small>d</small></b><span>Mejor racha</span></div></div>
+    ${habAchieveHTML(days, t)}
   </div>`;
   body.querySelectorAll('[data-hr]').forEach(b => b.onclick = () => { UI.habRep = b.dataset.hr; renderView(); });
   const mv = n => { const x = parseISO(UI.habRef); if (rp === 'semana') x.setDate(x.getDate() + 7 * n); else if (rp === 'mes') x.setMonth(x.getMonth() + n, 1); else x.setFullYear(x.getFullYear() + n, 0, 1); UI.habRef = iso(x); renderView(); };
   $('#hrP', body).onclick = () => mv(-1); $('#hrN', body).onclick = () => mv(1);
 }
+// Lo logrado en el periodo, según el tipo de cada hábito (botellas, km/millas, calorías, páginas…)
+function habAchieveHTML(days, t) {
+  const past = days.filter(x => x <= t);
+  const rows = S.habits.map(h => {
+    const k = habKind(h), dd = past.filter(x => habDue(h, x)), hechos = dd.filter(x => habDone(h, x)).length;
+    const sum = fn => dd.reduce((a, x) => a + (+fn(x) || 0), 0);
+    const lines = [`${hechos} de ${dd.length} días`];
+    let big = `${hechos} días`;
+    if (k === 'agua') { const oz = sum(x => habCount(h, x)); big = `${Math.floor(oz / OZ)} botellas`; lines.push(`${oz} oz tomadas`); }
+    else if (k === 'actividad') { const min = sum(x => habCount(h, x)), dist = sum(x => actDist(h, x)), kc = sum(x => actCalories(h, x)); big = `${min} min`; if (dist) lines.push(`${fmtD(dist)} ${h.unitD || 'mi'} recorridas`); if (kc) lines.push(`🔥 ${Math.round(kc)} calorías quemadas`); }
+    else if (k === 'lectura') { big = `${sum(x => habCount(h, x))} páginas`; }
+    else if (k === 'tiempo' || k === 'oracion') { big = `${sum(x => habCount(h, x))} min`; }
+    else if (k === 'ahorro') { big = money(sum(x => habCount(h, x))); lines.push('ahorrado'); }
+    else if (k === 'comida') { big = `${sum(x => habCount(h, x))} porciones`; }
+    else if (k === 'despertar') { big = `${dd.filter(x => wakeOnTime(h, x)).length} a tiempo`; }
+    return `<div class="habach-row"><span class="habach-ic">${h.icon}</span><div class="habach-tx"><b>${esc(h.name)}</b><small>${lines.join(' · ')}</small></div><div class="habach-big">${big}</div></div>`;
+  });
+  return `<div class="habach"><div class="sec-title">Lo logrado</div>${rows.join('')}</div>`;
+}
 function openHabitForm(h) {
   const isNew = !h; h = h ? JSON.parse(JSON.stringify(h)) : {id: uid(), icon: '😊', name: '', goal: 1, unit: '', color: HL_PASTEL[S.habits.length % HL_PASTEL.length], days: [], log: {}, created: todayISO()};
   const s = openSheet({title: isNew ? 'Nuevo hábito' : 'Editar hábito', body: `
     <div class="fld"><label>Nombre</label><input class="inp" id="hName" value="${esc(h.name)}" placeholder="Ej.: Tomar agua" maxlength="40"></div>
-    <div class="fld"><label>Ícono</label><div class="habicons">${HAB_ICONS.map(i => `<button type="button" data-hi="${i}" class="${h.icon === i ? 'on' : ''}">${i}</button>`).join('')}</div></div>
-    <div class="fld"><label>Color</label><div class="habcols">${HL_PASTEL.map(c => `<button type="button" data-hc="${c}" class="${h.color === c ? 'on' : ''}" style="background:${c}" aria-label="Color"></button>`).join('')}</div></div>
+    <div class="fld"><label>Ícono</label><button type="button" class="habpickbtn" id="hiOpen" aria-label="Elegir ícono">${h.icon}<span>▾ Más</span></button></div>
+    <div class="fld"><label>Color</label><button type="button" class="habpickbtn" id="hcOpen" aria-label="Elegir color" style="background:${h.color}"><span>▾ Más</span></button></div>
     <div class="fld"><label>Tipo</label><div class="habkinds">${HAB_KINDS.map(([k, n]) => `<button type="button" data-hk="${k}" class="${habKind(h) === k ? 'on' : ''}">${n}</button>`).join('')}</div><small class="hint" id="hkHint"></small></div>
     <div class="fld hk-lectura"><small class="hint">📖 Lectura: sin límite por día. Cada día anotas cuántas páginas leíste y guardas tu 🔖 marcador.</small></div>
     <div class="fld hk-agua"><label>Meta de agua por día (en onzas)</label><div class="habgoal"><button type="button" class="btn sec sm" id="hbM">−</button><input class="inp rdnum" id="hbOz" readonly inputmode="none" data-wheel data-min="1" data-max="300" data-title="Meta de agua" data-unit="oz" value="${habKind(h) === 'agua' ? habGoal(h) : 64}"><button type="button" class="btn sec sm" id="hbP">+</button><span class="hint">oz</span></div><div class="rdquick">${[32, 48, 64, 80, 100].map(n => `<button type="button" data-goz="${n}">${n}</button>`).join('')}</div><small class="hint">Escribe la meta que quieras. Cada botella es de 8 oz.</small></div>
@@ -1561,8 +1593,14 @@ function openHabitForm(h) {
       const hp = q('#hPin');
       if (hp) { const isPinned = () => (pins().habs || []).includes(h.id), paint = () => { const on = isPinned(); hp.classList.toggle('on', on); hp.setAttribute('aria-pressed', on); hp.querySelector('span').textContent = on ? 'Fijado' : 'Fijar'; }; paint();
         hp.onclick = () => { const was = isPinned(), P = pins(); P.habs = (P.habs || []).filter(x => x !== h.id); if (!was) P.habs.push(h.id); save('meta'); paint(); toast(was ? 'Quitado de fijados' : 'Fijado en Mi Día'); }; }
-      el.querySelectorAll('[data-hi]').forEach(b => b.onclick = () => { h.icon = b.dataset.hi; el.querySelectorAll('[data-hi]').forEach(x => x.classList.toggle('on', x === b)); });
-      el.querySelectorAll('[data-hc]').forEach(b => b.onclick = () => { h.color = b.dataset.hc; el.querySelectorAll('[data-hc]').forEach(x => x.classList.toggle('on', x === b)); });
+      // Ícono y color van plegados; al tocar se abre un popup con todas las opciones
+      let icoVal = h.icon, colVal = h.color;
+      const hiBtn = q('#hiOpen'), hcBtn = q('#hcOpen');
+      // Cada cambio de h.icon / h.color (también los de las sugerencias) actualiza el botón plegado
+      Object.defineProperty(h, 'icon', {enumerable: true, configurable: true, get: () => icoVal, set: v => { icoVal = v; hiBtn.innerHTML = `${v}<span>▾ Más</span>`; }});
+      Object.defineProperty(h, 'color', {enumerable: true, configurable: true, get: () => colVal, set: v => { colVal = v; hcBtn.style.background = v; }});
+      hiBtn.onclick = () => { const pick = openSheet({title: 'Elige un ícono', cls: 'small', body: `<div class="habicons habicons-all">${HAB_ICONS.map(i => `<button type="button" data-pi="${i}" class="${h.icon === i ? 'on' : ''}">${i}</button>`).join('')}</div>`, onMount: pel => pel.querySelectorAll('[data-pi]').forEach(b => b.onclick = () => { h.icon = b.dataset.pi; pick.close(); })}); };
+      hcBtn.onclick = () => { const pick = openSheet({title: 'Elige un color', cls: 'small', body: `<div class="habcols habcols-all">${HAB_COLORS.map(c => `<button type="button" data-pc="${c}" class="${h.color === c ? 'on' : ''}" style="background:${c}" aria-label="Color"></button>`).join('')}<label class="habnewcol" title="Crear un color"><input type="color" id="hcCustom" value="${h.color}"><span>🎨</span></label></div>`, onMount: pel => { pel.querySelectorAll('[data-pc]').forEach(b => b.onclick = () => { h.color = b.dataset.pc; pick.close(); }); pel.querySelector('#hcCustom').onchange = e => { h.color = e.target.value; pick.close(); }; }}); };
       q('#hName').addEventListener('input', () => { const nm = q('#hName').value; if (isNew && !kind) { if (/agua/i.test(nm)) { el.querySelector('[data-hk="agua"]').click(); } else if (/^(leer|lectura)/i.test(nm)) { el.querySelector('[data-hk="lectura"]').click(); } else if (/ahorr/i.test(nm)) { el.querySelector('[data-hk="ahorro"]').click(); } else if (/levant|despert|madrug/i.test(nm)) { el.querySelector('[data-hk="despertar"]').click(); } else if (/comer|comida|saludable|dieta/i.test(nm)) { el.querySelector('[data-hk="comida"]').click(); } else if (/^or(ar|aci)/i.test(nm)) { el.querySelector('[data-hk="oracion"]').click(); } else if (ACT_RE.test(nm)) { el.querySelector('[data-hk="actividad"]').click(); } else if (TIME_RE.test(nm)) { el.querySelector('[data-hk="tiempo"]').click(); } } });
       q('#hgM').onclick = () => { h.goal = Math.max(1, habGoal(h) - 1); q('#hgV').textContent = h.goal; };
       q('#hgP').onclick = () => { h.goal = Math.min(99, habGoal(h) + 1); q('#hgV').textContent = h.goal; };
@@ -2309,7 +2347,30 @@ function pinCalendar(box) {
   const q = x => box.querySelector(x), redraw = () => pinCalendar(box);
   q('#pcP').onclick = () => { const x = parseISO(d); x.setMonth(x.getMonth() - 1, 1); UI.pinDay = iso(x); redraw(); };
   q('#pcN').onclick = () => { const x = parseISO(d); x.setMonth(x.getMonth() + 1, 1); UI.pinDay = iso(x); redraw(); };
-  box.querySelectorAll('[data-pcd]').forEach(b => b.onclick = () => { UI.pinDay = b.dataset.pcd; redraw(); });
+  // Tocar un día: se selecciona y se ofrece qué añadir ese día
+  box.querySelectorAll('[data-pcd]').forEach(b => b.onclick = () => {
+    const c = b.dataset.pcd; UI.pinDay = c;
+    const pick = openSheet({title: `${cap(fmtLong(c))}`, cls: 'small', body: `<div class="daypick">
+      <button type="button" class="btn" data-dp="tarea">✅ Añadir tarea</button>
+      <button type="button" class="btn sec" data-dp="evento">📅 Añadir evento</button>
+      <button type="button" class="btn sec" data-dp="ver">📋 Ver el día en el calendario</button></div>`,
+      onMount: pel => pel.querySelectorAll('[data-dp]').forEach(x => x.onclick = () => {
+        const a = x.dataset.dp; pick.close();
+        if (a === 'tarea') openTaskForm(null, {date: c});
+        else if (a === 'evento') openEventForm(null, {date: c, allDay: true}, 'month');
+        else { UI.calDate = UI.selDate = c; go('calendario'); return; }
+        setTimeout(() => redraw(), 0);
+      }),
+      onClose: () => redraw()});
+  });
+  // Deslizar sobre el mes: pasa al mes anterior o siguiente, sin límite
+  const grid = q('.pcalg'); let sx = null, sy = null;
+  grid.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive: true});
+  grid.addEventListener('touchend', e => {
+    if (sx == null) return;
+    const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; sx = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) { const x = parseISO(d); x.setMonth(x.getMonth() + (dx < 0 ? 1 : -1), 1); UI.pinDay = iso(x); redraw(); }
+  }, {passive: true});
   box.querySelectorAll('[data-pctk]').forEach(r => r.onclick = () => { const x = S.tasks.find(y => y.id === r.dataset.pctk); setDone(x.id, !isDone(x)); setTimeout(redraw, 120); });
   box.querySelectorAll('[data-pcev]').forEach(r => r.onclick = () => openEventDetail(r.dataset.pcev));
   const add = () => { const raw = q('#pcAdd').value.trim(); if (!raw) { q('#pcAdd').focus(); return; } const g = guess(raw); S.tasks.push({id: uid(), title: raw, date: d, time: g.time, typeId: g.typeId, areaId: g.areaId, priority: 'Media', details: '', steps: [], status: 'Pendiente', obs: '', reminder: null, createdAt: Date.now()}); save('tasks'); toast('Añadido'); redraw(); };
@@ -2525,7 +2586,10 @@ function wirePinCards(v) {
   if (UI.pinKey && keyList.indexOf(UI.pinKey) >= 0) UI.pinIdx = keyList.indexOf(UI.pinKey);
   UI.pinIdx = Math.min(UI.pinIdx || 0, n - 1);
   wrap.addEventListener('pointerdown', e => { const bx = e.target.closest && e.target.closest('.pinbox'); if (bx) UI.pinKey = bx.dataset.fixkey; }, true);
-  const mark = () => dots.forEach((d, i) => d.classList.toggle('on', i === UI.pinIdx));
+  // El encabezado del día (Hoy · fecha) solo se ve cuando la tarjeta HOY es la que está abierta
+  const syncHead = () => { const hd = v.querySelector('.dhead'); if (hd) hd.style.display = keyList[UI.pinIdx || 0] === 'hoy' ? '' : 'none'; };
+  syncHead();
+  const mark = () => { dots.forEach((d, i) => d.classList.toggle('on', i === UI.pinIdx)); syncHead(); };
   const fit = () => { const c = wrap.children[UI.pinIdx || 0]; if (c) wrap.style.height = c.offsetHeight + 'px'; };
   requestAnimationFrame(() => { wrap._hold = true; wrap.scrollLeft = UI.pinIdx * wrap.clientWidth; mark(); fit(); setTimeout(() => { wrap._hold = false; }, 400); });
   let t; wrap.addEventListener('scroll', () => { if (wrap._hold) return; clearTimeout(t); t = setTimeout(() => { if (wrap._hold) return; UI.pinIdx = Math.round(wrap.scrollLeft / wrap.clientWidth); UI.pinKey = keyList[UI.pinIdx] || UI.pinKey; mark(); fit(); }, 80); }, {passive: true});

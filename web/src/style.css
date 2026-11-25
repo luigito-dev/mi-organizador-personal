@@ -763,7 +763,7 @@ label.btn,label.bgopt{position:relative;overflow:hidden}
 .habtot{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15}
 .habtot b{font-size:19px;font-weight:600}
 .habtot small{font-size:11.5px;color:var(--muted)}
-.habmore{width:30px;height:30px;border-radius:50%;color:var(--muted);font-size:18px;flex:none}
+.habmore{height:30px;padding:0 10px;border-radius:15px;border:1px solid var(--line,#d6deeb);background:#fff;color:var(--blue,#1d5fd1);font-size:12px;font-weight:700;white-space:nowrap;flex:none}
 .habempty{text-align:center;padding:24px 16px}
 .habempty p{color:var(--muted)}
 .habsug{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:14px 0 18px}
@@ -774,6 +774,13 @@ label.btn,label.bgopt{position:relative;overflow:hidden}
 .habicons button.on{background:var(--blue-l,#e3edff);box-shadow:0 0 0 2px var(--blue)}
 .habcols{display:flex;gap:10px;flex-wrap:wrap}
 .habcols button{width:32px;height:32px;border-radius:50%}
+.habpickbtn{min-height:44px;min-width:86px;padding:0 12px;border-radius:14px;border:1px solid #d6deeb;background:var(--soft);font-size:24px;display:inline-flex;align-items:center;gap:8px}
+.habpickbtn span{font-size:13px;color:var(--muted)}
+.habicons-all{max-height:52vh;overflow:auto;padding:4px}
+.habcols-all{padding:4px}
+.habnewcol{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border:1px dashed var(--muted);cursor:pointer;font-size:16px}
+.habnewcol input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
+.habnewcol span{pointer-events:none}
 .habcols button.on{box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--text)}
 .habgoal{display:flex;align-items:center;gap:10px}
 .habgoal b{font-size:20px;min-width:26px;text-align:center}
@@ -1221,7 +1228,16 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .pinmark small{color:var(--muted)}
 .pinst{font-size:13px;color:var(--muted);background:var(--soft);border-radius:999px;padding:4px 12px;margin-top:4px}
 .pcalh{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.pcalg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.pcalg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;touch-action:pan-y}
+.habach{margin-top:14px}
+.habach-row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line,#e5eaf2)}
+.habach-ic{font-size:22px;width:30px;text-align:center}
+.habach-tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.habach-tx b{font-size:14px}
+.habach-tx small{color:var(--muted);font-size:12px}
+.habach-big{font-weight:800;font-size:15px;white-space:nowrap}
+.daypick{display:flex;flex-direction:column;gap:10px;padding:4px 0}
+.daypick .btn{width:100%}
 .pcalg .wd{font-size:11px;color:var(--muted);padding:2px 0}
 .pcalg button{position:relative;height:38px;border-radius:10px;font-weight:600;font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
 .pcalg button.out{opacity:.35}
@@ -1439,3 +1455,11 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 /* Escena Navidad: trineo con Santa y renos volando por el cielo */
 .sc-sleigh{top:20%;font-size:30px;letter-spacing:-4px;animation:scSleigh 10s linear infinite}
 @keyframes scSleigh{0%{left:-35%;top:24%}50%{top:12%}100%{left:110%;top:24%}}
+
+/* Escena Año nuevo: fuegos artificiales que explotan en bucle */
+.fx-a2027:not(.ph){background:radial-gradient(circle at 50% 40%,#243b7a,#070b1f)!important}
+.fwb{position:absolute;width:0;height:0}
+.fwspk{position:absolute;left:0;top:0;width:5px;height:5px;margin:-2px 0 0 -2px;border-radius:50%;transform-origin:0 0;box-shadow:0 0 6px currentColor;animation:fwBurst 2.6s ease-out infinite}
+@keyframes fwBurst{0%{transform:rotate(var(--a)) translateX(0);opacity:0}4%{opacity:1}70%{opacity:1}100%{transform:rotate(var(--a)) translateX(var(--d));opacity:0}}
+.fwyear{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);font-size:46px;letter-spacing:2px;color:#ffd166;text-shadow:0 0 14px rgba(255,209,102,.7);animation:fwYear 3s ease-in-out infinite}
+@keyframes fwYear{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.9}50%{transform:translate(-50%,-50%) scale(1.08);opacity:1}}
