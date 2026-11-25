@@ -39,6 +39,20 @@
                 android:maxLines="1" />
 
             <TextView
+                android:id="@+id/wToday"
+                android:layout_width="wrap_content"
+                android:layout_height="22dp"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/widget_pill"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:gravity="center"
+                android:text="Hoy"
+                android:textColor="@color/widgetBlue"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <TextView
                 android:id="@+id/wNext"
                 android:layout_width="26dp"
                 android:layout_height="26dp"

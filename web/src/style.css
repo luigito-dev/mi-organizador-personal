@@ -1501,3 +1501,6 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 
 .habspec{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin-bottom:12px;border-radius:12px;overflow:hidden}
 .habspec button{aspect-ratio:1/1;width:100%;height:auto;border:0;border-radius:0;padding:0;cursor:pointer}
+
+.cdsall{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;-webkit-overflow-scrolling:touch}
+.cdsall>.cdfeat{flex:0 0 100%;scroll-snap-align:start;min-width:0}

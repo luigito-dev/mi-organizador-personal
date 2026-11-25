@@ -2398,7 +2398,7 @@ function cdFeatBox(c) {
   const fxLayer = cdFxLayer(th);
   return `<div class="cdfeat ${fxCls}" style="${c.photo ? `background-image:url(${c.photo})` : `background:${c.color || CD_COLORS[0]}`}">${c.photo ? '<div class="cdfshade"></div>' : ''}${fxLayer}<div class="cdfbody"><b>${n === 0 ? 'Hoy' : Math.abs(n)}${n === 0 ? '' : '<small>D</small>'}</b><span>${esc(c.name)}</span><small class="cdfdate">${since ? 'Días desde' : 'Días para'} ${fmtShort(c.date)}</small></div></div>`;
 }
-const itemExists = k => { const id = k.slice(3); if (k.startsWith('tk:')) return S.tasks.some(x => x.id === id); if (k.startsWith('nt:')) return S.notes.some(x => x.id === id); if (k.startsWith('cd:')) return (S.settings.countdowns || []).some(x => x.id === id); return false; };
+const itemExists = k => { if (k === 'cds:all') return (S.settings.countdowns || []).length > 0; if (k.startsWith('cd:')) return false; const id = k.slice(3); if (k.startsWith('tk:')) return S.tasks.some(x => x.id === id); if (k.startsWith('nt:')) return S.notes.some(x => x.id === id); if (k.startsWith('cd:')) return (S.settings.countdowns || []).some(x => x.id === id); return false; };
 function isPinnedKey(k) {
   if (k.startsWith('hab:')) return (pins().habs || []).includes(k.slice(4));
   if (k.startsWith('list:')) { const l = S.lists.find(x => x.id === k.slice(5)); return !!l && !l.hideOnDay; }
@@ -2416,6 +2416,7 @@ function pinItemView(k) {
   const id = k.slice(3);
   if (k.startsWith('tk:')) { const t = S.tasks.find(x => x.id === id); if (!t) return null; return {title: t.title, pill: t.status || '', html: `<div class="small muted" style="padding:10px 4px">${fmtLong(t.date)}${t.time ? ' · ' + fmtTime(t.time) : ''}</div>`, open: () => openTaskDetail(id)}; }
   if (k.startsWith('nt:')) { const n = S.notes.find(x => x.id === id); if (!n) return null; return {title: noteTitle(n), pill: fmtShort(n.date), html: `<div class="small" style="padding:10px 4px;white-space:pre-wrap">${esc(n.text).slice(0, 300)}</div>`, open: () => openNote(id)}; }
+  if (k === 'cds:all') { const L = cdList(); return {title: 'Cuentas', pill: `${L.length} cuenta${L.length === 1 ? '' : 's'}`, html: `<div class="cdsall">${L.map(cdFeatBox).join('')}</div>`, open: () => {}}; }
   if (k.startsWith('cd:')) { const c = (S.settings.countdowns || []).find(x => x.id === id); if (!c) return null; const n = dayDiff(todayISO(), c.date); return {title: c.name, pill: n === 0 ? 'Hoy' : `${Math.abs(n)} ${n < 0 ? 'días desde' : 'días para'}`, html: cdFeatBox(c), open: () => openCountdownForm(c)}; }
   return null;
 }
@@ -2501,7 +2502,7 @@ function openPinManager(done) {
     <div class="pingrp"><b>Listas</b>${S.lists.map(l => row('list:' + l.id, l.icon, l.name, !l.hideOnDay)).join('')}</div>
     ${S.tasks.filter(t => !isDone(t)).length ? `<div class="pingrp"><b>Tareas</b>${S.tasks.filter(t => !isDone(t)).slice(0, 40).map(t => row('tk:' + t.id, '✔️', t.title, isPinnedKey('tk:' + t.id), fmtShort(t.date))).join('')}</div>` : ''}
     ${S.notes.length ? `<div class="pingrp"><b>Notas</b>${S.notes.slice(0, 40).map(n => row('nt:' + n.id, '📝', noteTitle(n), isPinnedKey('nt:' + n.id), fmtShort(n.date))).join('')}</div>` : ''}
-    ${(S.settings.countdowns || []).length ? `<div class="pingrp"><b>Cuentas</b>${S.settings.countdowns.map(c => row('cd:' + c.id, c.icon || '⏳', c.name, isPinnedKey('cd:' + c.id), fmtShort(c.date))).join('')}</div>` : ''}
+    ${(S.settings.countdowns || []).length ? `<div class="pingrp"><b>Cuentas</b>${row('cds:all', '⏳', 'Todas las cuentas', isPinnedKey('cds:all'), 'Se ven juntas en una sola tarjeta, cada una con su escena')}</div>` : ''}
     <div class="pingrp"><b>Hábitos</b>${S.habits.map(h => row('hab:' + h.id, h.icon, h.name, (P.habs || []).includes(h.id))).join('')}${HAB_SUG.map((x, i) => S.habits.some(h => h.name === x[1]) ? '' : row('sug:' + i, x[0], x[1], false, 'Crear y fijar')).join('')}</div>
     ${retos.length ? `<div class="pingrp"><b>Retos de ahorro</b>${retos.map(h => row('reto:' + h.id, '🏆', h.challenge.name, (P.reto || []).includes(h.id))).join('')}</div>` : ''}`,
     foot: '<button class="btn" data-close>Listo</button>',

@@ -124,6 +124,7 @@ public class CalWidget extends AppWidgetProvider {
         first.set(y, m, 1);
         v.setTextViewText(R.id.wMonth, MESES[m] + " " + y);
         v.setOnClickPendingIntent(R.id.wMonth, broadcast(ctx, ACT_TODAY, 10, null, null, 0, false, false));
+        v.setOnClickPendingIntent(R.id.wToday, broadcast(ctx, ACT_TODAY, 13, null, null, 0, false, false));
         v.setOnClickPendingIntent(R.id.wPrev, broadcast(ctx, ACT_MONTH, 11, "delta", null, -1, false, false));
         v.setOnClickPendingIntent(R.id.wNext, broadcast(ctx, ACT_MONTH, 12, "delta", null, 1, false, false));
 
