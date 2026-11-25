@@ -48,11 +48,11 @@
       S.tasks.forEach(t => {
         if (isDone(t) || !t.date) return;
         remsOf(t).forEach(r => { const at = reminderTime(t.date, t.time, r);
-          if (at > now + 3000 && at < horizon) { const a = areaById(t.areaId); out.push({at, kind: 't', id: t.id, title: '🔔 ' + t.title, body: relDay(t.date) + (t.time ? ' a las ' + fmtTime(t.time) : '') + (a ? ' · ' + a.name : '')}); } });
+          if (at > now + 3000 && at < horizon) { const a = areaById(t.areaId); out.push({at, kind: 't', id: t.id, title: '🔔 ' + t.title, body: relDay(t.date) + (a ? ' · ' + a.name : '')}); } });
       });
       S.events.forEach(e => {
         remsOf(e).forEach(r => { const at = reminderTime(e.date, e.allDay ? null : e.start, r);
-          if (at > now + 3000 && at < horizon) out.push({at, kind: 'e', id: e.id, title: evType(e.evType).icon + ' ' + e.title, body: relDay(e.date) + (e.allDay ? ' · todo el día' : ' a las ' + fmtTime(e.start)) + (e.place ? ' · ' + e.place : '')}); });
+          if (at > now + 3000 && at < horizon) out.push({at, kind: 'e', id: e.id, title: evType(e.evType).icon + ' ' + e.title, body: relDay(e.date) + (e.place ? ' · ' + e.place : '')}); });
       });
       // Cuentas: aviso a las 9:00 a.m. del día, con el sonido elegido
       (S.settings.countdowns || []).forEach(c => {
@@ -70,12 +70,19 @@
         if (pend.notifications && pend.notifications.length) await LN.cancel({notifications: pend.notifications.map(n => ({id: n.id}))});
         const list = this.upcoming(); if (!list.length) return;
         if (!(await this.ensurePermission(true))) return;
-        await LN.schedule({notifications: list.map(x => ({
-          id: this.idOf(x.kind + x.id + x.at), title: x.title, body: x.body,
-          schedule: {at: new Date(x.at), allowWhileIdle: true}, channelId: x.channel || 'recordatorios',
-          actionTypeId: x.kind === 't' ? 'TAREA' : x.kind === 'h' ? 'AGUA' : 'EVENTO', extra: {kind: x.kind, id: x.id},
-          smallIcon: 'ic_stat_notify', iconColor: '#1F5FBF'
-        }))});
+        // Uno por uno: si un aviso falla, los demás igual se programan
+        let fallos = 0;
+        for (const x of list) {
+          try {
+            await LN.schedule({notifications: [{
+              id: this.idOf(x.kind + x.id + x.at), title: x.title, body: x.body || ' ',
+              schedule: {at: new Date(x.at), allowWhileIdle: true}, channelId: x.channel || 'recordatorios',
+              actionTypeId: x.kind === 't' ? 'TAREA' : x.kind === 'h' ? 'AGUA' : 'EVENTO', extra: {kind: x.kind, id: x.id},
+              smallIcon: 'ic_stat_notify', iconColor: '#1F5FBF'
+            }]});
+          } catch (e) { fallos++; console.warn('aviso', e); }
+        }
+        if (fallos) console.warn('avisos que no se pudieron programar:', fallos);
       } catch (e) { console.warn('avisos', e); }
     },
     async snooze(n) {

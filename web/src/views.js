@@ -1473,6 +1473,15 @@ function fcColor(i) { if (i.x.areaId && S.areas.some(a => a.id === i.x.areaId)) 
 /* ========== HÁBITOS ========== */
 const HAB_ICONS = ['😊','💧','🍳','🍌','☀️','😴','📖','📘','💪','🧘','🌈','🧹','💬','🤸','🧖','👁️','🌳','🚶','🏃','💵','⚖️','🌱','🍎','🥗','🙏','💊','🦷','🛏️','📵','🍦','🍷','🍭','🎮','📺','🎸','📷','✍️','🚴','🏊','🐶',
   '🥤','🍵','☕','🧃','🏋️','🤾','🚲','🌙','💤','🧠','📝','🗣️','🎨','🎵','🎤','🧽','🚿','🪥','🥦','🍇','🥕','🐟','🐕','🌻','🌸','✈️','📚','🖊️','🏠','🧺','🎯','⏰','📅','🙌','❤️','😄','🌟','🔥','🎉','🍚','🥚','🍗','🥜','🧀','🍞','🫖','🧼','🪴','🧑‍🍳','👣','🛁','🎂','🧩','✂️','🧾'];
+/* Paleta "Crear color": 12 tonos (rojo → violeta → azul → verde → amarillo → naranja) en 6 niveles de claridad */
+function hslHex(h, s, l) {
+  s /= 100; l /= 100;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => { const k = (n + h / 30) % 12; return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); };
+  return '#' + [f(0), f(8), f(4)].map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
+}
+const SPEC_LIGHT = [84, 72, 62, 52, 42, 32];
+const SPEC_COLORS = SPEC_LIGHT.flatMap(l => Array.from({length: 12}, (_, i) => hslHex((360 - i * 30) % 360, 78, l)));
 const HAB_COLORS = ['#ff6b8a', '#ffb627', '#4cc46b', '#4a90ff', '#a46bff', '#ff8a3d', '#22c1c3', '#e63946', '#f4a261', '#2a9d8f', '#264653', '#e9c46a', '#8ac926', '#1982c4', '#6a4c93', '#ff595e', '#ffca3a', '#8d99ae', '#c9ada7', '#9b5de5'];
 const HAB_SUG = [['💧', 'Tomar agua', 8, 'agua'], ['🚶', 'Caminar', 30, 'actividad'], ['📖', 'Leer', 1, 'lectura'], ['🧘', 'Meditar', 10, 'tiempo'], ['☀️', 'Levantarme temprano', 1, 'despertar'], ['🥗', 'Comer saludable', 5, 'comida'], ['💵', 'Ahorrar dinero', 1, 'ahorro'], ['🙏', 'Orar', 10, 'oracion']];
 const OZ = 16; // onzas por botella
@@ -1696,7 +1705,7 @@ function openHabitForm(h) {
       Object.defineProperty(h, 'icon', {enumerable: true, configurable: true, get: () => icoVal, set: v => { icoVal = v; hiBtn.innerHTML = `${v}<span>▾ Más</span>`; }});
       Object.defineProperty(h, 'color', {enumerable: true, configurable: true, get: () => colVal, set: v => { colVal = v; hcBtn.style.background = v; }});
       hiBtn.onclick = () => { const pick = openSheet({title: 'Elige un ícono', cls: 'small', body: `<div class="habicons habicons-all">${HAB_ICONS.map(i => `<button type="button" data-pi="${i}" class="${h.icon === i ? 'on' : ''}">${i}</button>`).join('')}</div>`, onMount: pel => pel.querySelectorAll('[data-pi]').forEach(b => b.onclick = () => { h.icon = b.dataset.pi; pick.close(); })}); };
-      hcBtn.onclick = () => { const pick = openSheet({title: 'Elige un color', cls: 'small', body: `<div class="habcols habcols-all">${HAB_COLORS.map(c => `<button type="button" data-pc="${c}" class="${h.color === c ? 'on' : ''}" style="background:${c}" aria-label="Color"></button>`).join('')}<label class="habnewcol" title="Crear un color"><input type="color" id="hcCustom" value="${h.color}"><span>🎨</span></label></div>`, onMount: pel => { pel.querySelectorAll('[data-pc]').forEach(b => b.onclick = () => { h.color = b.dataset.pc; pick.close(); }); pel.querySelector('#hcCustom').onchange = e => { h.color = e.target.value; pick.close(); }; }}); };
+      hcBtn.onclick = () => { const pick = openSheet({title: 'Elige un color', cls: 'small', body: `<div class="habspec">${SPEC_COLORS.map(c => `<button type="button" data-pc="${c}" style="background:${c}" aria-label="Color"></button>`).join('')}</div><div class="habcols habcols-all">${HAB_COLORS.map(c => `<button type="button" data-pc="${c}" class="${h.color === c ? 'on' : ''}" style="background:${c}" aria-label="Color"></button>`).join('')}<label class="habnewcol" title="Crear un color"><input type="color" id="hcCustom" value="${h.color}"><span>🎨</span></label></div>`, onMount: pel => { pel.querySelectorAll('[data-pc]').forEach(b => b.onclick = () => { h.color = b.dataset.pc; pick.close(); }); pel.querySelector('#hcCustom').onchange = e => { h.color = e.target.value; pick.close(); }; }}); };
       q('#hName').addEventListener('input', () => { const nm = q('#hName').value; if (isNew && !kind) { if (/agua/i.test(nm)) { el.querySelector('[data-hk="agua"]').click(); } else if (/^(leer|lectura)/i.test(nm)) { el.querySelector('[data-hk="lectura"]').click(); } else if (/ahorr/i.test(nm)) { el.querySelector('[data-hk="ahorro"]').click(); } else if (/levant|despert|madrug/i.test(nm)) { el.querySelector('[data-hk="despertar"]').click(); } else if (/comer|comida|saludable|dieta/i.test(nm)) { el.querySelector('[data-hk="comida"]').click(); } else if (/^or(ar|aci)/i.test(nm)) { el.querySelector('[data-hk="oracion"]').click(); } else if (ACT_RE.test(nm)) { el.querySelector('[data-hk="actividad"]').click(); } else if (TIME_RE.test(nm)) { el.querySelector('[data-hk="tiempo"]').click(); } } });
       q('#hgM').onclick = () => { h.goal = Math.max(1, habGoal(h) - 1); q('#hgV').textContent = h.goal; };
       q('#hgP').onclick = () => { h.goal = Math.min(99, habGoal(h) + 1); q('#hgV').textContent = h.goal; };

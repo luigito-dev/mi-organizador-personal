@@ -1498,3 +1498,6 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .hdpct{font-style:normal;font-weight:800;font-size:14px;min-width:42px;text-align:right}
 
 .fab.dragging{opacity:.85;cursor:grabbing;box-shadow:0 10px 26px rgba(31,95,191,.55)}
+
+.habspec{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin-bottom:12px;border-radius:12px;overflow:hidden}
+.habspec button{aspect-ratio:1/1;width:100%;height:auto;border:0;border-radius:0;padding:0;cursor:pointer}
