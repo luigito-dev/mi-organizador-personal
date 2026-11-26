@@ -2393,10 +2393,10 @@ function openFood(h, d, host) {
       let meal = defMeal, qty = 1, photo = null;
       const sh = openSheet({title: 'Registrar comida', body: `
         <div class="fld"><label>¿Cuál comida?</label><div class="chchips">${MEALS.map(([k, n2]) => `<button type="button" data-nm="${k}" class="${k === meal ? 'on' : ''}">${n2}</button>`).join('')}</div></div>
-        <div class="fld"><label>Alimento</label><select class="inp" id="nfF">${NUT_FOODS.map((x, i) => `<option value="${i}">${x[0]}</option>`).join('')}</select>
-          <button type="button" class="btn sec sm" id="nfScan" style="margin-top:8px">📷 Escanear código de barras</button></div>
+        <div class="fld"><div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn" id="nfScan" style="flex:1 1 180px">📷 Escanear código de barras</button><label class="btn sec" id="nfPhBtn" style="flex:1 1 140px;cursor:pointer;text-align:center">📸 Tomar foto<input type="file" accept="image/*" capture="environment" id="nfPh" style="display:none"></label></div></div>
+        <div class="fld"><label>Alimento</label><select class="inp" id="nfF">${NUT_FOODS.map((x, i) => `<option value="${i}">${x[0]}</option>`).join('')}</select></div>
         <div class="fld"><label>Porciones</label><div class="habgoal"><button type="button" class="btn sec sm" id="nfM">−</button><b id="nfQv">1</b><button type="button" class="btn sec sm" id="nfP">+</button></div></div>
-        <div class="fld"><label>Foto (opcional)</label><input class="inp" type="file" accept="image/*" capture="environment" id="nfPh"><img id="nfImg" class="nfimg" alt="" hidden></div>
+        <div class="fld"><img id="nfImg" class="nfimg" alt="" hidden></div>
         <div class="nfres" id="nfRes"></div>
         <small class="hint">Valores aproximados por porción. Para exactitud, usa la etiqueta del producto.</small>`,
         foot: '<button class="btn" id="nfS">Guardar comida</button>',
@@ -2404,6 +2404,8 @@ function openFood(h, d, host) {
           const qq = x => sel.querySelector(x);
           let product = null;
           const curFood = () => product ? [product.name, '', product.kcal100 * product.servingG / 100, product.p100 * product.servingG / 100, product.c100 * product.servingG / 100, product.g100 * product.servingG / 100] : NUT_FOODS[+qq('#nfF').value];
+          // Pedir permiso de cámara antes de abrir la cámara para la foto
+          qq('#nfPhBtn').addEventListener('click', async () => { try { const core = window.capacitorExports; if (core && core.registerPlugin) await core.registerPlugin('BarcodeScanner').requestPermissions(); } catch (e) {} });
           qq('#nfScan').onclick = async () => {
             const code = await scanFoodBarcode(); if (!code) return;
             toast('Buscando el producto…');
