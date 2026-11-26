@@ -33,6 +33,7 @@ public class OrganizadorPlugin extends Plugin {
         ctx.getSharedPreferences(HoyWidget.PREFS, Context.MODE_PRIVATE).edit().putString(HoyWidget.KEY, data).apply();
         HoyWidget.refreshAll(ctx);
         CalWidget.refreshAll(ctx);
+        OrgWidgets.refreshAll(ctx);
         call.resolve();
     }
 
@@ -44,6 +45,10 @@ public class OrganizadorPlugin extends Plugin {
         p.edit().remove(CalWidget.QUEUE).remove(CalWidget.OVERRIDES).apply();
         JSObject r = new JSObject();
         r.put("changes", q);
+        // Cambios de agua, hábitos y comida hechos desde los widgets nuevos
+        SharedPreferences w = getContext().getSharedPreferences(OrgWidgets.PREFS, Context.MODE_PRIVATE);
+        r.put("extra", w.getString(OrgWidgets.QUEUE, "[]"));
+        w.edit().remove(OrgWidgets.QUEUE).apply();
         call.resolve(r);
     }
 

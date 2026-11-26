@@ -129,7 +129,14 @@
       const colorFes = n => /puerto rico|puertorrique/i.test(n) ? '#c8102e' : /gracias/i.test(n) ? '#b8612a' : /año nuevo/i.test(n) ? '#7b2ff7' : /navidad/i.test(n) ? '#1e7d4a' : /reyes/i.test(n) ? '#b8860b' : /independencia|juneteenth/i.test(n) ? '#1f5fbf' : '#c0457a';
       const fe = S.events.find(e => e.date === hoy);
       const scene = fh ? {n: fh.name, e: holiEmoji(fh.name), c: colorFes(fh.name)} : fe ? {n: fe.title, e: (evType(fe.evType) || {}).icon || '📌', c: '#1F5FBF'} : null;
-      return Org.updateWidget({data: JSON.stringify({days, stats, pend, scene})}).catch(() => {});
+      // Agua, hábitos de hoy y comer saludable para sus widgets
+      const HB = S.habits || [], td = todayISO();
+      const aguaH = HB.find(h => habKind(h) === 'agua'), foodH = HB.find(h => h.food);
+      const water = aguaH ? {id: aguaH.id, n: habCount(aguaH, td), g: habGoal(aguaH)} : null;
+      const habs = HB.filter(h => h !== aguaH && h !== foodH && !h.challenge).slice(0, 5).map(h => ({id: h.id, n: h.name || '', i: h.icon || '', d: habDone(h, td) ? 1 : 0}));
+      const fd = foodH ? ((foodH.food || {})[td] || {}) : null;
+      const food = foodH ? {id: foodH.id, g: FOOD_GOAL(foodH), c: {v: fd.v || 0, f: fd.f || 0, g: fd.g || 0, p: fd.p || 0, l: fd.l || 0}} : null;
+      return Org.updateWidget({data: JSON.stringify({days, stats, pend, scene, water, habs, food})}).catch(() => {});
     },
     /* Aplica los cambios hechos desde el widget (marcar tareas) */
     async applyWidgetChanges() {
@@ -142,6 +149,25 @@
           if (t) { t.status = c.done ? 'Completada' : 'Pendiente'; t.completedAt = c.done ? Date.now() : null; changed = true; }
         });
         if (changed) { save('tasks'); render(); }
+        // Agua, hábitos y porciones marcados desde los widgets
+        const ex = JSON.parse((r && r.extra) || '[]');
+        let hab = false;
+        ex.forEach(x => {
+          const h = S.habits.find(q => q.id === x.id) || (x.k === 'agua' ? S.habits.find(q => habKind(q) === 'agua') : x.k === 'food' ? S.habits.find(q => q.food) : null);
+          if (!h) return;
+          const d = x.d || todayISO();
+          h.log = h.log || {};
+          if (x.k === 'agua') { h.log[d] = habCount(h, d) + (+x.oz || 1); hab = true; }
+          if (x.k === 'hab') { h.log[d] = habDone(h, d) ? 0 : habGoal(h); hab = true; }
+          if (x.k === 'food' && ['v', 'f', 'g', 'p', 'l'].includes(x.sec)) {
+            h.food = h.food || {};
+            const day = h.food[d] = h.food[d] || {f: 0, v: 0, g: 0, p: 0, l: 0, meals: {}};
+            day[x.sec] = (day[x.sec] || 0) + 1; day.order = (day.order || '') + x.sec;
+            const t = (day.f || 0) + (day.v || 0); if (t) h.log[d] = t; else delete h.log[d];
+            hab = true;
+          }
+        });
+        if (hab) { save('habits'); if (!sheets.length) render(); this.pushWidget(); }
       } catch (e) {}
     },
     handleAction(a) {

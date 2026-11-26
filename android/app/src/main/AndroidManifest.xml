@@ -52,6 +52,45 @@
                 android:resource="@xml/widget_cal_info" />
         </receiver>
 
+        <receiver
+            android:name=".AguaWidget"
+            android:label="Mi Organizador · Agua"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.luigito.miorganizador.W_AGUA" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_agua_info" />
+        </receiver>
+
+        <receiver
+            android:name=".HabitosWidget"
+            android:label="Mi Organizador · Hábitos de hoy"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.luigito.miorganizador.W_HAB" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_habitos_info" />
+        </receiver>
+
+        <receiver
+            android:name=".ComerWidget"
+            android:label="Mi Organizador · Comer saludable"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.luigito.miorganizador.W_FOOD" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_comer_info" />
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
