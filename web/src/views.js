@@ -2309,10 +2309,10 @@ function plateSVG(f) {
   </svg>`;
 }
 function plateRef(f) {
-  // MiPlato (USDA): mitad vegetales y frutas, un cuarto granos, un cuarto proteína; el lácteo va aparte
+  // MiPlato (USDA), igual al sticker del paquete: arriba izquierda frutas, arriba derecha granos, abajo izquierda vegetales, abajo derecha proteína; el lácteo va aparte
   const R = 98, cx = 110, cy = 110, pt = a => [cx + R * Math.cos(a * Math.PI / 180), cy + R * Math.sin(a * Math.PI / 180)];
   const seg = (a0, a1) => { const [x0, y0] = pt(a0), [x1, y1] = pt(a1); return `M${cx} ${cy} L${x0} ${y0} A${R} ${R} 0 0 1 ${x1} ${y1}Z`; };
-  const parts = [['v', '#2e9d5b', 'Vegetales', -180, -90], ['f', '#e5383b', 'Frutas', -90, 0], ['g', '#d99400', 'Granos', 0, 90], ['p', '#b45309', 'Proteína', 90, 180]];
+  const parts = [['f', '#e5383b', 'Frutas', -180, -90], ['g', '#d99400', 'Granos', -90, 0], ['p', '#b45309', 'Proteína', 0, 90], ['v', '#2e9d5b', 'Vegetales', 90, 180]];
   return `<svg class="plate" viewBox="0 0 220 220" aria-hidden="true">
     <circle cx="110" cy="110" r="108" fill="#fff" stroke="#e5e7eb" stroke-width="2"/>
     ${parts.map(([k, col, name, a0, a1]) => { const n = f[k] || 0, m = (a0 + a1) / 2, lx = cx + 58 * Math.cos(m * Math.PI / 180), ly = cy + 58 * Math.sin(m * Math.PI / 180); return `<path d="${seg(a0, a1)}" fill="${n ? col : '#f3f4f6'}" fill-opacity="${n ? .85 : 1}" stroke="#fff" stroke-width="3" data-gi="${k}" class="pseg"/><text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" class="ptxt${n ? ' on' : ''}">${name}</text>`; }).join('')}
