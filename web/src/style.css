@@ -1561,3 +1561,13 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .ntpie{width:110px;height:110px;flex:0 0 110px}
 .ntleg{font-size:13px;display:flex;flex-direction:column;gap:6px}
 .ntleg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+/* Calendario con escena de fondo: más aire, el pavo visible y la escena completa */
+.pcal-scene{padding-bottom:14px}
+.pcal-scene .pcalg,.pcal-scene .qrows,.pcal-scene .pcald{background:rgba(255,255,255,.62)!important;backdrop-filter:blur(1px)}
+.pcal-scene .pcalh b{background:rgba(255,255,255,.75)}
+.pcalbg .hfeat .hw{top:44px;bottom:auto;font-size:36px;z-index:0}
+.pcalbg .hfeat .hl{top:auto;bottom:-10px}
+.pcal-scene .pcalg{margin-top:6px}
+.pcal-scene .qfoot{background:rgba(255,255,255,.7)!important}
+.qcount{white-space:nowrap}
+.qtitle.long{font-size:clamp(18px,5.5vw,24px)}
