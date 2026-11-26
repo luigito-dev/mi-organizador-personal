@@ -1571,3 +1571,6 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .pcal-scene .qfoot{background:rgba(255,255,255,.7)!important}
 .qcount{white-space:nowrap}
 .qtitle.long{font-size:clamp(18px,5.5vw,24px)}
+
+.pcal-scene .pcalg,.pcal-scene .qrows,.pcal-scene .pcald{background:rgba(255,255,255,.42)!important}
+.pcalbg .hfeat{filter:saturate(1.15) brightness(1.05)}

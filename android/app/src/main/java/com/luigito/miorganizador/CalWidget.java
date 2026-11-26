@@ -119,6 +119,16 @@ public class CalWidget extends AppWidgetProvider {
         JSONObject ov = new JSONObject();
         try { ov = new JSONObject(p.getString(OVERRIDES, "{}")); } catch (Exception ignored) { }
 
+        // Escena de hoy (festivo o evento con emoji)
+        try {
+          JSONObject sc = new JSONObject(ctx.getSharedPreferences(HoyWidget.PREFS, Context.MODE_PRIVATE).getString(HoyWidget.KEY, "{}")).optJSONObject("scene");
+          if (sc != null) {
+            v.setViewVisibility(R.id.wScene, View.VISIBLE);
+            v.setTextViewText(R.id.wScene, sc.optString("e", "") + " " + sc.optString("n", ""));
+            v.setInt(R.id.wScene, "setBackgroundColor", Color.parseColor(sc.optString("c", "#1F5FBF")));
+          } else v.setViewVisibility(R.id.wScene, View.GONE);
+        } catch (Exception ignored) { v.setViewVisibility(R.id.wScene, View.GONE); }
+
         // Encabezado del mes
         Calendar first = Calendar.getInstance();
         first.set(y, m, 1);

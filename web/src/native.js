@@ -124,7 +124,12 @@
         const L = S.tasks.filter(t => t.date === d && !isDone(t)).map(t => ({id: t.id, n: t.title || '', h: t.time ? fmtTime(t.time) : ''}));
         if (L.length) pend[d] = L;
       }
-      return Org.updateWidget({data: JSON.stringify({days, stats, pend})}).catch(() => {});
+      // Escena de hoy (festivo o evento con emoji) para el widget
+      const hoy = todayISO(), fh = holidaysOn(hoy)[0];
+      const colorFes = n => /puerto rico|puertorrique/i.test(n) ? '#c8102e' : /gracias/i.test(n) ? '#b8612a' : /año nuevo/i.test(n) ? '#7b2ff7' : /navidad/i.test(n) ? '#1e7d4a' : /reyes/i.test(n) ? '#b8860b' : /independencia|juneteenth/i.test(n) ? '#1f5fbf' : '#c0457a';
+      const fe = S.events.find(e => e.date === hoy);
+      const scene = fh ? {n: fh.name, e: holiEmoji(fh.name), c: colorFes(fh.name)} : fe ? {n: fe.title, e: (evType(fe.evType) || {}).icon || '📌', c: '#1F5FBF'} : null;
+      return Org.updateWidget({data: JSON.stringify({days, stats, pend, scene})}).catch(() => {});
     },
     /* Aplica los cambios hechos desde el widget (marcar tareas) */
     async applyWidgetChanges() {
