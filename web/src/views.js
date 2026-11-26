@@ -2308,6 +2308,36 @@ function plateSVG(f) {
     ${parts.map(([k, col, em, a0, a1]) => { const n = f[k] || 0, m = (a0 + a1) / 2, rad = 52, x = cx + rad * Math.cos(m * Math.PI / 180), y = cy + rad * Math.sin(m * Math.PI / 180); return `<path d="${seg(a0, a1)}" fill="${n ? col : '#fafaf7'}" stroke="#fff" stroke-width="3" data-sec="${k}" class="plsec"/><text x="${x}" y="${y + 6}" text-anchor="middle" font-size="22">${em}</text>${n ? `<text x="${x}" y="${y + 26}" text-anchor="middle" font-size="13" font-weight="800" fill="#333">×${n}</text>` : ''}`; }).join('')}
   </svg>`;
 }
+function plateRef(f) {
+  // MiPlato (USDA): mitad vegetales y frutas, un cuarto granos, un cuarto proteína; el lácteo va aparte
+  const R = 98, cx = 110, cy = 110, pt = a => [cx + R * Math.cos(a * Math.PI / 180), cy + R * Math.sin(a * Math.PI / 180)];
+  const seg = (a0, a1) => { const [x0, y0] = pt(a0), [x1, y1] = pt(a1); return `M${cx} ${cy} L${x0} ${y0} A${R} ${R} 0 0 1 ${x1} ${y1}Z`; };
+  const parts = [['v', '#2e9d5b', 'Vegetales', -180, -90], ['f', '#e5383b', 'Frutas', -90, 0], ['g', '#d99400', 'Granos', 0, 90], ['p', '#b45309', 'Proteína', 90, 180]];
+  return `<svg class="plate" viewBox="0 0 220 220" aria-hidden="true">
+    <circle cx="110" cy="110" r="108" fill="#fff" stroke="#e5e7eb" stroke-width="2"/>
+    ${parts.map(([k, col, name, a0, a1]) => { const n = f[k] || 0, m = (a0 + a1) / 2, lx = cx + 58 * Math.cos(m * Math.PI / 180), ly = cy + 58 * Math.sin(m * Math.PI / 180); return `<path d="${seg(a0, a1)}" fill="${n ? col : '#f3f4f6'}" fill-opacity="${n ? .85 : 1}" stroke="#fff" stroke-width="3" data-gi="${k}" class="pseg"/><text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" class="ptxt${n ? ' on' : ''}">${name}</text>`; }).join('')}
+  </svg>`;
+}
+const PLATE_SHARE = {v: 'La mitad del plato junto con las frutas', f: 'La mitad del plato junto con los vegetales', g: 'Un cuarto del plato', p: 'Un cuarto del plato', l: 'Aparte del plato, una porción al día'};
+function showGroupInfo(k) {
+  const e = NUT_EDU[k], ex = NUT_FOODS.filter(x => x[1] === k).slice(0, 6).map(x => x[0]);
+  openSheet({title: e.t, body: `
+    <p>${e.d}</p>
+    <div class="gi-box"><div><b>Cuánto en tu plato:</b> ${PLATE_SHARE[k]}</div><div><b>Porción recomendada:</b> ${e.porc}</div></div>
+    <p><b>Ejemplos:</b> ${e.ej}</p>
+    <small class="hint">En la lista de la app: ${ex.join(' · ')}</small>`});
+}
+function plateAdvice(c, n) {
+  if (!n) return '<small class="muted">Todavía no has marcado alimentos.</small>';
+  const tips = [];
+  if (c.v + c.f === 0) tips.push('Falta la mitad del plato: vegetales y frutas.');
+  else if (c.v + c.f < 2) tips.push('Agrega más vegetales o frutas para llegar a la mitad del plato.');
+  if (c.g >= 2) tips.push('Baja la porción de granos (farináceos) a un cuarto del plato.');
+  if (c.p === 0) tips.push('Falta proteína: agrega un cuarto del plato.');
+  else if (c.g >= 2 && c.p < c.g) tips.push('Sube la proteína para equilibrar los granos.');
+  if (c.l === 0) tips.push('Incluye un lácteo en el día (leche, yogur o queso bajo en grasa), aparte del plato.');
+  return tips.length ? `<div class="fdadv"><b>Para mejorar tu plato:</b><ul>${tips.map(t => `<li>${t}</li>`).join('')}</ul></div>` : '<div class="fdadv ok"><b>¡Plato equilibrado!</b> Sigue así.</div>';
+}
 const NUT_FOODS = [
   ['Arroz blanco · 1 taza', 'g', 205, 4.3, 45, 0.4], ['Arroz integral · 1 taza', 'g', 216, 5, 45, 1.8],
   ['Habichuelas cocidas · ½ taza', 'p', 120, 7.5, 22, 0.5], ['Pollo a la plancha · 100 g', 'p', 165, 31, 0, 3.6],
@@ -2373,28 +2403,66 @@ function openFood(h, d, host) {
     h.food = h.food || {}; const f = h.food[d] = h.food[d] || {f: 0, v: 0, g: 0, p: 0, l: 0, meals: {}}, g = FOOD_GOAL(h), n = (f.f || 0) + (f.v || 0), tot = ['f', 'v', 'g', 'p', 'l'].reduce((a, k) => a + (f[k] || 0), 0);
     const tk = x => (x.entries || []).reduce((a, en) => ({kcal: a.kcal + en.kcal, p: a.p + en.p, c: a.c + en.c, g: a.g + en.g}), {kcal: 0, p: 0, c: 0, g: 0}); const tt = tk(f); tt.p = Math.round(tt.p * 10) / 10; tt.c = Math.round(tt.c * 10) / 10; tt.g = Math.round(tt.g * 10) / 10;
     const ml = Object.values(f.meals || {}), sano = ml.filter(x => x === 'sano').length, tip = FOOD_TIPS[(parseISO(d).getDate() + parseISO(d).getMonth()) % FOOD_TIPS.length];
+    const C_RING = 2 * Math.PI * 52, pct = Math.min(1, n / g);
+    const msg = n >= g ? '¡Meta cumplida! Excelente día' : n === 0 ? 'Empieza con una fruta o un vegetal' : (n / g >= .5 ? `Vas muy bien, faltan ${g - n}` : `Vas bien, faltan ${g - n} para tu meta`);
+    const GRP = [
+      ['v', 'Vegetal', '#2e9d5b', '<path d="M10 38 C10 18 24 8 40 8 C40 26 30 38 10 38Z" fill="currentColor"/><path d="M10 38 L28 20" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>'],
+      ['f', 'Fruta', '#e5383b', '<path d="M24 16 C16 10 6 16 8 28 C10 40 18 42 24 38 C30 42 38 40 40 28 C42 16 32 10 24 16Z" fill="currentColor"/><path d="M24 16 C24 12 26 8 30 6" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>'],
+      ['g', 'Granos', '#d99400', '<path d="M8 22 H40 C40 34 34 40 24 40 C14 40 8 34 8 22Z" fill="currentColor"/><path d="M14 16 Q18 10 16 4 M24 16 Q28 10 26 4 M34 16 Q38 10 36 4" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/>'],
+      ['p', 'Proteína', '#b45309', '<circle cx="20" cy="26" r="13" fill="currentColor"/><path d="M29 17 L40 6" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><circle cx="41" cy="7" r="4" fill="currentColor"/>'],
+      ['l', 'Lácteo', '#2f7de1', '<path d="M12 10 H36 L33 42 H15 Z" fill="currentColor"/><path d="M13 18 H35" stroke="#fff" stroke-width="2.5" opacity=".8"/>']
+    ];
+    const pop = UI.fdPop; UI.fdPop = null;
     el.querySelector('#fdBody').innerHTML = `
-      <div class="fdplate">${plateSVG(f)}</div>
-      <div class="wmsg">${n >= g ? '🎉 ¡Meta de frutas y vegetales cumplida!' : `Te ${g - n === 1 ? 'falta 1 porción' : `faltan ${g - n} porciones`} de frutas o vegetales`}</div>
-      <div class="fdbtns"><button class="fdb veg" data-fa="v">🥦 Vegetal <b>+1</b></button><button class="fdb fruit" data-fa="f">🍎 Fruta <b>+1</b></button><button class="fdb grain" data-fa="g">🍚 Granos <b>+1</b></button><button class="fdb prot" data-fa="p">🍗 Proteína <b>+1</b></button><button class="fdb dairy" data-fa="l">🥛 Lácteo <b>+1</b></button><button class="wsmall" id="fdM" ${tot ? '' : 'disabled'} aria-label="Quitar una">−1</button></div>
-      <div class="prcard"><div class="bknh"><b>¿Cómo comiste hoy?</b>${ml.length ? `<span>${sano} de ${ml.length} sanas</span>` : ''}</div>
-        ${MEALS.map(([k, n2]) => `<div class="fdmeal"><span>${n2}</span><div class="fdst">${MEAL_ST.map(([sk, e, lbl]) => `<button data-ml="${k}" data-ms="${sk}" class="${f.meals[k] === sk ? 'on ' + sk : ''}" aria-label="${lbl}" title="${lbl}">${e}</button>`).join('')}</div></div>`).join('')}
-        <small class="hint">🥗 Sano · 😐 Regular · 🍔 Comida rápida. Toca otra vez para quitar.</small></div>
-      <div class="fdedu" id="fdEdu">${(() => { const k = UI.foodSec || 'v', e = NUT_EDU[k]; return `<div class="fdedu-h">${e.t} <small>· ${e.porc}</small></div><p>${e.d}</p><small class="muted">Ejemplos: ${e.ej}</small>`; })()}</div>
-      ${(() => { const pK = tt.p * 4, cK = tt.c * 4, gK = tt.g * 9, all = pK + cK + gK; const pc = v => all ? Math.round(v / all * 100) : 0; return `<div class="ntcard"><div class="nthead"><b>Resumen de hoy</b><span>${tt.kcal} kcal</span></div><div class="ntbody">${pieSVG([{v: pK, col: '#7b5cd6'}, {v: cK, col: '#2fb67c'}, {v: gK, col: '#f0a202'}])}<div class="ntleg"><div><i style="background:#2fb67c"></i>Carbohidratos <b>${tt.c} g</b> · ${pc(cK)}%</div><div><i style="background:#7b5cd6"></i>Proteína <b>${tt.p} g</b> · ${pc(pK)}%</div><div><i style="background:#f0a202"></i>Grasa <b>${tt.g} g</b> · ${pc(gK)}%</div><small class="muted">Porcentaje de calorías del día</small></div></div></div>`; })()}
-      <button class="btn sec sm fdadd" id="fdAdd">+ Registrar comida con foto o alimento</button>
-      ${(f.entries || []).length ? `<div class="fdlist">${f.entries.map(en => `<div class="fdrow">${en.photo ? `<img src="${en.photo}" alt="">` : `<span class="fdno">🍽️</span>`}<div class="fdt"><b>${esc(en.name)}</b><small>${MEALS.find(m => m[0] === en.meal)?.[1] || ''} · ${en.q} · ${en.kcal} kcal · P ${en.p} g · C ${en.c} g · G ${en.g} g</small></div><button class="wrdel" data-fdel="${en.id}" aria-label="Quitar"><i class="xdel"></i></button></div>`).join('')}</div>` : ''}
-      <div class="fdtip">💡 ${tip}</div>
+      <div class="fdhero">
+        <div class="fdplatebox">
+          ${plateRef(f)}
+          <span class="fdlact" data-gi="l">Lácteo: ${f.l || 0}</span>
+        </div>
+        <div class="fdhero-t">
+          <div class="fdcount"><b>${n}</b> de ${g} porciones</div>
+          <div class="fdbar"><i style="width:${Math.round(pct * 100)}%"></i></div>
+          <div class="fdmsg">${msg}</div>
+          <small class="muted">${tt.kcal} kcal · P ${tt.p} g · C ${tt.c} g · G ${tt.g} g</small>
+        </div>
+      </div>
+      <div class="fdgrid">
+        ${GRP.map(([k, name, col, ico]) => `
+          <div class="fdg${pop === k ? ' pop' : ''}" data-fa="${k}" role="button" tabindex="0" style="--c:${col}">
+            <span class="fdgn">${name}</span><span class="fdinfo" data-gi="${k}" aria-label="Ver ejemplos y porciones">i</span>
+            <svg class="fdgi" viewBox="0 0 48 48" aria-hidden="true">${ico}</svg>
+            <div class="fdgc"><b>${f[k] || 0}</b><small>toca para sumar</small></div>
+            <span class="fdminus${f[k] ? '' : ' off'}" data-fm="${k}" aria-label="Quitar una">−</span>
+          </div>`).join('')}
+      </div>
+      <div class="fdadds">
+        <button class="fdadd2" id="fdScan">Escanear</button>
+        <button class="fdadd2" id="fdPhoto">Foto</button>
+        <button class="fdadd2" id="fdSearch">Buscar</button>
+        <button class="fdadd2" id="fdCheck">Revisar plato</button>
+      </div>
+      <div class="fdcard">
+        <div class="fdcard-h"><b>¿Cómo comiste hoy?</b>${ml.length ? `<small>${sano} de ${ml.length} sanas</small>` : ''}</div>
+        ${MEALS.map(([k, n2]) => `<div class="fdmeal"><span>${n2}</span><div class="fdst">${MEAL_ST.map(([sk, e, lbl]) => `<button data-ml="${k}" data-ms="${sk}" class="${f.meals[k] === sk ? 'on ' + sk : ''}" aria-label="${lbl}">${lbl}</button>`).join('')}</div></div>`).join('')}
+      </div>
+      <div class="fdcard">
+        <div class="fdcard-h"><b>Lo que comiste</b>${(f.entries || []).length ? `<small>${f.entries.length} registro${f.entries.length === 1 ? '' : 's'}</small>` : ''}</div>
+        ${(f.entries || []).length ? `<div class="fdlist">${f.entries.map(en => `<div class="fdrow">${en.photo ? `<img src="${en.photo}" alt="">` : `<span class="fdno"></span>`}<div class="fdt"><b>${esc(en.name)}</b><small>${MEALS.find(m => m[0] === en.meal)?.[1] || ''} · ${en.q} · ${en.kcal} kcal · P ${en.p} g · C ${en.c} g · G ${en.g} g</small></div><button class="wrdel" data-fdel="${en.id}" aria-label="Quitar"><i class="xdel"></i></button></div>`).join('')}</div>` : '<small class="muted">Todavía no hay comidas registradas hoy.</small>'}
+      </div>
+      <details class="fdcard fdedu" id="fdEdu"><summary><b>Consejo del día</b></summary>
+        <p>${tip}</p>
+        ${(() => { const k = UI.foodSec || 'v', e = NUT_EDU[k]; return `<div class="fdedu-h">${e.t} <small>· ${e.porc}</small></div><p>${e.d}</p><small class="muted">Ejemplos: ${e.ej}</small>`; })()}
+      </details>
       <button class="acgoal" id="fdG">Meta: <b>${g} porciones al día</b> <span>Cambiar ✎</span></button>`;
     const q = x => el.querySelector(x);
     const setLog = () => { h.log = h.log || {}; const t = (f.f || 0) + (f.v || 0); if (t) h.log[d] = t; else delete h.log[d]; save('habits'); };
-    el.querySelectorAll('[data-fa]').forEach(b => b.onclick = () => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } const was = habDone(h, d), k = b.dataset.fa; f[k] = (f[k] || 0) + 1; f.order = (f.order || '') + k; setLog(); if (!was && habDone(h, d)) toast('🥗 ¡Meta cumplida! Sigue así'); draw(el); });
-    q('#fdM').onclick = () => { const last = (f.order || '').slice(-1); const k = f[last] ? last : ['v', 'f', 'g', 'p', 'l'].find(x => f[x]); if (k) f[k]--; f.order = (f.order || '').slice(0, -1); setLog(); draw(el); };
+    el.querySelectorAll('[data-fa]').forEach(b => b.onclick = () => { if (d > todayISO()) { toast('Ese día todavía no llega'); return; } const was = habDone(h, d), k = b.dataset.fa; f[k] = (f[k] || 0) + 1; f.order = (f.order || '') + k; UI.fdPop = k; setLog(); if (!was && habDone(h, d)) toast('🥗 ¡Meta cumplida! Sigue así'); draw(el); });
+    el.querySelectorAll('[data-fm]').forEach(b => b.onclick = e => { e.stopPropagation(); const k = b.dataset.fm; if (!f[k]) return; f[k]--; f.order = (f.order || '').replace(new RegExp(k + '(?=[^' + k + ']*$)'), ''); setLog(); draw(el); });
     el.querySelectorAll('[data-ml]').forEach(b => b.onclick = () => { const k = b.dataset.ml; f.meals[k] = f.meals[k] === b.dataset.ms ? undefined : b.dataset.ms; if (!f.meals[k]) delete f.meals[k]; save('habits'); draw(el); });
     el.querySelectorAll('[data-sec]').forEach(pth => pth.onclick = () => { UI.foodSec = pth.dataset.sec; draw(el); });
     const r1 = x => Math.round(x * 10) / 10;
     const pickPhoto = file => new Promise(res => { const img = new Image(), url = URL.createObjectURL(file); img.onload = () => { const sc = Math.min(1, 260 / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', .6)); }; img.onerror = () => res(null); img.src = url; });
-    const openAdd = () => {
+    const openAdd = (opt = {}) => {
       if (d > todayISO()) { toast('Ese día todavía no llega'); return; }
       const hr = new Date().getHours(), defMeal = hr < 11 ? 'desayuno' : hr < 16 ? 'almuerzo' : 'cena';
       let meal = defMeal, qty = 1, photo = null;
@@ -2432,9 +2500,43 @@ function openFood(h, d, host) {
             f.entries = f.entries || []; f.entries.push(en); save('habits'); setLog(); sh.close(); toast('Comida guardada'); draw(el);
           };
           upd();
+          if (opt.scan) qq('#nfScan').click();
+          if (opt.photo) qq('#nfPh').click();
         }});
     };
-    const fa = el.querySelector('#fdAdd'); if (fa) fa.onclick = openAdd;
+    const openCheck = () => {
+      const sel = {};
+      const groups = [['v', 'Vegetales'], ['f', 'Frutas'], ['g', 'Granos'], ['p', 'Proteína'], ['l', 'Lácteos']];
+      const body = `<p class="hint">Marca lo que tiene tu plato. Cada alimento cuenta como una porción.</p>
+        ${groups.map(([k, nm]) => `<div class="fdpick-g"><b>${nm}</b><div class="chchips">${NUT_FOODS.map((x, i) => [x, i]).filter(([x]) => x[1] === k).map(([x, i]) => `<button type="button" data-pf="${i}">${x[0]}</button>`).join('')}</div></div>`).join('')}
+        <div id="fdRes"></div>`;
+      const sh = openSheet({title: 'Revisar mi plato', body, foot: '<button class="btn" id="fdRegs" disabled>Registrar este plato</button>', onMount: sel2 => {
+        const qq = x => sel2.querySelector(x);
+        const upd = () => {
+          const c = {v: 0, f: 0, g: 0, p: 0, l: 0}; let n = 0;
+          Object.keys(sel).forEach(i => { if (sel[i]) { c[NUT_FOODS[i][1]]++; n++; } });
+          sel2.querySelectorAll('[data-pf]').forEach(b => b.classList.toggle('on', !!sel[b.dataset.pf]));
+          qq('#fdRes').innerHTML = plateAdvice(c, n); qq('#fdRegs').disabled = !n;
+        };
+        sel2.querySelectorAll('[data-pf]').forEach(b => b.onclick = () => { sel[b.dataset.pf] = !sel[b.dataset.pf]; upd(); });
+        qq('#fdRegs').onclick = () => {
+          if (d > todayISO()) { toast('Ese día todavía no llega'); return; }
+          const hr = new Date().getHours(), meal = hr < 11 ? 'desayuno' : hr < 16 ? 'almuerzo' : 'cena';
+          Object.keys(sel).filter(i => sel[i]).forEach(i => {
+            const x = NUT_FOODS[i], sec = x[1];
+            const en = {id: uid(), meal, name: x[0], sec, q: 1, kcal: x[2], p: x[3], c: x[4], g: x[5], at: Date.now(), secN: 1};
+            if (sec) { f[sec] = (f[sec] || 0) + 1; f.order = (f.order || '') + sec; }
+            f.entries = f.entries || []; f.entries.push(en);
+          });
+          save('habits'); setLog(); sh.close(); toast('Plato registrado'); draw(el);
+        };
+        upd();
+      }});
+    };
+    const bindAdd = (id, o) => { const b = el.querySelector(id); if (b) b.onclick = () => openAdd(o); };
+    bindAdd('#fdScan', {scan: true}); bindAdd('#fdPhoto', {photo: true}); bindAdd('#fdSearch', {});
+    el.querySelectorAll('[data-gi]').forEach(b => b.onclick = e => { e.stopPropagation(); showGroupInfo(b.dataset.gi); });
+    const chk = el.querySelector('#fdCheck'); if (chk) chk.onclick = openCheck;
     el.querySelectorAll('[data-fdel]').forEach(b => b.onclick = () => { const en = (f.entries || []).find(x => x.id === b.dataset.fdel); if (!en) return; f.entries = f.entries.filter(x => x !== en); if (en.sec && en.secN) { f[en.sec] = Math.max(0, (f[en.sec] || 0) - en.secN); for (let i = 0; i < en.secN; i++) f.order = (f.order || '').replace(new RegExp(en.sec + '(?=[^' + en.sec + ']*$)'), ''); } save('habits'); setLog(); draw(el); });
     q('#fdG').onclick = async () => { const v = await pickNumber(g, {min: 1, max: 12, unit: 'porciones', title: 'Frutas y vegetales al día'}); if (v) { h.goal = v; setLog(); draw(el); } };
   };
