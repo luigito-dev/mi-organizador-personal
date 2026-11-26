@@ -1,9 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg">
+
+    <!-- Escena de fondo (festivo o evento con emoji) -->
+    <ImageView
+        android:id="@+id/wSceneBg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
+
+    <LinearLayout
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
-    android:background="@drawable/widget_bg"
     android:padding="10dp">
 
     <LinearLayout
@@ -137,23 +149,6 @@
         android:layout_weight="1.05"
         android:layout_marginStart="10dp"
         android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/wScene"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:paddingTop="3dp"
-            android:paddingBottom="3dp"
-            android:background="@color/widgetBlue"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:visibility="gone" />
 
         <TextView
             android:id="@+id/wDay"
@@ -342,4 +337,5 @@
             android:textSize="12sp"
             android:maxLines="1" />
     </LinearLayout>
-</LinearLayout>
+    </LinearLayout>
+</FrameLayout>

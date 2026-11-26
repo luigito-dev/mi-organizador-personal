@@ -7,7 +7,12 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
+import android.graphics.Paint;
+import android.graphics.Shader;
 import android.view.View;
 import android.widget.RemoteViews;
 import java.text.SimpleDateFormat;
@@ -102,6 +107,39 @@ public class CalWidget extends AppWidgetProvider {
         return PendingIntent.getActivity(ctx, code, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
+    /** Dibuja la escena de fondo: degradado suave del color de la escena, emoji grande y el nombre arriba. */
+    static Bitmap sceneBitmap(String emoji, String name, String hex) {
+        int w = 480, h = 320;
+        Bitmap bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(bmp);
+        int base;
+        try { base = Color.parseColor(hex); } catch (Exception e) { base = Color.parseColor("#1F5FBF"); }
+        // Aclarado para que el texto azul del calendario siga leyéndose
+        int top = blend(base, Color.WHITE, 0.55f), bottom = blend(base, Color.WHITE, 0.80f);
+        Paint bg = new Paint();
+        bg.setShader(new LinearGradient(0, 0, 0, h, top, bottom, Shader.TileMode.CLAMP));
+        c.drawRect(0, 0, w, h, bg);
+        Paint emo = new Paint(Paint.ANTI_ALIAS_FLAG);
+        emo.setTextSize(170f);
+        emo.setTextAlign(Paint.Align.CENTER);
+        emo.setAlpha(120);
+        c.drawText(emoji, w * 0.72f, h * 0.72f, emo);
+        Paint txt = new Paint(Paint.ANTI_ALIAS_FLAG);
+        txt.setColor(Color.WHITE);
+        txt.setTextSize(30f);
+        txt.setFakeBoldText(true);
+        txt.setShadowLayer(4f, 0, 2f, Color.argb(120, 0, 0, 0));
+        c.drawText(name, 18f, 42f, txt);
+        return bmp;
+    }
+
+    private static int blend(int a, int b, float t) {
+        int r = Math.round(Color.red(a) + (Color.red(b) - Color.red(a)) * t);
+        int g = Math.round(Color.green(a) + (Color.green(b) - Color.green(a)) * t);
+        int bl = Math.round(Color.blue(a) + (Color.blue(b) - Color.blue(a)) * t);
+        return Color.rgb(r, g, bl);
+    }
+
     static RemoteViews build(Context ctx) {
         RemoteViews v = new RemoteViews(ctx.getPackageName(), R.layout.widget_cal);
         SharedPreferences p = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
@@ -123,11 +161,10 @@ public class CalWidget extends AppWidgetProvider {
         try {
           JSONObject sc = new JSONObject(ctx.getSharedPreferences(HoyWidget.PREFS, Context.MODE_PRIVATE).getString(HoyWidget.KEY, "{}")).optJSONObject("scene");
           if (sc != null) {
-            v.setViewVisibility(R.id.wScene, View.VISIBLE);
-            v.setTextViewText(R.id.wScene, sc.optString("e", "") + " " + sc.optString("n", ""));
-            v.setInt(R.id.wScene, "setBackgroundColor", Color.parseColor(sc.optString("c", "#1F5FBF")));
-          } else v.setViewVisibility(R.id.wScene, View.GONE);
-        } catch (Exception ignored) { v.setViewVisibility(R.id.wScene, View.GONE); }
+            v.setImageViewBitmap(R.id.wSceneBg, sceneBitmap(sc.optString("e", ""), sc.optString("n", ""), sc.optString("c", "#1F5FBF")));
+            v.setViewVisibility(R.id.wSceneBg, View.VISIBLE);
+          } else v.setViewVisibility(R.id.wSceneBg, View.GONE);
+        } catch (Exception ignored) { v.setViewVisibility(R.id.wSceneBg, View.GONE); }
 
         // Encabezado del mes
         Calendar first = Calendar.getInstance();
