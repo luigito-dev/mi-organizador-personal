@@ -2352,13 +2352,20 @@ async function scanFoodBarcode() {
     return (r.barcodes && r.barcodes[0] && r.barcodes[0].rawValue) || null;
   } catch (e) { toast('No se pudo abrir el escáner'); return null; }
 }
+// Tabla nutricional al estilo de la etiqueta: por porción y por 100 g
+function nutriTable(pr, qty) {
+  const sv = pr.servingG / 100 * qty, r = x => Math.round(x * 10) / 10;
+  const rows = [['Calorías', pr.kcal100, 'kcal', 0], ['Grasa total', pr.g100, 'g', 1], ['  Grasa saturada', pr.sat100, 'g', 1], ['Carbohidratos', pr.c100, 'g', 1], ['  Azúcares', pr.sug100, 'g', 1], ['  Fibra', pr.fib100, 'g', 1], ['Proteína', pr.p100, 'g', 1], ['Sodio', pr.sod100, 'mg', 0]];
+  return `<div class="nutri"><div class="nutri-h"><b>${esc(pr.name)}</b><small>Porción: ${pr.servingG} g${qty !== 1 ? ` × ${qty}` : ''}</small></div>
+    <table><thead><tr><th></th><th>Por porción</th><th>Por 100 g</th></tr></thead><tbody>${rows.map(([n, v, u, d]) => `<tr><td>${n}</td><td><b>${r(v * sv)}</b> ${u}</td><td>${r(v)} ${u}</td></tr>`).join('')}</tbody></table></div>`;
+}
 async function lookupFoodBarcode(code) {
   try {
     const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,brands,serving_quantity,nutriments`);
     const j = await res.json();
     if (j.status !== 1 || !j.product) return null;
     const p = j.product, n = p.nutriments || {};
-    return {name: [p.brands, p.product_name].filter(Boolean).join(' · ') || 'Producto', servingG: +p.serving_quantity || 100, kcal100: +n['energy-kcal_100g'] || 0, p100: +n['proteins_100g'] || 0, c100: +n['carbohydrates_100g'] || 0, g100: +n['fat_100g'] || 0};
+    return {name: [p.brands, p.product_name].filter(Boolean).join(' · ') || 'Producto', servingG: +p.serving_quantity || 100, kcal100: +n['energy-kcal_100g'] || 0, p100: +n['proteins_100g'] || 0, c100: +n['carbohydrates_100g'] || 0, g100: +n['fat_100g'] || 0, sat100: +n['saturated-fat_100g'] || 0, sug100: +n['sugars_100g'] || 0, fib100: +n['fiber_100g'] || 0, sod100: (+n['sodium_100g'] || 0) * 1000};
   } catch (e) { return null; }
 }
 function openFood(h, d, host) {
@@ -2413,7 +2420,7 @@ function openFood(h, d, host) {
             if (!pr) { toast('Ese producto no está en la base de datos'); return; }
             product = pr; qty = 1; upd();
           };
-          const upd = () => { const food = curFood(); qq('#nfQv').textContent = qty; qq('#nfRes').innerHTML = `<b>${Math.round(food[2] * qty)} kcal</b> · Proteína ${r1(food[3] * qty)} g · Carbohidratos ${r1(food[4] * qty)} g · Grasa ${r1(food[5] * qty)} g`; };
+          const upd = () => { const food = curFood(); qq('#nfQv').textContent = qty; qq('#nfRes').innerHTML = (product ? nutriTable(product, qty) : '') + `<b>${Math.round(food[2] * qty)} kcal</b> · Proteína ${r1(food[3] * qty)} g · Carbohidratos ${r1(food[4] * qty)} g · Grasa ${r1(food[5] * qty)} g`; };
           sel.querySelectorAll('[data-nm]').forEach(b => b.onclick = () => { meal = b.dataset.nm; sel.querySelectorAll('[data-nm]').forEach(x => x.classList.toggle('on', x === b)); });
           qq('#nfF').onchange = () => { product = null; upd(); };
           qq('#nfM').onclick = () => { qty = Math.max(0.5, qty - 0.5); upd(); };
