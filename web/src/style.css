@@ -1506,3 +1506,39 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .cdsall>.cdfeat{flex:0 0 100%;scroll-snap-align:start;min-width:0}
 
 .pcaltoday{border:1.5px solid var(--blue);color:var(--blue);background:transparent;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;cursor:pointer;margin:0 4px}
+
+.ordrow{display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--line)}
+.hfeat{position:relative;overflow:hidden;border-radius:18px;min-height:150px;margin:8px 0;background:linear-gradient(180deg,#fbe3b8,#e89f58 72%,#b96f36);color:#3b2412;cursor:pointer;user-select:none}
+.hfeat .hfbody{position:absolute;inset:0}
+.hfeat .fxlayer{position:absolute;inset:0;pointer-events:none}
+.hftxt{position:absolute;left:14px;top:12px;display:flex;flex-direction:column;z-index:2}
+.hftxt b{font-size:17px}
+.hftxt span{font-size:13px;opacity:.9}
+.hftxt small{font-size:11px;opacity:.7}
+.hfeat .hw{position:absolute;bottom:10px;left:-15%;font-size:50px;animation:hwalk 14s linear infinite}
+@keyframes hwalk{0%{left:-15%}40%,100%{left:105%}}
+.hfeat.go .hw{animation:hjump .4s ease-in-out 4}
+@keyframes hjump{50%{bottom:80px}}
+.hfeat .hl{position:absolute;top:-12px;font-size:16px;animation:hfall 6s linear infinite}
+.hfeat .l1{left:20%;animation-delay:0s}.hfeat .l2{left:50%;animation-delay:1.5s}.hfeat .l3{left:72%;animation-delay:3s}.hfeat .l4{left:88%;animation-delay:4.5s}
+@keyframes hfall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(190px) rotate(260deg);opacity:0}}
+.hfeat.go .hl{animation-duration:2.5s}
+.hfeat .hf{position:absolute;font-size:30px;animation:hfl 4s ease-in-out infinite}
+.hfeat .f0{left:10%;top:18%}.hfeat .f1{left:70%;top:14%;animation-delay:.5s}.hfeat .f2{left:40%;top:50%;animation-delay:1s}
+.hfeat .f3{left:82%;top:58%;animation-delay:1.5s}.hfeat .f4{left:18%;top:66%;animation-delay:2s}.hfeat .f5{left:56%;top:24%;animation-delay:2.5s}
+@keyframes hfl{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-14px) scale(1.12)}}
+.hfeat.go .hf{animation-duration:1s}
+
+.hfeat.fx{background:linear-gradient(180deg,#1b2440,#0d1226)}
+.hfeat .hbeat{position:absolute;left:66%;top:34%;font-size:44px;animation:hbeat 1s ease-in-out infinite}
+@keyframes hbeat{0%,100%{transform:scale(1)}15%{transform:scale(1.25)}30%{transform:scale(1)}45%{transform:scale(1.18)}}
+.hfeat .ecg{position:absolute;left:4%;right:4%;bottom:14px;width:92%;height:40px}
+.hfeat .ecg polyline{fill:none;stroke:#e63946;stroke-width:2.5;stroke-dasharray:300;stroke-dashoffset:300;animation:ecg 2.5s linear infinite}
+@keyframes ecg{to{stroke-dashoffset:0}}
+.hfeat .hplane{position:absolute;top:40%;left:-15%;font-size:40px;animation:hfly 9s linear infinite}
+@keyframes hfly{0%{left:-15%}100%{left:110%}}
+.prflag{position:absolute;left:50%;top:50%;width:170px;height:105px;transform:translate(-50%,-50%);background:linear-gradient(to bottom,#ed0000 0 20%,#fff 20% 40%,#ed0000 40% 60%,#fff 60% 80%,#ed0000 80%);box-shadow:0 6px 16px rgba(0,0,0,.25);transform-origin:left center;animation:prwave 2.4s ease-in-out infinite}
+.prflag .prb{position:absolute;left:0;top:0;width:0;height:0;border-top:52px solid transparent;border-bottom:52px solid transparent;border-left:88px solid #0050f0}
+.prflag .prst{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#fff;font-size:30px;line-height:1;font-style:normal}
+@keyframes prwave{0%,100%{transform:translate(-50%,-50%) skewY(0) scaleX(1)}25%{transform:translate(-50%,-50%) skewY(-4deg) scaleX(1.03)}75%{transform:translate(-50%,-50%) skewY(4deg) scaleX(.98)}}
+.hfeat.go .prflag{animation-duration:.8s}
