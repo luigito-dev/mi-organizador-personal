@@ -132,7 +132,7 @@
       // Agua, hábitos de hoy y comer saludable para sus widgets
       const HB = S.habits || [], td = todayISO();
       const aguaH = HB.find(h => habKind(h) === 'agua'), foodH = HB.find(h => h.food);
-      const water = aguaH ? {id: aguaH.id, n: habCount(aguaH, td), g: habGoal(aguaH)} : null;
+      const water = aguaH ? {id: aguaH.id, n: habCount(aguaH, td), g: habGoal(aguaH), oz: OZ} : null;
       const habs = HB.filter(h => h !== aguaH && h !== foodH && !h.challenge).slice(0, 5).map(h => ({id: h.id, n: h.name || '', i: h.icon || '', d: habDone(h, td) ? 1 : 0}));
       const fd = foodH ? ((foodH.food || {})[td] || {}) : null;
       const food = foodH ? {id: foodH.id, g: FOOD_GOAL(foodH), c: {v: fd.v || 0, f: fd.f || 0, g: fd.g || 0, p: fd.p || 0, l: fd.l || 0}} : null;
@@ -157,7 +157,7 @@
           if (!h) return;
           const d = x.d || todayISO();
           h.log = h.log || {};
-          if (x.k === 'agua') { h.log[d] = habCount(h, d) + (+x.oz || 1); hab = true; }
+          if (x.k === 'agua') { h.log[d] = Math.max(0, habCount(h, d) + (+x.oz || 0)); if (!h.log[d]) delete h.log[d]; hab = true; }
           if (x.k === 'hab') { h.log[d] = habDone(h, d) ? 0 : habGoal(h); hab = true; }
           if (x.k === 'food' && ['v', 'f', 'g', 'p', 'l'].includes(x.sec)) {
             h.food = h.food || {};
