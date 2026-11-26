@@ -1529,7 +1529,8 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 @keyframes hfl{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-14px) scale(1.12)}}
 .hfeat.go .hf{animation-duration:1s}
 
-.hfeat.fx{background:linear-gradient(180deg,#1b2440,#0d1226)}
+.hfeat.fx{background:linear-gradient(160deg,#ff3d7f 0%,#ff9f1c 42%,#ffd60a 70%,#7b2ff7 100%);color:#fff}
+.hfeat.fx .hftxt,.hfeat.fx .hftxt small{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.35)}
 .hfeat .hbeat{position:absolute;left:66%;top:34%;font-size:44px;animation:hbeat 1s ease-in-out infinite}
 @keyframes hbeat{0%,100%{transform:scale(1)}15%{transform:scale(1.25)}30%{transform:scale(1)}45%{transform:scale(1.18)}}
 .hfeat .ecg{position:absolute;left:4%;right:4%;bottom:14px;width:92%;height:40px}
@@ -1542,3 +1543,14 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .prflag .prst{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#fff;font-size:30px;line-height:1;font-style:normal}
 @keyframes prwave{0%,100%{transform:translate(-50%,-50%) skewY(0) scaleX(1)}25%{transform:translate(-50%,-50%) skewY(-4deg) scaleX(1.03)}75%{transform:translate(-50%,-50%) skewY(4deg) scaleX(.98)}}
 .hfeat.go .prflag{animation-duration:.8s}
+
+.pcal-scene{position:relative;overflow:hidden;border-radius:18px}
+.pcal-scene>*:not(.pcalbg){position:relative;z-index:1}
+.pcalbg{position:absolute;inset:0;z-index:0}
+.pcalbg .hfeat{position:absolute;inset:0;min-height:0;margin:0;border-radius:0;box-shadow:none;cursor:pointer}
+.pcalbg .hftxt{display:none}
+.pcal-scene .pcalg,.pcal-scene .qrows,.pcal-scene .pcald,.pcal-scene .qadd,.pcal-scene .qfoot{background:rgba(255,255,255,.84);border-radius:12px}
+.pcal-scene .pcalh b{background:rgba(255,255,255,.84);border-radius:10px;padding:2px 10px}
+.hfeat.fx-anio,.hfeat.fx-a2027{background:linear-gradient(160deg,#ff3d7f 0%,#ff9f1c 42%,#ffd60a 70%,#7b2ff7 100%)!important}
+.hfeat.fx-anio .fwb,.hfeat.fx-a2027 .fwb{filter:drop-shadow(0 0 3px rgba(40,0,60,.55))}
+.hfeat.fx-a2027 .fwyear{color:#fff;text-shadow:0 2px 6px rgba(60,0,90,.6);opacity:.95}

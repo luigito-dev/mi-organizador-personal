@@ -834,6 +834,31 @@ function vProgreso(v) {
     <div class="grid g2"><div class="card"><h3>Completadas por día</h3><div class="bars">${wd.map((d, i) => `<div class="b"><small class="xs">${per[i] || ''}</small><i style="height:${per[i] / mx * 100}%;${d === todayISO() ? 'background:var(--orange)' : ''}"></i><span>${DCORTO[dow(d)]}</span></div>`).join('')}</div></div>
       <div class="card"><h3>🎯 Enfoque esta semana</h3><div class="stats" style="grid-template-columns:1fr 1fr;margin:0"><div class="stat"><b>${fl.m}</b><span>Minutos</span></div><div class="stat"><b>${fl.b}</b><span>Bloques</span></div></div></div></div>
     <div class="card" style="margin-top:14px"><h3>Avance por área (esta semana)</h3>${S.areas.length ? S.areas.map(a => { const at = tk.filter(t => t.areaId === a.id); const ad = at.filter(isDone).length; const p = at.length ? ad / at.length * 100 : 0; return `<div style="margin:10px 0"><div class="row small"><span class="dot" style="background:${a.color}"></span><b>${esc(a.name)}</b><span class="sp"></span><span class="muted">${ad}/${at.length}</span></div><div class="hbar" style="margin-top:5px"><i style="width:${p}%;background:${a.color}"></i></div></div>`; }).join('') : '<div class="muted small">Crea áreas para ver tu avance en cada una.</div>'}</div>`;
+  // Detalle concreto de la semana
+  const dn = d => cap(DIAS[dow(d)]);
+  const bestI = per.indexOf(Math.max(...per));
+  const next = S.tasks.filter(t => wd.includes(t.date) && !isDone(t)).sort((a, b) => (a.date + (a.time || '99')).localeCompare(b.date + (b.time || '99')))[0];
+  const resumen = [per[bestI] > 0 ? `Tu día más productivo fue el <b>${dn(wd[bestI])}</b> con ${per[bestI]} tarea${per[bestI] === 1 ? '' : 's'} completada${per[bestI] === 1 ? '' : 's'}.` : 'Todavía no hay tareas completadas esta semana.',
+    pend ? `Te faltan <b>${pend}</b> tarea${pend === 1 ? '' : 's'}${next ? `; la siguiente es «${esc(next.title)}» el ${dn(next.date)}` : ''}.` : 'No te faltan tareas esta semana.'].map(x => `<p style="margin:6px 0">${x}</p>`).join('');
+  const dias = wd.map(d => {
+    const ts = S.tasks.filter(t => t.date === d), fo = S.focusLog[d];
+    if (!ts.length && !fo) return '';
+    const hechas = ts.filter(isDone), falt = ts.filter(t => !isDone(t));
+    return `<div style="margin:8px 0;padding-bottom:8px;border-bottom:1px solid var(--line)"><b>${dn(d)} ${parseISO(d).getDate()}${d === todayISO() ? ' · hoy' : ''}</b>
+      <div class="small">✅ ${hechas.length ? hechas.map(t => esc(t.title)).join(', ') : 'ninguna'}</div>
+      <div class="small">⏳ ${falt.length ? falt.map(t => esc(t.title)).join(', ') : 'nada pendiente'}</div>
+      ${fo ? `<div class="xs muted">🎯 ${fo.minutes} min de enfoque</div>` : ''}</div>`;
+  }).join('');
+  const atr = S.tasks.filter(isLate);
+  const habs = (S.habits || []).map(h => {
+    const pasados = wd.filter(d => d <= todayISO()), logrados = pasados.filter(d => habDone(h, d)).length;
+    return `<div class="row small" style="margin:6px 0"><span>${h.icon || ''} ${esc(h.name)}</span><span class="sp"></span><b>${logrados}</b><span class="muted">/${pasados.length} días cumplidos</span></div>`;
+  }).join('');
+  v.insertAdjacentHTML('beforeend', `
+    <div class="card" style="margin-top:14px"><h3>Resumen de la semana</h3>${resumen}</div>
+    <div class="card" style="margin-top:14px"><h3>Qué hiciste cada día</h3>${dias || '<div class="muted small">Sin tareas esta semana.</div>'}
+      ${atr.length ? `<div class="small" style="color:var(--red);margin-top:8px">⚠️ Atrasadas: ${atr.map(t => esc(t.title)).join(', ')}</div>` : ''}</div>
+    <div class="card" style="margin-top:14px"><h3>Hábitos esta semana</h3>${habs || '<div class="muted small">Aún no tienes hábitos.</div>'}</div>`);
 }
 
 /* ========== CONFIGURACIÓN ========== */
@@ -2470,6 +2495,10 @@ function popKeyName(k) {
   if (k.startsWith('reto:')) { const h = S.habits.find(x => 'reto:' + x.id === k); return h && h.challenge ? h.challenge.name : k; }
   const i = pinItemView(k); return i ? i.title : k;
 }
+function openCountdownsSheet() {
+  const L = cdList();
+  const sh = openSheet({title: 'Cuentas', cls: 'small', body: `<div class="qrows">${L.map(c => `<button class="btn sec" style="width:100%;margin-bottom:8px;text-align:left" data-cdo="${c.id}">${c.icon || '⏳'} ${esc(c.name)} · ${fmtShort(c.date)}</button>`).join('') || '<p class="hint">No tienes cuentas todavía.</p>'}</div>`, onMount: pel => pel.querySelectorAll('[data-cdo]').forEach(b => b.onclick = () => { const c = (S.settings.countdowns || []).find(x => x.id === b.dataset.cdo); sh.close(); if (c) openCountdownForm(c); })});
+}
 function openOrderSheet() {
   openSheet({title: 'Orden de los accesos rápidos', cls: 'small', body: '<p class="hint" style="margin-top:0">Sube o baja cada acceso. Así se ven en ese orden.</p><div class="ordlist"></div>', onMount: pel => {
     const draw = () => {
@@ -2486,11 +2515,11 @@ function openOrderSheet() {
 }
 function pinItemView(k) {
   const id = k.slice(3);
-  if (k.startsWith('fest:')) { const d = k.slice(5), h = holidaysOn(d)[0]; if (!h) return null; return {title: h.name, pill: fmtShort(d), html: festBox(h, d), open: () => {}}; }
-  if (k.startsWith('evs:')) { const e = S.events.find(x => x.id === k.slice(4)); if (!e) return null; return {title: e.title, pill: fmtShort(e.date), html: evScene(e), open: () => {}}; }
+  if (k.startsWith('fest:')) { const d = k.slice(5), h = holidaysOn(d)[0]; if (!h) return null; return {title: h.name, pill: fmtShort(d), html: festBox(h, d), open: () => { UI.selDate = d; go('calendario'); }}; }
+  if (k.startsWith('evs:')) { const e = S.events.find(x => x.id === k.slice(4)); if (!e) return null; return {title: e.title, pill: fmtShort(e.date), html: evScene(e), open: () => openEventDetail(e.id)}; }
   if (k.startsWith('tk:')) { const t = S.tasks.find(x => x.id === id); if (!t) return null; return {title: t.title, pill: t.status || '', html: `<div class="small muted" style="padding:10px 4px">${fmtLong(t.date)}${t.time ? ' · ' + fmtTime(t.time) : ''}</div>`, open: () => openTaskDetail(id)}; }
   if (k.startsWith('nt:')) { const n = S.notes.find(x => x.id === id); if (!n) return null; return {title: noteTitle(n), pill: fmtShort(n.date), html: `<div class="small" style="padding:10px 4px;white-space:pre-wrap">${esc(n.text).slice(0, 300)}</div>`, open: () => openNote(id)}; }
-  if (k === 'cds:all') { const L = cdList(); return {title: 'Cuentas', pill: `${L.length} cuenta${L.length === 1 ? '' : 's'}`, html: `<div class="cdsall">${L.map(cdFeatBox).join('')}</div>`, open: () => {}}; }
+  if (k === 'cds:all') { const L = cdList(); return {title: 'Cuentas', pill: `${L.length} cuenta${L.length === 1 ? '' : 's'}`, html: `<div class="cdsall">${L.map(cdFeatBox).join('')}</div>`, open: () => openCountdownsSheet()}; }
   if (k.startsWith('cd:')) { const c = (S.settings.countdowns || []).find(x => x.id === id); if (!c) return null; const n = dayDiff(todayISO(), c.date); return {title: c.name, pill: n === 0 ? 'Hoy' : `${Math.abs(n)} ${n < 0 ? 'días desde' : 'días para'}`, html: cdFeatBox(c), open: () => openCountdownForm(c)}; }
   return null;
 }
@@ -2514,10 +2543,13 @@ function pinCalendar(box) {
   const d = UI.pinDay, m = parseISO(d), cells = monthCells(iso(new Date(m.getFullYear(), m.getMonth(), 1))), t = todayISO();
   const its = sortedDay(d, {withDone: true});
   const fh = holidaysOn(d), fe = S.events.filter(e => e.date === d)[0];
-  box.innerHTML = `<div class="pcal">
+  // La escena del día (festivo o evento con emoji) va como fondo del calendario
+  const sc = fh.length ? holiScene(fh[0], d) : fe ? evScene(fe) : '';
+  const scLayer = sc ? sc.slice(sc.indexOf('<div class="hfbody">') + 20, sc.indexOf('<div class="hftxt">')) : '';
+  const scCls = sc ? sc.slice(sc.indexOf('class="hfeat ') + 13, sc.indexOf('" title')) : '';
+  box.innerHTML = `<div class="pcal${sc ? ' pcal-scene' : ''}">${sc ? `<div class="pcalbg"><div class="hfeat ${scCls}" title="Toca la escena"><div class="hfbody">${scLayer}</div></div></div>` : ''}
     <div class="pcalh"><button class="iconbtn" id="pcP" aria-label="Mes anterior">‹</button><b>${cap(MESES[m.getMonth()])} ${m.getFullYear()}</b><button class="pcaltoday" id="pcT" aria-label="Ir a hoy">Hoy</button><button class="iconbtn" id="pcN" aria-label="Mes siguiente">›</button></div>
     <div class="pcalg">${wdHeaders().map(w => `<span class="wd">${w.slice(0, 1)}</span>`).join('')}${cells.map(c => { const n = sortedDay(c).length, st = daySticker(c), out = parseISO(c).getMonth() !== m.getMonth(); return `<button data-pcd="${c}" class="${c === d ? 'sel' : ''} ${c === t ? 'today' : ''} ${out ? 'out' : ''}">${parseISO(c).getDate()}${st ? `<i class="st">${st}</i>` : n ? '<i class="dt"></i>' : ''}</button>`; }).join('')}</div>
-    ${fh.length ? festBox(fh[0], d) : fe ? evScene(fe) : ''}
     ${d === t ? '' : `    <div class="pcald"><b>${d === t ? 'Hoy' : cap(fmtLong(d))}</b><span>${its.length ? its.length + ' cosas' : 'Libre'}</span></div>
     <div class="qrows">${its.map(i => { const x = i.x, title = i.k === 'rt' ? x.name : x.title, tm = i.k === 'ev' ? (x.allDay || x.date !== d ? 'Todo el día' : fmtTime(x.start)) : i.k === 'tk' ? (x.time ? fmtTime(x.time) : '') : fmtTime(x.start); return `<div class="qrow ${i.k === 'tk' && isDone(x) ? 'done' : ''}" ${i.k === 'tk' ? `data-pctk="${x.id}"` : i.k === 'ev' ? `data-pcev="${x.id}"` : ''} role="button" tabindex="0">${i.k === 'tk' ? '<span class="qbox"></span>' : `<span class="pcdot" style="background:${colorOf(i.k, x)}"></span>`}<span class="qtx">${esc(title)}${tm ? ` <span class="qtime">${tm}</span>` : ''}</span></div>`; }).join('') || '<div class="qempty">✓ Nada para este día</div>'}</div>`}
     <div class="qadd"><input id="pcAdd" placeholder="Añadir al calendario este día…" maxlength="200" autocomplete="off"><button class="btn" id="pcBtn" aria-label="Añadir">+</button></div>
