@@ -1640,3 +1640,23 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .fdpick-g .chchips button.on{background:#2e9d5b;color:#fff;border-color:transparent}
 .gi-box{background:#f5f7fb;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
 .gi-box div{margin-bottom:4px}
+
+/* Formulario de evento: secciones claras */
+.evsec{background:#f6f8fc;border:1px solid #e6ebf3;border-radius:16px;padding:12px 12px 4px;margin-bottom:12px}
+.evsec-h{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#5b6b82;margin-bottom:10px}
+.evsec .fld{margin-bottom:10px}
+.evgrid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.evgrid2 .fld{margin-bottom:10px;min-width:0}
+
+/* Ventana Tipo e ícono */
+.tiCols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tiH{color:#fff;border-radius:12px;padding:8px;text-align:center;font-weight:700;margin-bottom:8px}
+.tiH.blue{background:#2563eb}
+.tiH.green{background:#22a06b}
+.tiCol{max-height:52vh;overflow:auto;min-width:0}
+.tiGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.tiG{grid-column:1/-1;font-size:12px;font-weight:700;color:#5b6b82;margin:8px 0 2px}
+.tiBtn{display:flex;flex-direction:column;align-items:center;justify-content:center;background:none;border:0;border-radius:10px;padding:6px 2px;font-size:22px;min-width:0}
+.tiBtn.on{background:#eaf1ff;box-shadow:inset 0 0 0 2px #2563eb}
+.tiBtn small{font-size:10px;color:#5b6b82;line-height:1.1;text-align:center}
+.tiFoot{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}

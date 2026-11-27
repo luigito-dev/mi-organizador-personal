@@ -193,7 +193,7 @@ function openTaskForm(task, preset = {}) {
     <div class="fld row" id="tTimeRow" style="flex-wrap:nowrap"></div>
     <div class="fld"><label>Tipo</label><div class="opts" id="tTypes"></div></div>
     <div class="fld"><label>Área</label><div class="opts hscroll" id="tAreas"></div></div>
-<div class="fld"><label>Sticker en el calendario</label><div class="opts" id="tStk"></div></div>
+<div class="fld"><label>Ícono en el calendario</label><div class="opts" id="tStk"></div></div>
     <div class="fld"><label>Prioridad</label><div class="seg full" id="tPrio">${PRIOS.map(p => `<button type="button" class="opt" data-p="${p}">${p}</button>`).join('')}</div></div>
     <details class="fold" ${t.details ? 'open' : ''}><summary>Añadir más detalles</summary>
       <div class="fld"><label>¿De qué se trata?</label><textarea class="inp" id="tDet" placeholder="Escribe aquí… Usa “+ Añadir” para crear pasos con •">${esc(t.details)}</textarea>
@@ -286,6 +286,33 @@ function openTaskDetail(id) {
 
 /* ========== Formulario de EVENTO ========== */
 // mode: 'month' | 'week' | 'day' | undefined
+// Ventana única: tipo de evento (columna izquierda) e ícono (columna derecha)
+const STK_GROUPS = [['Salud', ['🩺', '🏋️', '⚽']], ['Hogar', ['🏠', '💈']], ['Finanzas', ['💰', '💼']], ['Viaje', ['✈️', '🧳', '🚗', '🏖️']], ['Familia', ['👶', '💍', '🎄', '🐶', '⛪']], ['Ocio', ['🎉', '🎵', '🌴', '🍽️', '🎁']], ['Otros', ['🎂', '❤️', '⭐']]];
+function stickerGroups() {
+  const known = STK_GROUPS.flatMap(g => g[1]), custom = allStickers().filter(x => !known.includes(x));
+  return [...STK_GROUPS.map(([n, l]) => [n, l.filter(x => allStickers().includes(x))]), ['Mis íconos', custom]].filter(g => g[1].length);
+}
+const tiLabel = e => `${evType(e.evType).icon} ${evType(e.evType).name}${e.sticker ? '  ' + e.sticker : ''}`;
+function openTypeIconPicker(e, done) {
+  const sh = openSheet({title: 'Evento', float: true, cls: 'pickpop typeicon', body: `
+    <div class="tiCols">
+      <div class="tiCol"><div class="tiH blue">Evento</div><div class="tiGrid" id="tiT"></div></div>
+      <div class="tiCol"><div class="tiH green">Ícono</div><div class="tiGrid" id="tiS"></div></div>
+    </div>
+    <div class="tiFoot"><button type="button" class="btn sec sm" id="tiNewT">+ Nuevo tipo</button><button type="button" class="btn sec sm" id="tiMore">+ Nuevo ícono</button></div>`,
+    onMount: el => {
+      const paint = () => {
+        el.querySelector('#tiT').innerHTML = allEvTypes().map(t => `<button type="button" class="tiBtn ${t.id === e.evType ? 'on' : ''}" data-t="${t.id}"><span>${t.icon}</span><small>${esc(t.name)}</small></button>`).join('');
+        el.querySelector('#tiS').innerHTML = `<button type="button" class="tiBtn ${!e.sticker ? 'on' : ''}" data-s=""><span>∅</span><small>Ninguno</small></button>` + stickerGroups().map(([n, l]) => `<div class="tiG">${n}</div>` + l.map(x => `<button type="button" class="tiBtn ${e.sticker === x ? 'on' : ''}" data-s="${x}"><span>${x}</span></button>`).join('')).join('');
+        el.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { e.evType = b.dataset.t; if (e.evType === 'celebracion' && !e.sticker) e.sticker = '🎂'; done(); paint(); });
+        el.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { e.sticker = b.dataset.s || null; done(); paint(); });
+      };
+      paint();
+      el.querySelector('#tiNewT').onclick = () => { sh.close(); addCustom('type', v => { e.evType = v; done(); }); };
+      el.querySelector('#tiMore').onclick = () => { sh.close(); addCustom('sticker', v => { e.sticker = v; done(); }); };
+    }});
+  return sh;
+}
 function openEventForm(ev, preset = {}, mode) {
   const editing = !!ev;
   const e = ev ? JSON.parse(JSON.stringify(ev)) : {id: uid(), title: preset.title || '', date: preset.date || todayISO(), allDay: mode === 'month' ? true : !!preset.allDay, start: preset.start || '09:00', end: preset.end || null, evType: 'evento', place: '', areaId: preset.areaId || null, reminder: null, note: ''};
@@ -296,20 +323,26 @@ function openEventForm(ev, preset = {}, mode) {
   const cls = mode === 'week' ? 'purple' : mode === 'day' ? 'bluehd' : '';
   const dd = parseISO(e.date);
   const body = `
-
     ${mode === 'month' ? `<div class="bigday"><div class="mo">${MESES[dd.getMonth()]}</div><div class="dn">${dd.getDate()}</div><div class="wd">${DIAS[dd.getDay()]}</div></div>` : ''}
     <input class="inp title" id="eTitle" placeholder="Nombre del evento" value="${esc(e.title)}" maxlength="140">
-    ${mode === 'week' ? `<div class="fld"><label>¿Qué días de esta semana?</label><div class="opts" id="eDays">${wk.map(d => `<button type="button" class="opt" data-d="${d}">${DCORTO[dow(d)]} ${parseISO(d).getDate()}</button>`).join('')}</div></div>`
-      : mode ? '' : `<div class="fld"><label>Fecha</label><input type="date" class="inp" id="eDate" value="${e.date}"></div>`}
-    ${editing ? `<div class="fld"><label>Fecha</label><input type="date" class="inp" id="eDate" value="${e.date}"></div>` : ''}
-    <div class="fld"><button type="button" class="row" id="eAllRow" style="padding:4px 0;font-weight:600"><span class="switch blue ${e.allDay ? 'on' : ''}" id="eAll"></span>Todo el día</button></div>
-    ${mode === 'week' ? '' : `<div class="fld"><label>Termina otro día (para eventos de varios días)</label><input type="date" class="inp" id="eEnd" value="${e.endDate || ''}" min="${e.date}"></div>`}
-    <div class="fld row" id="eTimes"></div>
-    <div class="fld"><label>Tipo de evento</label><div id="eTypes"></div></div>
-    <div class="fld"><label>Sticker en el calendario</label><div id="eStk"></div></div>
-    <div class="fld"><label>Lugar</label><input class="inp" id="ePlace" value="${esc(e.place)}" placeholder="¿Dónde?"></div>
-    <div class="fld"><label>Área</label><div class="opts hscroll" id="eAreas"></div></div>
-    <div class="fld row"><span class="lab" style="margin:0">Recordatorio</span><span class="sp"></span><span id="eBell">${bellHTML(e.reminder)}</span></div>
+    <div class="evsec"><div class="evsec-h">Cuándo</div>
+      ${mode === 'week' ? `<div class="fld"><label>¿Qué días de esta semana?</label><div class="opts" id="eDays">${wk.map(d => `<button type="button" class="opt" data-d="${d}">${DCORTO[dow(d)]} ${parseISO(d).getDate()}</button>`).join('')}</div></div>`
+        : mode ? '' : `<div class="fld"><label>Fecha</label><input type="date" class="inp" id="eDate" value="${e.date}"></div>`}
+      ${editing ? `<div class="fld"><label>Fecha</label><input type="date" class="inp" id="eDate" value="${e.date}"></div>` : ''}
+      <div class="fld"><button type="button" class="row" id="eAllRow" style="padding:4px 0;font-weight:600"><span class="switch blue ${e.allDay ? 'on' : ''}" id="eAll"></span>Todo el día</button></div>
+      <div class="fld row" id="eTimes"></div>
+      ${mode === 'week' ? '' : `<div class="fld"><label>Termina otro día (para eventos de varios días)</label><input type="date" class="inp" id="eEnd" value="${e.endDate || ''}" min="${e.date}"></div>`}
+    </div>
+    <div class="evsec"><div class="evsec-h">Detalles</div>
+      <div class="evgrid2">
+        <div class="fld" style="grid-column:1/-1"><label>Evento</label><button type="button" class="pickbtn" id="eTiBtn" style="width:100%"></button></div>
+      </div>
+      <div class="fld"><label>Lugar</label><input class="inp" id="ePlace" value="${esc(e.place)}" placeholder="¿Dónde?"></div>
+      <div class="fld"><label>Área</label><div class="opts hscroll" id="eAreas"></div></div>
+    </div>
+    <div class="evsec"><div class="evsec-h">Recordatorio</div>
+      <div class="fld row"><span id="eBell">${bellHTML(e.reminder)}</span></div>
+    </div>
     <details class="fold" ${e.note ? 'open' : ''}><summary>Añadir una nota</summary><textarea class="inp" id="eNote">${esc(e.note)}</textarea></details>`;
   const s = openSheet({title, cls, body,
     foot: `<button class="btn sec" data-close>Cancelar</button><button class="btn" id="eSave">${editing ? 'Guardar cambios' : 'Guardar evento'}</button>`,
@@ -323,10 +356,8 @@ function openEventForm(ev, preset = {}, mode) {
       };
       paintTimes();
       el.querySelector('#eAllRow').onclick = () => { e.allDay = !e.allDay; el.querySelector('#eAll').classList.toggle('on', e.allDay); paintTimes(); };
-      const pt = () => { const cur = evType(e.evType); el.querySelector('#eTypes').innerHTML = `<button type="button" class="pickbtn" id="eTypeBtn"><span>${cur.icon} ${cur.name}</span><b>›</b></button>`; el.querySelector('#eTypeBtn').onclick = () => popPick('Tipo de evento', allEvTypes().map(t => ({value: t.id, label: `${t.icon} ${t.name}`})), e.evType, v => { e.evType = v; if (e.evType === 'celebracion' && !e.sticker) { e.sticker = '🎂'; } pt(); paintSticker(); }, false, () => addCustom('type', v => { e.evType = v; pt(); })); };
-      const paintSticker = () => { el.querySelector('#eStk').innerHTML = `<button type="button" class="pickbtn" id="eStkBtn"><span>${e.sticker || 'Ninguno'}</span><b>›</b></button>`; el.querySelector('#eStkBtn').onclick = () => popPick('Sticker en el calendario', [{value: '', label: 'Ninguno'}, ...allStickers().map(x => ({value: x, label: x}))], e.sticker || '', v => { e.sticker = v || null; paintSticker(); }, true, () => addCustom('sticker', v => { e.sticker = v; paintSticker(); })); };
-      paintSticker();
-      pt();
+      const paintTI = () => { const bt = el.querySelector('#eTiBtn'); bt.innerHTML = `<span>${tiLabel(e)}</span><b>›</b>`; bt.onclick = () => openTypeIconPicker(e, paintTI); };
+      paintTI();
       const pa = () => { el.querySelector('#eAreas').innerHTML = areaButtons(e.areaId); el.querySelectorAll('[data-area]').forEach(b => b.onclick = () => { e.areaId = b.dataset.area || null; pa(); }); };
       pa();
       wireBell(el.querySelector('#eBell'), e);
@@ -353,12 +384,16 @@ function openEventDetail(id) {
     <div class="kv"><span class="k">Fecha</span><span>${fmtLong(e.date)}</span></div>
     ${e.endDate ? `<div class="kv"><span class="k">Hasta</span><span>${fmtLong(e.endDate)}</span></div>` : ''}<div class="kv"><span class="k">Horario</span><span>${e.allDay ? 'Todo el día' : fmtTime(e.start) + ' – ' + fmtTime(e.end)}</span></div>
     ${e.place ? `<div class="kv"><span class="k">Lugar</span><span>${esc(e.place)}</span></div>` : ''}
+    <div class="kv"><span class="k">Evento</span><span id="dTi"></span></div>
     <div class="kv"><span class="k">Recordatorio</span><span id="dBell">${bellHTML(e.reminder)}</span></div>
     ${e.note ? `<div class="fld"><div class="lab">Nota</div><div style="white-space:pre-wrap">${esc(e.note)}</div></div>` : ''}
     ${calLinks({title: e.title, date: e.date, start: e.start, end: e.end, allDay: e.allDay, details: e.note, place: e.place})}`;
   const s = openSheet({title: 'Evento', body, foot: `<button class="btn sec" id="dDel" aria-label="Eliminar" title="Eliminar"><i class="xdel"></i></button><button class="btn" id="dEdit">✎ Editar</button>`,
     onMount: el => {
       wireBell(el.querySelector('#dBell'), e, () => { save('events'); render(); toast(!remsOf(e).length ? 'Recordatorios apagados' : remsOf(e).length + (remsOf(e).length === 1 ? ' aviso' : ' avisos')); });
+      // Tipo e ícono: misma ventana que en el formulario, se guarda al elegir
+      const paintDTi = () => { el.querySelector('#dTi').innerHTML = `<button type="button" class="pickbtn" id="dTiBtn" style="min-width:150px"><span>${tiLabel(e)}</span><b>›</b></button>`; el.querySelector('#dTiBtn').onclick = () => openTypeIconPicker(e, () => { save('events'); render(); paintDTi(); }); };
+      paintDTi();
       el.querySelector('#dEdit').onclick = () => { s.close(); openEventForm(e); };
       el.querySelector('#dDel').onclick = async () => { if (await ask('¿Eliminar el evento “' + esc(e.title) + '”?')) { S.events = S.events.filter(x => x.id !== e.id); save('events'); s.close(); render(); toast('Evento eliminado'); } };
     }});
@@ -545,7 +580,7 @@ function wireStickers(box, obj) {
   const paint = () => {
     box.innerHTML = `<button type="button" class="opt on" id="stkOpen">${obj.sticker ? obj.sticker : 'Elegir'} ▾</button>`;
     box.querySelector('#stkOpen').onclick = () => {
-      const ps = openSheet({title: 'Sticker en el calendario', cls: 'small', body: `<div class="emojis" id="stkPop">${allStickers().map(s => `<button type="button" class="${obj.sticker === s ? 'on' : ''}" data-stk="${s}">${s}</button>`).join('')}</div><p class="hint">Toca el que ya está elegido para quitarlo.</p>`, foot: '<button class="btn sec" data-close>Cerrar</button>',
+      const ps = openSheet({title: 'Ícono en el calendario', cls: 'small', body: `<div class="emojis" id="stkPop">${allStickers().map(s => `<button type="button" class="${obj.sticker === s ? 'on' : ''}" data-stk="${s}">${s}</button>`).join('')}</div><p class="hint">Toca el que ya está elegido para quitarlo.</p>`, foot: '<button class="btn sec" data-close>Cerrar</button>',
         onMount: sel => sel.querySelectorAll('[data-stk]').forEach(b => b.onclick = () => { obj.sticker = obj.sticker === b.dataset.stk ? null : b.dataset.stk; ps.close(); paint(); })});
     };
   };
