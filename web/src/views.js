@@ -3013,6 +3013,16 @@ async function wxAlerts(p) {
     return (j.features || []).map(f => ({id: f.id, ev: f.properties.event || 'Aviso', head: f.properties.headline || ''}));
   } catch (e) { return null; }
 }
+async function wxRevName(lat, lon) {
+  // Nombre del pueblo (p. ej. "Caguas, Puerto Rico") a partir de la ubicación
+  try {
+    const j = await (await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=es&lat=${lat}&lon=${lon}`)).json();
+    const a = j.address || {};
+    const town = a.city || a.town || a.village || a.municipality || a.county;
+    const region = a.state || a.country;
+    return town ? [town, region].filter(Boolean).join(', ') : null;
+  } catch (e) { return null; }
+}
 async function avisoPush(a) {
   try {
     const LN = window.capacitorLocalNotifications && window.capacitorLocalNotifications.LocalNotifications; if (!LN) return;
@@ -3024,7 +3034,14 @@ async function wxGet(force) {
   if (!C.place) return C.data || null;
   if (!force && C.data && C.data.v === 2 && C.data.aq !== undefined && Date.now() - C.data.at < 15 * 60000) return C.data;
   try {
-    if (C.place.auto) { const loc = await wxLocate(); if (loc) C.place = {name: 'Mi pueblo', auto: true, lat: loc.lat, lon: loc.lon}; }
+    if (C.place.auto) {
+      const loc = await wxLocate();
+      if (loc) {
+        const same = C.place.lat != null && Math.abs(C.place.lat - loc.lat) < 0.01 && Math.abs(C.place.lon - loc.lon) < 0.01;
+        const name = same && C.place.name ? C.place.name : ((await wxRevName(loc.lat, loc.lon)) || 'Mi ubicación');
+        C.place = {name, auto: true, lat: loc.lat, lon: loc.lon};
+      }
+    }
     if (C.place.lat == null) return C.data || null;
     const data = await wxFetch(C.place);
     data.aq = await wxAir(C.place);
@@ -3090,7 +3107,7 @@ function vClima(v) {
     <div class="wxsearch"><input class="inp" id="wxQ" placeholder="Buscar país o ciudad"><button class="btn sm" id="wxGo">Buscar</button></div>
     <div id="wxRes"></div>
     <div id="wxBig"></div>
-    <button class="btn sec sm" id="wxAuto" style="margin-top:10px">Usar mi pueblo</button>
+    <button class="btn sec sm" id="wxAuto" style="margin-top:10px">Usar mi ubicación</button>
     <label class="wrsw" style="margin-top:12px"><span><b>⚠️ Avisos del clima</b><small>Lluvias fuertes, tormentas y otros avisos. Solo para Estados Unidos y sus territorios, en inglés.</small></span><input type="checkbox" id="wxAv" ${S.settings.avisos ? 'checked' : ''}><i></i></label></div>`;
   const big = async force => { const b = v.querySelector('#wxBig'); b.innerHTML = '<small class="muted">Cargando…</small>'; const d = await wxGet(force); b.innerHTML = d ? wxBigHTML(d) : '<small class="muted">Busca un lugar para ver su clima.</small>'; };
   const find = async () => {
@@ -3102,7 +3119,7 @@ function vClima(v) {
   };
   v.querySelector('#wxGo').onclick = find;
   v.querySelector('#wxQ').onkeydown = e => { if (e.key === 'Enter') find(); };
-  v.querySelector('#wxAuto').onclick = async () => { const b = v.querySelector('#wxBig'); b.innerHTML = '<small class="muted">Buscando tu pueblo…</small>'; const loc = await wxLocate(); if (!loc) { b.innerHTML = '<small class="muted">No pude leer tu ubicación. Revisa que la app tenga permiso de ubicación en el teléfono, o escribe tu ciudad arriba.</small>'; return; } S.settings.clima = {place: {name: 'Mi pueblo', auto: true, lat: loc.lat, lon: loc.lon}}; save('meta'); await big(true); };
+  v.querySelector('#wxAuto').onclick = async () => { const b = v.querySelector('#wxBig'); b.innerHTML = '<small class="muted">Buscando tu ubicación…</small>'; const loc = await wxLocate(); if (!loc) { b.innerHTML = '<small class="muted">No pude leer tu ubicación. Revisa que la app tenga permiso de ubicación en el teléfono, o escribe tu ciudad arriba.</small>'; return; } S.settings.clima = {place: {name: (await wxRevName(loc.lat, loc.lon)) || 'Mi ubicación', auto: true, lat: loc.lat, lon: loc.lon}}; save('meta'); await big(true); };
   v.querySelector('#wxAv').onchange = async e => { S.settings.avisos = e.target.checked; save('meta'); if (S.settings.avisos && window.NATIVE) await NATIVE.ensurePermission().catch(() => {}); await big(true); };
   big(false);
 }
