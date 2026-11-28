@@ -2985,9 +2985,10 @@ async function wxSearch(q) {
   return (j.results || []).map(x => ({name: [x.name, x.admin1, x.country].filter(Boolean).join(', '), lat: x.latitude, lon: x.longitude}));
 }
 async function wxFetch(p) {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${p.lat}&longitude=${p.lon}&current=temperature_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${p.lat}&longitude=${p.lon}&current=temperature_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max&timezone=auto&forecast_days=5`;
   const j = await (await fetch(url)).json();
-  return {place: p.name, at: Date.now(), cur: {t: Math.round(j.current.temperature_2m), c: j.current.weather_code, w: Math.round(j.current.wind_speed_10m)}, days: j.daily.time.map((d, i) => ({d, c: j.daily.weather_code[i], max: Math.round(j.daily.temperature_2m_max[i]), min: Math.round(j.daily.temperature_2m_min[i])}))};
+  const dl = j.daily, at = (arr, i) => (arr && arr[i] != null ? arr[i] : null);
+  return {v: 2, place: p.name, at: Date.now(), cur: {t: Math.round(j.current.temperature_2m), c: j.current.weather_code, w: Math.round(j.current.wind_speed_10m)}, days: dl.time.map((d, i) => ({d, c: dl.weather_code[i], max: Math.round(dl.temperature_2m_max[i]), min: Math.round(dl.temperature_2m_min[i]), pp: at(dl.precipitation_probability_max, i), ps: at(dl.precipitation_sum, i) != null ? Math.round(dl.precipitation_sum[i] * 10) / 10 : null, wm: at(dl.wind_speed_10m_max, i) != null ? Math.round(dl.wind_speed_10m_max[i]) : null}))};
 }
 const wxLocate = () => new Promise(res => { if (!navigator.geolocation) return res(null); navigator.geolocation.getCurrentPosition(p => res({lat: p.coords.latitude, lon: p.coords.longitude}), () => res(null), {timeout: 8000, maximumAge: 1800000}); });
 // Usa el dato guardado si tiene menos de 30 minutos; si no, lo pide de nuevo
@@ -3005,28 +3006,59 @@ async function wxAir(p) {
     return {dust: c.dust != null ? Math.round(c.dust) : null, aqi: c.us_aqi != null ? Math.round(c.us_aqi) : null, pollen};
   } catch (e) { return null; }
 }
+async function wxAlerts(p) {
+  if (p.lat == null) return null;
+  try {
+    const j = await (await fetch(`https://api.weather.gov/alerts/active?point=${p.lat},${p.lon}`)).json();
+    return (j.features || []).map(f => ({id: f.id, ev: f.properties.event || 'Aviso', head: f.properties.headline || ''}));
+  } catch (e) { return null; }
+}
+async function avisoPush(a) {
+  try {
+    const LN = window.capacitorLocalNotifications && window.capacitorLocalNotifications.LocalNotifications; if (!LN) return;
+    await LN.schedule({notifications: [{id: Math.floor(Math.random() * 2000000000), title: '⚠️ ' + a.ev, body: (a.head || 'Aviso del clima').slice(0, 140), schedule: {at: new Date(Date.now() + 1000), allowWhileIdle: true}}]});
+  } catch (e) {}
+}
 async function wxGet(force) {
   const C = S.settings.clima || {};
   if (!C.place) return C.data || null;
-  if (!force && C.data && C.data.aq !== undefined && Date.now() - C.data.at < 15 * 60000) return C.data;
+  if (!force && C.data && C.data.v === 2 && C.data.aq !== undefined && Date.now() - C.data.at < 15 * 60000) return C.data;
   try {
-    if (C.place.auto) { const loc = await wxLocate(); if (loc) C.place = {name: 'Mi ubicación', auto: true, lat: loc.lat, lon: loc.lon}; }
+    if (C.place.auto) { const loc = await wxLocate(); if (loc) C.place = {name: 'Mi pueblo', auto: true, lat: loc.lat, lon: loc.lon}; }
     if (C.place.lat == null) return C.data || null;
     const data = await wxFetch(C.place);
     data.aq = await wxAir(C.place);
-    S.settings.clima = {...C, place: C.place, data}; save('meta');
+    data.alerts = S.settings.avisos ? await wxAlerts(C.place) : null;
+    const seen = C.seen || [], fresh = (data.alerts || []).filter(a => !seen.includes(a.id));
+    if (S.settings.avisos) fresh.forEach(avisoPush);
+    S.settings.clima = {...C, place: C.place, data, seen: [...seen, ...fresh.map(a => a.id)].slice(-40)}; save('meta');
     return data;
   } catch (e) { return C.data || null; }
 }
 function wxCardHTML(d) {
-  return `<div class="wxhead"><span class="wxico">${WX_ICON(d.cur.c)}</span><div><b>${d.cur.t}°C · ${WX_TXT(d.cur.c)}</b><small>${esc(d.place)}</small></div><span class="wxgo">›</span></div>`;
+  const al = d.alerts && d.alerts.length ? `<small class="wxal">⚠️ ${esc(d.alerts[0].ev)}</small>` : '';
+  return `<div class="wxhead"><span class="wxico">${WX_ICON(d.cur.c)}</span><div><b>${d.cur.t}°C · ${WX_TXT(d.cur.c)}</b><small>${esc(d.place)}</small>${al}</div><span class="wxgo">›</span></div>`;
 }
 function wxBigHTML(d) {
-  return `<div class="wxhead big"><span class="wxico">${WX_ICON(d.cur.c)}</span><div><b>${d.cur.t}°C · ${WX_TXT(d.cur.c)}</b><small>${esc(d.place)} · viento ${d.cur.w} km/h</small></div></div>
-    <div class="wxdays">${d.days.map(x => `<div><small>${WX_DIA[new Date(x.d + 'T12:00:00').getDay()]}</small><span>${WX_ICON(x.c)}</span><b>${x.max}°</b><small>${x.min}°</small></div>`).join('')}</div>
+  const al = (d.alerts || []).map(a => `<div class="wxalert"><b>⚠️ ${esc(a.ev)}</b>${a.head ? `<small>${esc(a.head)}</small>` : ''}</div>`).join('');
+  const none = S.settings.avisos && d.alerts && !d.alerts.length ? '<small class="muted">Sin avisos activos ahora. (Los avisos son solo para Estados Unidos y sus territorios.)</small>' : '';
+  return `<div class="wxbig"><div class="wxhead big"><span class="wxico">${WX_ICON(d.cur.c)}</span><div><b>${d.cur.t}°C · ${WX_TXT(d.cur.c)}</b><small>${esc(d.place)} · viento ${d.cur.w} km/h</small></div></div>
+    ${al}${none}
+    <div class="wxdays">${d.days.map((x, i) => `<div class="wxday" data-wxd="${i}"><small>${WX_DIA[new Date(x.d + 'T12:00:00').getDay()]}</small><span>${WX_ICON(x.c)}</span><b>${x.max}°</b><small>${x.min}°</small></div>`).join('')}</div>
+    <div class="wxdet"><small class="muted">Toca un día para ver lluvia y viento.</small></div>
     ${wxAirHTML(d)}
-    <small class="muted">Se actualiza cada 15 minutos cuando hay internet.</small>`;
+    <small class="muted">Se actualiza cada 15 minutos cuando hay internet.</small></div>`;
 }
+function wxDetHTML(x) {
+  const f = new Date(x.d + 'T12:00:00').toLocaleDateString('es', {weekday: 'long', day: 'numeric', month: 'long'});
+  return `<div class="wxdetbox"><b>${f}</b><div>Probabilidad de lluvia: <b>${x.pp != null ? x.pp + '%' : '—'}</b></div><div>Lluvia acumulada: <b>${x.ps != null ? x.ps + ' mm' : '—'}</b></div><div>Viento máximo: <b>${x.wm != null ? x.wm + ' km/h' : '—'}</b></div></div>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('.wxday'); if (!b) return;
+  const host = b.closest('.wxbig'), days = ((S.settings.clima || {}).data || {}).days; if (!host || !days) return;
+  const det = host.querySelector('.wxdet'); if (det) det.innerHTML = wxDetHTML(days[+b.dataset.wxd]);
+  host.querySelectorAll('.wxday').forEach(q => q.classList.toggle('on', q === b));
+});
 const AQI_LVL = v => v <= 50 ? ['Bueno', '#16a34a'] : v <= 100 ? ['Moderado', '#ca8a04'] : v <= 150 ? ['Dañino para sensibles', '#ea580c'] : v <= 200 ? ['Dañino', '#dc2626'] : ['Muy dañino', '#7c3aed'];
 const DUST_LVL = v => v < 20 ? ['Bajo', '#16a34a'] : v < 50 ? ['Moderado', '#ca8a04'] : ['Alto', '#dc2626'];
 const POL_LVL = v => v < 10 ? ['Bajo', '#16a34a'] : v < 50 ? ['Medio', '#ca8a04'] : ['Alto', '#dc2626'];
@@ -3058,7 +3090,8 @@ function vClima(v) {
     <div class="wxsearch"><input class="inp" id="wxQ" placeholder="Buscar país o ciudad"><button class="btn sm" id="wxGo">Buscar</button></div>
     <div id="wxRes"></div>
     <div id="wxBig"></div>
-    <button class="btn sec sm" id="wxAuto" style="margin-top:10px">Usar mi ubicación</button></div>`;
+    <button class="btn sec sm" id="wxAuto" style="margin-top:10px">Usar mi pueblo</button>
+    <label class="wrsw" style="margin-top:12px"><span><b>⚠️ Avisos del clima</b><small>Lluvias fuertes, tormentas y otros avisos. Solo para Estados Unidos y sus territorios, en inglés.</small></span><input type="checkbox" id="wxAv" ${S.settings.avisos ? 'checked' : ''}><i></i></label></div>`;
   const big = async force => { const b = v.querySelector('#wxBig'); b.innerHTML = '<small class="muted">Cargando…</small>'; const d = await wxGet(force); b.innerHTML = d ? wxBigHTML(d) : '<small class="muted">Busca un lugar para ver su clima.</small>'; };
   const find = async () => {
     const q = v.querySelector('#wxQ').value.trim(); if (!q) return;
@@ -3069,6 +3102,7 @@ function vClima(v) {
   };
   v.querySelector('#wxGo').onclick = find;
   v.querySelector('#wxQ').onkeydown = e => { if (e.key === 'Enter') find(); };
-  v.querySelector('#wxAuto').onclick = async () => { const b = v.querySelector('#wxBig'); b.innerHTML = '<small class="muted">Buscando tu ubicación…</small>'; const loc = await wxLocate(); if (!loc) { b.innerHTML = '<small class="muted">No pude leer tu ubicación. Revisa que la app tenga permiso de ubicación en el teléfono, o escribe tu ciudad arriba.</small>'; return; } S.settings.clima = {place: {name: 'Mi ubicación', auto: true, lat: loc.lat, lon: loc.lon}}; save('meta'); await big(true); };
+  v.querySelector('#wxAuto').onclick = async () => { const b = v.querySelector('#wxBig'); b.innerHTML = '<small class="muted">Buscando tu pueblo…</small>'; const loc = await wxLocate(); if (!loc) { b.innerHTML = '<small class="muted">No pude leer tu ubicación. Revisa que la app tenga permiso de ubicación en el teléfono, o escribe tu ciudad arriba.</small>'; return; } S.settings.clima = {place: {name: 'Mi pueblo', auto: true, lat: loc.lat, lon: loc.lon}}; save('meta'); await big(true); };
+  v.querySelector('#wxAv').onchange = async e => { S.settings.avisos = e.target.checked; save('meta'); if (S.settings.avisos && window.NATIVE) await NATIVE.ensurePermission().catch(() => {}); await big(true); };
   big(false);
 }
