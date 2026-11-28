@@ -3038,7 +3038,7 @@ async function wxGet(force) {
       const loc = await wxLocate();
       if (loc) {
         const same = C.place.lat != null && Math.abs(C.place.lat - loc.lat) < 0.01 && Math.abs(C.place.lon - loc.lon) < 0.01;
-        const name = same && C.place.name ? C.place.name : ((await wxRevName(loc.lat, loc.lon)) || 'Mi ubicación');
+        const name = same && C.place.name && C.place.name !== 'Mi ubicación' ? C.place.name : ((await wxRevName(loc.lat, loc.lon)) || 'Mi ubicación');
         C.place = {name, auto: true, lat: loc.lat, lon: loc.lon};
       }
     }
