@@ -1678,6 +1678,17 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .wxaq small{font-size:11px;color:#5b6b82}
 .wxpol{font-size:12px;color:#5b6b82;margin:6px 2px}
 .wxpol b{font-size:12px}
+.wxbig{background:linear-gradient(#8ab4f8,#dbe8fb);border-radius:22px;padding:14px 12px;color:#0b2545}
+.wxtop{padding:6px 4px 4px}
+.wxplace{font-size:15px;font-weight:600;display:block}
+.wxnow{display:flex;align-items:center;gap:8px}
+.wxtemp{font-size:64px;font-weight:300;line-height:1.05}
+.wxnow .wxico.big{font-size:44px}
+.wxcond{font-size:20px;margin-top:2px}
+.wxmeta{font-size:13px;color:#24466e}
+.wxchart{width:100%;height:auto;display:block;margin:6px 0 2px}
+.wxbig .wxdays div{background:rgba(255,255,255,.7)}
+.wxbig .wxcoord{display:block;margin-top:6px;color:#24466e}
 .wxalert{background:#fee2e2;color:#991b1b;border-radius:12px;padding:8px 10px;margin:8px 0;display:flex;flex-direction:column}
 .wxalert small{color:#7f1d1d;font-size:12px}
 .wxal{color:#b91c1c;font-size:12px;display:block}

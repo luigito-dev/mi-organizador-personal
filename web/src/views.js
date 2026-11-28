@@ -2988,9 +2988,9 @@ async function wxFetch(p) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${p.lat}&longitude=${p.lon}&current=temperature_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max&timezone=auto&forecast_days=5`;
   const j = await (await fetch(url)).json();
   const dl = j.daily, at = (arr, i) => (arr && arr[i] != null ? arr[i] : null);
-  return {v: 2, place: p.name, at: Date.now(), cur: {t: Math.round(j.current.temperature_2m), c: j.current.weather_code, w: Math.round(j.current.wind_speed_10m)}, days: dl.time.map((d, i) => ({d, c: dl.weather_code[i], max: Math.round(dl.temperature_2m_max[i]), min: Math.round(dl.temperature_2m_min[i]), pp: at(dl.precipitation_probability_max, i), ps: at(dl.precipitation_sum, i) != null ? Math.round(dl.precipitation_sum[i] * 10) / 10 : null, wm: at(dl.wind_speed_10m_max, i) != null ? Math.round(dl.wind_speed_10m_max[i]) : null}))};
+  return {v: 2, place: p.name, lat: p.lat, lon: p.lon, at: Date.now(), cur: {t: Math.round(j.current.temperature_2m), c: j.current.weather_code, w: Math.round(j.current.wind_speed_10m)}, days: dl.time.map((d, i) => ({d, c: dl.weather_code[i], max: Math.round(dl.temperature_2m_max[i]), min: Math.round(dl.temperature_2m_min[i]), pp: at(dl.precipitation_probability_max, i), ps: at(dl.precipitation_sum, i) != null ? Math.round(dl.precipitation_sum[i] * 10) / 10 : null, wm: at(dl.wind_speed_10m_max, i) != null ? Math.round(dl.wind_speed_10m_max[i]) : null}))};
 }
-const wxLocate = () => new Promise(res => { if (!navigator.geolocation) return res(null); navigator.geolocation.getCurrentPosition(p => res({lat: p.coords.latitude, lon: p.coords.longitude}), () => res(null), {timeout: 8000, maximumAge: 1800000}); });
+const wxLocate = () => new Promise(res => { if (!navigator.geolocation) return res(null); navigator.geolocation.getCurrentPosition(p => res({lat: p.coords.latitude, lon: p.coords.longitude}), () => res(null), {enableHighAccuracy: true, timeout: 15000, maximumAge: 600000}); });
 // Usa el dato guardado si tiene menos de 30 minutos; si no, lo pide de nuevo
 async function wxAir(p) {
   const base = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${p.lat}&longitude=${p.lon}&timezone=auto&current=`;
@@ -3013,15 +3013,24 @@ async function wxAlerts(p) {
     return (j.features || []).map(f => ({id: f.id, ev: f.properties.event || 'Aviso', head: f.properties.headline || ''}));
   } catch (e) { return null; }
 }
+// Pueblos principales de Puerto Rico (centro aproximado) para nombrar la ubicación sin internet
+const PR_PUEBLOS = [['San Juan',18.4655,-66.1057],['Bayamón',18.3989,-66.1557],['Carolina',18.3808,-65.9572],['Caguas',18.2341,-66.0356],['Guaynabo',18.3575,-66.1111],['Trujillo Alto',18.3558,-66.0019],['Toa Baja',18.4455,-66.2506],['Toa Alta',18.3893,-66.2472],['Dorado',18.4586,-66.2680],['Vega Alta',18.4124,-66.3339],['Vega Baja',18.4440,-66.3875],['Manatí',18.4279,-66.4769],['Barceloneta',18.4540,-66.5415],['Arecibo',18.4725,-66.7158],['Hatillo',18.4901,-66.8236],['Camuy',18.4839,-66.8447],['Quebradillas',18.4736,-66.9392],['Isabela',18.5008,-67.0241],['Aguadilla',18.4274,-67.1541],['Aguada',18.3772,-67.1864],['Moca',18.3939,-67.1158],['Añasco',18.2830,-67.1400],['Mayagüez',18.2013,-67.1396],['Cabo Rojo',18.0867,-67.1467],['Hormigueros',18.1406,-67.1264],['San Sebastián',18.3436,-66.9911],['Lares',18.2943,-66.8755],['Utuado',18.2653,-66.7013],['Adjuntas',18.1622,-66.7219],['Ponce',18.0111,-66.6141],['Yauco',18.0356,-66.8500],['Guánica',17.9714,-66.9078],['Lajas',18.0458,-67.0592],['Peñuelas',18.0500,-66.7230],['Juana Díaz',18.0511,-66.5043],['Coamo',18.0806,-66.3592],['Santa Isabel',17.9664,-66.4056],['Salinas',17.9742,-66.2944],['Guayama',17.9840,-66.1100],['Cayey',18.1108,-66.1661],['Aibonito',18.1410,-66.2658],['Barranquitas',18.1889,-66.3067],['Comerío',18.2183,-66.2261],['Orocovis',18.2260,-66.3918],['Villalba',18.1280,-66.4909],['Morovis',18.3317,-66.4000],['Ciales',18.3358,-66.4736],['Corozal',18.3478,-66.3167],['Naranjito',18.3008,-66.2453],['Florida',18.3639,-66.5679],['Gurabo',18.2530,-65.9731],['Juncos',18.2275,-65.9222],['Humacao',18.1497,-65.8272],['Naguabo',18.2130,-65.7349],['Fajardo',18.3258,-65.6527],['Río Grande',18.3806,-65.8330],['Luquillo',18.3725,-65.7130],['Vieques',18.1264,-65.4425],['Culebra',18.3167,-65.2910]];
+function wxNearestPR(lat, lon) {
+  if (lat < 17.8 || lat > 18.6 || lon < -67.4 || lon > -65.1) return null; // fuera de Puerto Rico
+  let best = null, bd = Infinity;
+  PR_PUEBLOS.forEach(([n, a, o]) => { const d = (a - lat) ** 2 + ((o - lon) * Math.cos(lat * Math.PI / 180)) ** 2; if (d < bd) { bd = d; best = n; } });
+  return best ? best + ', Puerto Rico' : null;
+}
 async function wxRevName(lat, lon) {
-  // Nombre del pueblo (p. ej. "Caguas, Puerto Rico") a partir de la ubicación
+  // Nombre del pueblo: primero por internet; si falla, el pueblo más cercano de la lista
   try {
     const j = await (await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=es&lat=${lat}&lon=${lon}`)).json();
     const a = j.address || {};
     const town = a.city || a.town || a.village || a.municipality || a.county;
     const region = a.state || a.country;
-    return town ? [town, region].filter(Boolean).join(', ') : null;
-  } catch (e) { return null; }
+    if (town) return [town, region].filter(Boolean).join(', ');
+  } catch (e) {}
+  return wxNearestPR(lat, lon);
 }
 async function avisoPush(a) {
   try {
@@ -3059,12 +3068,19 @@ function wxCardHTML(d) {
 function wxBigHTML(d) {
   const al = (d.alerts || []).map(a => `<div class="wxalert"><b>⚠️ ${esc(a.ev)}</b>${a.head ? `<small>${esc(a.head)}</small>` : ''}</div>`).join('');
   const none = S.settings.avisos && d.alerts && !d.alerts.length ? '<small class="muted">Sin avisos activos ahora. (Los avisos son solo para Estados Unidos y sus territorios.)</small>' : '';
-  return `<div class="wxbig"><div class="wxhead big"><span class="wxico">${WX_ICON(d.cur.c)}</span><div><b>${d.cur.t}°C · ${WX_TXT(d.cur.c)}</b><small>${esc(d.place)} · viento ${d.cur.w} km/h</small></div></div>
+  const mx = Math.max(...d.days.map(x => x.max)), mn = Math.min(...d.days.map(x => x.max));
+  const pts = d.days.map((x, i) => ({px: 30 + i * 60, py: 30 + (mx - x.max) / Math.max(1, mx - mn) * 34, x}));
+  const chart = `<svg class="wxchart" viewBox="0 0 300 92"><polyline points="${pts.map(p => p.px + ',' + p.py).join(' ')}" fill="none" stroke="#1d4f91" stroke-width="2.5"/>${pts.map(p => `<text x="${p.px}" y="${p.py - 8}" text-anchor="middle" font-size="13" font-weight="600" fill="#0b2545">${p.x.max}°</text>`).join('')}</svg>`;
+  const coord = d.lat != null ? `<small class="muted wxcoord">Punto usado: ${d.lat.toFixed(4)}, ${d.lon.toFixed(4)}</small>` : '';
+  return `<div class="wxbig">
+    <div class="wxtop"><small class="wxplace">${esc(d.place)}</small><div class="wxnow"><span class="wxtemp">${d.cur.t}°</span><span class="wxico big">${WX_ICON(d.cur.c)}</span></div><div class="wxcond">${WX_TXT(d.cur.c)}</div><small class="wxmeta">Viento ${d.cur.w} km/h</small></div>
     ${al}${none}
+    ${chart}
     <div class="wxdays">${d.days.map((x, i) => `<div class="wxday" data-wxd="${i}"><small>${WX_DIA[new Date(x.d + 'T12:00:00').getDay()]}</small><span>${WX_ICON(x.c)}</span><b>${x.max}°</b><small>${x.min}°</small></div>`).join('')}</div>
     <div class="wxdet"><small class="muted">Toca un día para ver lluvia y viento.</small></div>
     ${wxAirHTML(d)}
-    <small class="muted">Se actualiza cada 15 minutos cuando hay internet.</small></div>`;
+    <small class="muted">Se actualiza cada 15 minutos cuando hay internet.</small>${coord}
+  </div>`;
 }
 function wxDetHTML(x) {
   const f = new Date(x.d + 'T12:00:00').toLocaleDateString('es', {weekday: 'long', day: 'numeric', month: 'long'});
