@@ -2993,7 +2993,7 @@ const wxLocate = () => new Promise(res => { if (!navigator.geolocation) return r
 async function wxGet(force) {
   const C = S.settings.clima || {};
   if (!C.place) return C.data || null;
-  if (!force && C.data && Date.now() - C.data.at < 30 * 60000) return C.data;
+  if (!force && C.data && Date.now() - C.data.at < 15 * 60000) return C.data;
   try {
     if (C.place.auto) { const loc = await wxLocate(); if (loc) C.place = {name: 'Mi ubicación', auto: true, lat: loc.lat, lon: loc.lon}; }
     if (C.place.lat == null) return C.data || null;
@@ -3008,7 +3008,7 @@ function wxCardHTML(d) {
 function wxBigHTML(d) {
   return `<div class="wxhead big"><span class="wxico">${WX_ICON(d.cur.c)}</span><div><b>${d.cur.t}°C · ${WX_TXT(d.cur.c)}</b><small>${esc(d.place)} · viento ${d.cur.w} km/h</small></div></div>
     <div class="wxdays">${d.days.map(x => `<div><small>${WX_DIA[new Date(x.d + 'T12:00:00').getDay()]}</small><span>${WX_ICON(x.c)}</span><b>${x.max}°</b><small>${x.min}°</small></div>`).join('')}</div>
-    <small class="muted">Se actualiza cada 30 minutos cuando hay internet.</small>`;
+    <small class="muted">Se actualiza cada 15 minutos cuando hay internet.</small>`;
 }
 // Tarjeta arriba en Mi Día
 async function wxMount(v) {
@@ -3020,6 +3020,8 @@ async function wxMount(v) {
   if (!box.isConnected) return;
   box.innerHTML = d ? wxCardHTML(d) : '<small class="muted">Clima: toca aquí para elegir tu ciudad</small>';
   box.onclick = () => go('clima');
+  // Mientras la app esté abierta, se refresca cada 15 minutos (el dato real cambia cada 15 min)
+  const tm = setInterval(async () => { if (!box.isConnected) return clearInterval(tm); const x = await wxGet(true); if (x && box.isConnected) box.innerHTML = wxCardHTML(x); }, 15 * 60000);
 }
 // Pantalla Clima (en Más)
 function vClima(v) {
