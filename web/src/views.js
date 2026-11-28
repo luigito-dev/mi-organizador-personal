@@ -2773,7 +2773,7 @@ function openPinManager(done) {
   const row = (key, icon, name, on, sub = '') => `<label class="wrsw pinrow"><span><b>${icon} ${esc(name)}</b>${sub ? `<small>${sub}</small>` : ''}</span><input type="checkbox" data-pk="${key}" ${on ? 'checked' : ''}><i></i></label>`;
   const s = openSheet({title: 'Fijar en el acceso rápido', body: `<p class="hint" style="margin-top:0">
     <div class="row" style="margin:4px 0 10px"><button class="btn sec" id="pmOrder" type="button">↕️ Cambiar el orden</button></div>
-    <div class="pingrp"><b>Básicos</b>${row('hoy', '☀️', 'Hoy', P.hoy !== false, 'Tareas de hoy')}${row('cal', '📅', 'Calendario', !!P.cal, 'Mes y cosas del día')}</div>
+    <div class="pingrp"><b>Básicos</b>${row('hoy', '☀️', 'Hoy', P.hoy !== false, 'Tareas de hoy')}${row('cal', '📅', 'Calendario', !!P.cal, 'Mes y cosas del día')}${row('clim', '🌤️', 'Clima', !!P.clim, 'Tarjeta del clima de hoy')}</div>
     <div class="pingrp"><b>Listas</b>${S.lists.map(l => row('list:' + l.id, l.icon, l.name, !l.hideOnDay)).join('')}</div>
     ${S.tasks.filter(t => !isDone(t)).length ? `<div class="pingrp"><b>Tareas</b>${S.tasks.filter(t => !isDone(t)).slice(0, 40).map(t => row('tk:' + t.id, '✔️', t.title, isPinnedKey('tk:' + t.id), fmtShort(t.date))).join('')}</div>` : ''}
     ${S.notes.length ? `<div class="pingrp"><b>Notas</b>${S.notes.slice(0, 40).map(n => row('nt:' + n.id, '📝', noteTitle(n), isPinnedKey('nt:' + n.id), fmtShort(n.date))).join('')}</div>` : ''}
@@ -2897,7 +2897,7 @@ function wirePinBar(v) {
 // Orden de lo fijado en la ventana flotante (se pasa de uno a otro deslizando de lado)
 function popKeys() {
   const P = pins();
-  const raw = [...(P.hoy === false ? [] : ['hoy']), ...(P.cdsOff !== true && (S.settings.countdowns || []).length ? ['cds:all'] : []), ...S.lists.filter(l => !l.hideOnDay).map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(P.cal ? ['cal'] : []), ...pinItems().filter(k => k !== 'cds:all' && itemExists(k)), ...(P.hoy === false ? [] : []), ...(S.settings.showHolidays ? (() => { const out = []; for (let i = 0; i <= 7; i++) { const d = addDays(todayISO(), i); if (holidaysOn(d).length) out.push('fest:' + d); } return out; })() : []), ...S.events.filter(e => e.date >= todayISO() && e.date <= addDays(todayISO(), 7)).sort((a, b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || ''))).slice(0, 10).map(e => 'evs:' + e.id)];
+  const raw = [...(P.hoy === false ? [] : ['hoy']), ...(P.clim ? ['clim'] : []), ...(P.cdsOff !== true && (S.settings.countdowns || []).length ? ['cds:all'] : []), ...S.lists.filter(l => !l.hideOnDay).map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(P.cal ? ['cal'] : []), ...pinItems().filter(k => k !== 'cds:all' && itemExists(k)), ...(P.hoy === false ? [] : []), ...(S.settings.showHolidays ? (() => { const out = []; for (let i = 0; i <= 7; i++) { const d = addDays(todayISO(), i); if (holidaysOn(d).length) out.push('fest:' + d); } return out; })() : []), ...S.events.filter(e => e.date >= todayISO() && e.date <= addDays(todayISO(), 7)).sort((a, b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || ''))).slice(0, 10).map(e => 'evs:' + e.id)];
   const ord = P.order || [];
   return [...ord.filter(k => raw.includes(k)), ...raw.filter(k => !ord.includes(k))];
 }
