@@ -18,7 +18,7 @@ const ic = (k, cls = 'ic') => `<svg class="${cls}" viewBox="0 0 24 24" fill="non
 const LOGO = `<svg width="34" height="34" viewBox="0 0 40 40"><rect x="4" y="7" width="32" height="29" rx="6" fill="#fff"/><rect x="4" y="7" width="32" height="9" rx="4" fill="#f08a24"/><rect x="4" y="12" width="32" height="4" fill="#f08a24"/><rect x="11" y="3" width="4" height="8" rx="2" fill="#fff" stroke="#174a96" stroke-width="1.5"/><rect x="25" y="3" width="4" height="8" rx="2" fill="#fff" stroke="#174a96" stroke-width="1.5"/><path d="M12.5 25.5l5 5 10-10" fill="none" stroke="#1f5fbf" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const SECTIONS = [
   ['dia', 'Mi Día', 'dia'], ['calendario', 'Calendario', 'cal'], ['areas', 'Áreas', 'areas'], ['rutina', 'Rutina semanal', 'rutina'],
-  ['tareas', 'Tareas', 'tareas'], ['listas', 'Mis listas', 'listas'], ['habitos', 'Hábitos', 'habitos'], ['enfoque', 'Enfoque', 'enfoque'], ['notas', 'Mis notas', 'notas'], ['progreso', 'Progreso', 'progreso'], ['config', 'Configuración', 'config']
+  ['tareas', 'Tareas', 'tareas'], ['listas', 'Mis listas', 'listas'], ['clima', 'Clima', 'cal'], ['habitos', 'Hábitos', 'habitos'], ['enfoque', 'Enfoque', 'enfoque'], ['notas', 'Mis notas', 'notas'], ['progreso', 'Progreso', 'progreso'], ['config', 'Configuración', 'config']
 ];
 const UI = {freeShown: {}, daySel: null, view: 'dia', q: '', calDate: todayISO(), selDate: todayISO(), sumTab: 'hoy', taskTab: 'todo', filters: {area: '', type: '', prio: '', sort: 'fecha'}, showHiddenNotes: false, sideTab: 'citas', taskMode: 'tareas', openList: null, openArea: null, areaType: '', motivHidden: false, motiv: '', qWhen: 'hoy', qDate: null};
 const isMobile = () => window.matchMedia('(max-width:820px)').matches;
@@ -148,8 +148,8 @@ function render() {
 }
 function renderView() {
   const v = $('#view');
-  const fn = {dia: vDia2, calendario: vCal, areas: vAreas, rutina: vRutina, tareas: vTareas, listas: vListasView, habitos: vHabitos, enfoque: vEnfoque, notas: vNotas, progreso: vProgreso, config: vConfig}[UI.view];
-  v.innerHTML = ''; fn(v); listBadge();
+  const fn = {dia: vDia2, calendario: vCal, areas: vAreas, rutina: vRutina, tareas: vTareas, listas: vListasView, habitos: vHabitos, enfoque: vEnfoque, notas: vNotas, progreso: vProgreso, config: vConfig, clima: vClima}[UI.view];
+  v.innerHTML = ''; fn(v); if (UI.view === 'dia') wxMount(v); listBadge();
 }
 
 /* ========== Búsqueda global ========== */
@@ -1069,13 +1069,13 @@ function dayLists(box) {
   if (!box) return;
   if (box.dataset.fixkey) { UI.popTab = box.dataset.fixkey; if (!box._fx) { box._fx = 1; const fix = () => { UI.popTab = box.dataset.fixkey; }; ['click', 'keydown', 'pointerdown', 'change', 'input'].forEach(ev => box.addEventListener(ev, fix, true)); } }
   const t = todayISO(), lists = S.lists.filter(l => !l.hideOnDay);
-  if (!UI.popTab || (UI.popTab !== 'hoy' && UI.popTab !== 'cal' && !/^(reto|hab|tk|nt|cd|cds|fest|evs):/.test(String(UI.popTab)) && UI.popTab !== 'newlist' && !lists.some(l => l.id === UI.popTab))) UI.popTab = 'hoy';
+  if (!UI.popTab || (UI.popTab !== 'hoy' && UI.popTab !== 'cal' && UI.popTab !== 'clim' && !/^(reto|hab|tk|nt|cd|cds|fest|evs):/.test(String(UI.popTab)) && UI.popTab !== 'newlist' && !lists.some(l => l.id === UI.popTab))) UI.popTab = 'hoy';
   const keys = popKeys(), ki = Math.max(0, keys.indexOf(UI.popTab)), kprev = keys[(ki - 1 + keys.length) % keys.length], knext = keys[(ki + 1) % keys.length];
   const tabs = `<div class="qnav">${keys.length > 1 ? `<button class="qarr" data-qt="${kprev}" aria-label="Anterior">‹</button>` : ''}<div class="qdots">${keys.map(k => `<i class="${k === UI.popTab ? 'on' : ''}"></i>`).join('')}</div>${keys.length > 1 ? `<button class="qarr" data-qt="${knext}" aria-label="Siguiente">›</button>` : ''}</div>`;
   if (!box.dataset.fixkey) popSwipe(box);
   if (UI.popTab === 'hoy' && pins().hoy === false) { const first = [...lists.map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(pins().cal ? ['cal'] : [])][0]; if (first) UI.popTab = first; }
   const wireTabs = () => { addUnpin(box); box.querySelectorAll('[data-qt]').forEach(b => b.onclick = () => { UI.popTab = b.dataset.qt; dayLists(box); listBadge(); }); box.querySelectorAll('[data-qpins]').forEach(b => b.onclick = () => openPinManager(() => dayLists(box))); };
-  if (/^(tk|nt|cd|cds|fest|evs):/.test(String(UI.popTab))) { const it = pinItemView(UI.popTab); if (it) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:var(--blue)"><span class="qtitle ${it.title.length > 9 ? 'long' : ''}">${esc(it.title.toUpperCase())}</span><span class="qcount">${esc(it.pill)}</span></div><div class="pinhost">${it.html}</div><div class="row qfoot"><button class="btn ghost sm" id="qOpenIt">Abrir ›</button></div>`; box.querySelector('#qOpenIt').onclick = it.open; wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
+  if (/^(tk|nt|cd|cds|fest|evs|clim)(:|$)/.test(String(UI.popTab))) { const it = pinItemView(UI.popTab); if (it) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:var(--blue)"><span class="qtitle ${it.title.length > 9 ? 'long' : ''}">${esc(it.title.toUpperCase())}</span><span class="qcount">${esc(it.pill)}</span></div><div class="pinhost">${it.html}</div><div class="row qfoot"><button class="btn ghost sm" id="qOpenIt">${it.btn || 'Abrir ›'}</button></div>`; box.querySelector('#qOpenIt').onclick = it.open; wireTabs(); if (it.refresh) it.refresh(box.querySelector('.pinhost')); return; } UI.popTab = 'hoy'; return dayLists(box); }
   if (String(UI.popTab).startsWith('hab:')) { const h = S.habits.find(x => 'hab:' + x.id === UI.popTab); if (h) { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:${h.color}"><span class="qtitle ${h.name.length > 9 ? 'long' : ''}">${esc(h.name.toUpperCase())}</span><span class="qcount">${habPill(h)}</span></div><div class="pinhost" id="pinHost"></div><div class="row qfoot"><span class="sp"></span><button class="btn ghost sm" id="qHab">Abrir hábito ›</button></div>`; box.querySelector('#qHab').onclick = () => { go('habitos'); }; pinHabit(h, box.querySelector('#pinHost'), () => dayLists(box)); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
   if (UI.popTab === 'cal') { box.innerHTML = `<div class="qtop">${tabs}<button class="iconbtn qx" data-close aria-label="Cerrar">✕</button></div><div class="qhead" style="--lc:var(--teal,#0f9d8f)"><span class="qtitle">CALENDARIO</span><span class="qcount">${sortedDay(todayISO()).length} hoy</span></div><div id="pinCal"></div>`; pinCalendar(box.querySelector('#pinCal')); wireTabs(); return; }
   if (String(UI.popTab).startsWith('reto:')) { const h = S.habits.find(x => 'reto:' + x.id === UI.popTab); if (h && h.challenge) { challengeBox(box, h, tabs, null); wireTabs(); return; } UI.popTab = 'hoy'; return dayLists(box); }
@@ -2581,6 +2581,7 @@ function cdFeatBox(c) {
 const itemExists = k => { if (k === 'cds:all') return (S.settings.countdowns || []).length > 0; if (k.startsWith('cd:')) return false; const id = k.slice(3); if (k.startsWith('tk:')) return S.tasks.some(x => x.id === id); if (k.startsWith('nt:')) return S.notes.some(x => x.id === id); if (k.startsWith('cd:')) return (S.settings.countdowns || []).some(x => x.id === id); return false; };
 function isPinnedKey(k) {
   if (k === 'cds:all') return pins().cdsOff !== true && (S.settings.countdowns || []).length > 0;
+  if (k === 'clim') return !!pins().clim;
   if (k.startsWith('hab:')) return (pins().habs || []).includes(k.slice(4));
   if (k.startsWith('list:')) { const l = S.lists.find(x => x.id === k.slice(5)); return !!l && !l.hideOnDay; }
   return pinItems().includes(k);
@@ -2590,6 +2591,7 @@ function togglePinKey(k, quiet = false) {
   if (k.startsWith('hab:')) { const id = k.slice(4); P.habs = (P.habs || []).filter(x => x !== id); if (!was) P.habs.push(id); save('meta'); }
   else if (k.startsWith('list:')) { const l = S.lists.find(x => x.id === k.slice(5)); if (l) { l.hideOnDay = was; save('lists'); } }
   else if (k === 'cds:all') { P.cdsOff = was; save('meta'); }
+  else if (k === 'clim') { P.clim = !was; save('meta'); }
   else { P.items = pinItems().filter(x => x !== k); if (!was) P.items.push(k); save('meta'); }
   if (!quiet) toast(was ? 'Quitado de fijados' : 'Fijado');
   listBadge();
@@ -2642,6 +2644,7 @@ document.addEventListener('click', e => { const f = e.target.closest && e.target
 function popKeyName(k) {
   if (k === 'hoy') return 'Hoy';
   if (k === 'cal') return 'Calendario';
+  if (k === 'clim') return 'Clima';
   if (k === 'cds:all') return 'Cuentas';
   if (k.startsWith('fest:')) { const h = holidaysOn(k.slice(5))[0]; return h ? `${holiEmoji(h.name)} ${h.name}` : 'Festivo'; }
   if (k.startsWith('evs:')) { const e = S.events.find(x => x.id === k.slice(4)); return e ? `${(evType(e.evType) || {}).icon || '📌'} ${e.title}` : 'Evento'; }
@@ -2670,6 +2673,13 @@ function openOrderSheet() {
 }
 function pinItemView(k) {
   const id = k.slice(3);
+  if (k === 'clim') {
+    const d = (S.settings.clima || {}).data;
+    const html = d ? wxBigHTML(d) : '<div class="small muted" style="padding:10px 4px">Cargando clima…</div>';
+    // Se refresca al abrir (usa caché de 30 min); si no hay ciudad, manda a elegirla
+    const refresh = host => wxGet(false).then(x => { if (x && host && host.isConnected) host.innerHTML = wxBigHTML(x); else if (!x && host && host.isConnected) host.innerHTML = '<div class="small muted" style="padding:10px 4px">Elige tu ciudad para ver el clima</div>'; });
+    return {title: 'Clima', pill: d ? WX_TXT(d.cur.c) : '', html, btn: 'Cambiar ciudad ›', refresh, open: () => go('clima')};
+  }
   if (k.startsWith('fest:')) { const d = k.slice(5), h = holidaysOn(d)[0]; if (!h) return null; return {title: h.name, pill: fmtShort(d), html: festBox(h, d), open: () => { UI.selDate = d; go('calendario'); }}; }
   if (k.startsWith('evs:')) { const e = S.events.find(x => x.id === k.slice(4)); if (!e) return null; return {title: e.title, pill: fmtShort(e.date), html: evScene(e), open: () => openEventDetail(e.id)}; }
   if (k.startsWith('tk:')) { const t = S.tasks.find(x => x.id === id); if (!t) return null; return {title: t.title, pill: t.status || '', html: `<div class="small muted" style="padding:10px 4px">${fmtLong(t.date)}${t.time ? ' · ' + fmtTime(t.time) : ''}</div>`, open: () => openTaskDetail(id)}; }
@@ -2763,7 +2773,7 @@ function openPinManager(done) {
   const row = (key, icon, name, on, sub = '') => `<label class="wrsw pinrow"><span><b>${icon} ${esc(name)}</b>${sub ? `<small>${sub}</small>` : ''}</span><input type="checkbox" data-pk="${key}" ${on ? 'checked' : ''}><i></i></label>`;
   const s = openSheet({title: 'Fijar en el acceso rápido', body: `<p class="hint" style="margin-top:0">
     <div class="row" style="margin:4px 0 10px"><button class="btn sec" id="pmOrder" type="button">↕️ Cambiar el orden</button></div>
-    <div class="pingrp"><b>Básicos</b>${row('hoy', '☀️', 'Hoy', P.hoy !== false, 'Tareas de hoy')}${row('cal', '📅', 'Calendario', !!P.cal, 'Mes y cosas del día')}</div>
+    <div class="pingrp"><b>Básicos</b>${row('hoy', '☀️', 'Hoy', P.hoy !== false, 'Tareas de hoy')}${row('cal', '📅', 'Calendario', !!P.cal, 'Mes y cosas del día')}${row('clim', '🌤️', 'Clima', !!P.clim, 'Tarjeta del clima de hoy')}</div>
     <div class="pingrp"><b>Listas</b>${S.lists.map(l => row('list:' + l.id, l.icon, l.name, !l.hideOnDay)).join('')}</div>
     ${S.tasks.filter(t => !isDone(t)).length ? `<div class="pingrp"><b>Tareas</b>${S.tasks.filter(t => !isDone(t)).slice(0, 40).map(t => row('tk:' + t.id, '✔️', t.title, isPinnedKey('tk:' + t.id), fmtShort(t.date))).join('')}</div>` : ''}
     ${S.notes.length ? `<div class="pingrp"><b>Notas</b>${S.notes.slice(0, 40).map(n => row('nt:' + n.id, '📝', noteTitle(n), isPinnedKey('nt:' + n.id), fmtShort(n.date))).join('')}</div>` : ''}
@@ -2887,7 +2897,7 @@ function wirePinBar(v) {
 // Orden de lo fijado en la ventana flotante (se pasa de uno a otro deslizando de lado)
 function popKeys() {
   const P = pins();
-  const raw = [...(P.hoy === false ? [] : ['hoy']), ...(P.cdsOff !== true && (S.settings.countdowns || []).length ? ['cds:all'] : []), ...S.lists.filter(l => !l.hideOnDay).map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(P.cal ? ['cal'] : []), ...pinItems().filter(k => k !== 'cds:all' && itemExists(k)), ...(P.hoy === false ? [] : []), ...(S.settings.showHolidays ? (() => { const out = []; for (let i = 0; i <= 7; i++) { const d = addDays(todayISO(), i); if (holidaysOn(d).length) out.push('fest:' + d); } return out; })() : []), ...S.events.filter(e => e.date >= todayISO() && e.date <= addDays(todayISO(), 7)).sort((a, b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || ''))).slice(0, 10).map(e => 'evs:' + e.id)];
+  const raw = [...(P.hoy === false ? [] : ['hoy']), ...(P.clim ? ['clim'] : []), ...(P.cdsOff !== true && (S.settings.countdowns || []).length ? ['cds:all'] : []), ...S.lists.filter(l => !l.hideOnDay).map(l => l.id), ...retoHabits().map(h => 'reto:' + h.id), ...pinHabits().map(h => 'hab:' + h.id), ...(P.cal ? ['cal'] : []), ...pinItems().filter(k => k !== 'cds:all' && itemExists(k)), ...(P.hoy === false ? [] : []), ...(S.settings.showHolidays ? (() => { const out = []; for (let i = 0; i <= 7; i++) { const d = addDays(todayISO(), i); if (holidaysOn(d).length) out.push('fest:' + d); } return out; })() : []), ...S.events.filter(e => e.date >= todayISO() && e.date <= addDays(todayISO(), 7)).sort((a, b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || ''))).slice(0, 10).map(e => 'evs:' + e.id)];
   const ord = P.order || [];
   return [...ord.filter(k => raw.includes(k)), ...raw.filter(k => !ord.includes(k))];
 }
@@ -2962,4 +2972,72 @@ function wirePinCards(v) {
   requestAnimationFrame(() => { wrap._hold = true; wrap.scrollLeft = UI.pinIdx * wrap.clientWidth; mark(); fit(); setTimeout(() => { wrap._hold = false; }, 400); });
   let t; wrap.addEventListener('scroll', () => { if (wrap._hold) return; clearTimeout(t); t = setTimeout(() => { if (wrap._hold) return; UI.pinIdx = Math.round(wrap.scrollLeft / wrap.clientWidth); UI.pinKey = keyList[UI.pinIdx] || UI.pinKey; mark(); fit(); }, 80); }, {passive: true});
   dots.forEach((d, i) => d.onclick = () => wrap.scrollTo({left: i * wrap.clientWidth, behavior: 'smooth'}));
+}
+
+
+/* ===== Clima (Open-Meteo: sin clave) ===== */
+const WX_ICON = c => c === 0 ? '☀️' : c <= 2 ? '⛅' : c === 3 ? '☁️' : c <= 48 ? '🌫️' : c <= 67 ? '🌧️' : c <= 77 ? '❄️' : c <= 82 ? '🌦️' : '⛈️';
+const WX_TXT = c => c === 0 ? 'Despejado' : c <= 2 ? 'Parcialmente nublado' : c === 3 ? 'Nublado' : c <= 48 ? 'Neblina' : c <= 67 ? 'Lluvia' : c <= 77 ? 'Nieve' : c <= 82 ? 'Chubascos' : 'Tormenta';
+const WX_DIA = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+async function wxSearch(q) {
+  const j = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=es&format=json`)).json();
+  return (j.results || []).map(x => ({name: [x.name, x.admin1, x.country].filter(Boolean).join(', '), lat: x.latitude, lon: x.longitude}));
+}
+async function wxFetch(p) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${p.lat}&longitude=${p.lon}&current=temperature_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`;
+  const j = await (await fetch(url)).json();
+  return {place: p.name, at: Date.now(), cur: {t: Math.round(j.current.temperature_2m), c: j.current.weather_code, w: Math.round(j.current.wind_speed_10m)}, days: j.daily.time.map((d, i) => ({d, c: j.daily.weather_code[i], max: Math.round(j.daily.temperature_2m_max[i]), min: Math.round(j.daily.temperature_2m_min[i])}))};
+}
+const wxLocate = () => new Promise(res => { if (!navigator.geolocation) return res(null); navigator.geolocation.getCurrentPosition(p => res({lat: p.coords.latitude, lon: p.coords.longitude}), () => res(null), {timeout: 8000, maximumAge: 1800000}); });
+// Usa el dato guardado si tiene menos de 30 minutos; si no, lo pide de nuevo
+async function wxGet(force) {
+  const C = S.settings.clima || {};
+  if (!C.place) return C.data || null;
+  if (!force && C.data && Date.now() - C.data.at < 30 * 60000) return C.data;
+  try {
+    if (C.place.auto) { const loc = await wxLocate(); if (loc) C.place = {name: 'Mi ubicación', auto: true, lat: loc.lat, lon: loc.lon}; }
+    if (C.place.lat == null) return C.data || null;
+    const data = await wxFetch(C.place);
+    S.settings.clima = {...C, place: C.place, data}; save('meta');
+    return data;
+  } catch (e) { return C.data || null; }
+}
+function wxCardHTML(d) {
+  return `<div class="wxhead"><span class="wxico">${WX_ICON(d.cur.c)}</span><div><b>${d.cur.t}°C · ${WX_TXT(d.cur.c)}</b><small>${esc(d.place)}</small></div><span class="wxgo">›</span></div>`;
+}
+function wxBigHTML(d) {
+  return `<div class="wxhead big"><span class="wxico">${WX_ICON(d.cur.c)}</span><div><b>${d.cur.t}°C · ${WX_TXT(d.cur.c)}</b><small>${esc(d.place)} · viento ${d.cur.w} km/h</small></div></div>
+    <div class="wxdays">${d.days.map(x => `<div><small>${WX_DIA[new Date(x.d + 'T12:00:00').getDay()]}</small><span>${WX_ICON(x.c)}</span><b>${x.max}°</b><small>${x.min}°</small></div>`).join('')}</div>
+    <small class="muted">Se actualiza cada 30 minutos cuando hay internet.</small>`;
+}
+// Tarjeta arriba en Mi Día
+async function wxMount(v) {
+  const box = document.createElement('div'); box.className = 'wxcard'; box.innerHTML = '<small class="muted">Cargando clima…</small>';
+  // Debajo de los números de la semana (barra de días)
+  const ds = v.querySelector('#dstrip');
+  if (ds) ds.parentNode.insertBefore(box, ds.nextSibling); else v.insertBefore(box, v.firstChild);
+  const d = await wxGet(false);
+  if (!box.isConnected) return;
+  box.innerHTML = d ? wxCardHTML(d) : '<small class="muted">Clima: toca aquí para elegir tu ciudad</small>';
+  box.onclick = () => go('clima');
+}
+// Pantalla Clima (en Más)
+function vClima(v) {
+  v.innerHTML = `<div class="evspace">
+    <div class="wxsearch"><input class="inp" id="wxQ" placeholder="Buscar país o ciudad"><button class="btn sm" id="wxGo">Buscar</button></div>
+    <div id="wxRes"></div>
+    <div id="wxBig"></div>
+    <button class="btn sec sm" id="wxAuto" style="margin-top:10px">Usar mi ubicación</button></div>`;
+  const big = async force => { const b = v.querySelector('#wxBig'); b.innerHTML = '<small class="muted">Cargando…</small>'; const d = await wxGet(force); b.innerHTML = d ? wxBigHTML(d) : '<small class="muted">Busca un lugar para ver su clima.</small>'; };
+  const find = async () => {
+    const q = v.querySelector('#wxQ').value.trim(); if (!q) return;
+    const res = await wxSearch(q).catch(() => []), box = v.querySelector('#wxRes');
+    if (!res.length) { box.innerHTML = '<small class="muted">No encontré ese lugar.</small>'; return; }
+    box.innerHTML = res.map((p, i) => `<button class="pickbtn" data-wx="${i}" style="width:100%;margin-bottom:6px"><span>${esc(p.name)}</span><b>›</b></button>`).join('');
+    box.querySelectorAll('[data-wx]').forEach(b => b.onclick = async () => { const p = res[+b.dataset.wx]; S.settings.clima = {place: {name: p.name, lat: p.lat, lon: p.lon, auto: false}}; save('meta'); box.innerHTML = ''; await big(true); });
+  };
+  v.querySelector('#wxGo').onclick = find;
+  v.querySelector('#wxQ').onkeydown = e => { if (e.key === 'Enter') find(); };
+  v.querySelector('#wxAuto').onclick = async () => { S.settings.clima = {place: {name: 'Mi ubicación', auto: true}}; save('meta'); await big(true); };
+  big(false);
 }

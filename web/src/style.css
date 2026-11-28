@@ -1660,3 +1660,18 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .tiBtn.on{background:#eaf1ff;box-shadow:inset 0 0 0 2px #2563eb}
 .tiBtn small{font-size:10px;color:#5b6b82;line-height:1.1;text-align:center}
 .tiFoot{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+
+/* Clima */
+.wxcard{margin:8px 12px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#dbeafe,#eef6ff);color:#1f2937;cursor:pointer}
+.wxhead{display:flex;align-items:center;gap:10px}
+.wxhead>div{flex:1;min-width:0}
+.wxhead small{display:block;color:#5b6b82;font-size:12px}
+.wxico{font-size:30px;line-height:1}
+.wxgo{font-size:20px;color:#5b6b82}
+.wxhead.big .wxico{font-size:44px}
+.wxdays{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:12px 0 6px;text-align:center}
+.wxdays div{background:#fff;border-radius:12px;padding:8px 2px;display:flex;flex-direction:column;align-items:center}
+.wxdays span{font-size:20px}
+.wxdays small{font-size:11px;color:#5b6b82}
+.wxsearch{display:flex;gap:8px;margin-bottom:10px}
+.wxsearch .inp{flex:1}
