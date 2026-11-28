@@ -258,6 +258,8 @@
       document.addEventListener('click', e => { const a = e.target.closest('a[target=_blank]'); if (a) { e.preventDefault(); Browser.open({url: a.href}); } }, true);
       ready = true; queue.splice(0).forEach(f => f());
       try { const r = await Org.getPendingAction(); if (r && r.action) this.handleAction(r.action); } catch (e) {}
+      // Aplica primero lo que se tocó en los widgets (si la app estaba cerrada) y luego manda los datos al widget
+      await this.applyWidgetChanges();
       this.pushWidget(); this.reschedule();
       setTimeout(() => this.checkUpdate(false), 4000);
     }
