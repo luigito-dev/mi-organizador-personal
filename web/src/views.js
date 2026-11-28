@@ -2788,6 +2788,7 @@ function openPinManager(done) {
       else if (k.startsWith('list:')) { const l = S.lists.find(x => 'list:' + x.id === k); if (l) { l.hideOnDay = !on; save('lists'); } }
       else if (k.startsWith('sug:')) { if (on) { const x = HAB_SUG[+k.slice(4)]; const id = uid(); S.habits.push({id, icon: x[0], name: x[1], goal: x[2], unit: '', kind: HAB_KINDS.some(kk => kk[0] === x[3]) ? x[3] : '', wakeAt: x[3] === 'despertar' ? '06:00' : undefined, goalOz: x[3] === 'agua' ? 64 : undefined, migA: 1, migO: 1, migW: 1, unitD: 'mi', color: HL_PASTEL[S.habits.length % HL_PASTEL.length], days: [], log: {}, created: todayISO()}); save('habits'); P2.habs = (P2.habs || []).concat(id); c.disabled = true; } }
       else if (/^(tk|nt|cd):/.test(k)) { if (on !== isPinnedKey(k)) togglePinKey(k, true); }
+      else if (k === 'clim') P2.clim = on;
       else if (k.startsWith('hab:')) { const id = k.slice(4); P2.habs = (P2.habs || []).filter(x => x !== id); if (on) P2.habs.push(id); }
       else if (k.startsWith('reto:')) { const id = k.slice(5); P2.reto = (P2.reto || []).filter(x => x !== id); if (on) P2.reto.push(id); }
       save('meta'); toast(on ? 'Fijado' : 'Quitado del acceso rápido');
@@ -2990,14 +2991,29 @@ async function wxFetch(p) {
 }
 const wxLocate = () => new Promise(res => { if (!navigator.geolocation) return res(null); navigator.geolocation.getCurrentPosition(p => res({lat: p.coords.latitude, lon: p.coords.longitude}), () => res(null), {timeout: 8000, maximumAge: 1800000}); });
 // Usa el dato guardado si tiene menos de 30 minutos; si no, lo pide de nuevo
+async function wxAir(p) {
+  const base = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${p.lat}&longitude=${p.lon}&timezone=auto&current=`;
+  try {
+    const c = ((await (await fetch(base + 'dust,us_aqi')).json()).current) || {};
+    let pollen = null;
+    try {
+      const k = ((await (await fetch(base + 'alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen')).json()).current) || {};
+      const nm = {alder_pollen: 'Aliso', birch_pollen: 'Abedul', grass_pollen: 'Pasto', mugwort_pollen: 'Artemisa', olive_pollen: 'Olivo', ragweed_pollen: 'Ambrosía'};
+      const arr = Object.keys(nm).filter(x => k[x] != null).map(x => ({n: nm[x], v: Math.round(k[x])}));
+      if (arr.length) pollen = arr;
+    } catch (e) {}
+    return {dust: c.dust != null ? Math.round(c.dust) : null, aqi: c.us_aqi != null ? Math.round(c.us_aqi) : null, pollen};
+  } catch (e) { return null; }
+}
 async function wxGet(force) {
   const C = S.settings.clima || {};
   if (!C.place) return C.data || null;
-  if (!force && C.data && Date.now() - C.data.at < 15 * 60000) return C.data;
+  if (!force && C.data && C.data.aq !== undefined && Date.now() - C.data.at < 15 * 60000) return C.data;
   try {
     if (C.place.auto) { const loc = await wxLocate(); if (loc) C.place = {name: 'Mi ubicación', auto: true, lat: loc.lat, lon: loc.lon}; }
     if (C.place.lat == null) return C.data || null;
     const data = await wxFetch(C.place);
+    data.aq = await wxAir(C.place);
     S.settings.clima = {...C, place: C.place, data}; save('meta');
     return data;
   } catch (e) { return C.data || null; }
@@ -3008,7 +3024,20 @@ function wxCardHTML(d) {
 function wxBigHTML(d) {
   return `<div class="wxhead big"><span class="wxico">${WX_ICON(d.cur.c)}</span><div><b>${d.cur.t}°C · ${WX_TXT(d.cur.c)}</b><small>${esc(d.place)} · viento ${d.cur.w} km/h</small></div></div>
     <div class="wxdays">${d.days.map(x => `<div><small>${WX_DIA[new Date(x.d + 'T12:00:00').getDay()]}</small><span>${WX_ICON(x.c)}</span><b>${x.max}°</b><small>${x.min}°</small></div>`).join('')}</div>
+    ${wxAirHTML(d)}
     <small class="muted">Se actualiza cada 15 minutos cuando hay internet.</small>`;
+}
+const AQI_LVL = v => v <= 50 ? ['Bueno', '#16a34a'] : v <= 100 ? ['Moderado', '#ca8a04'] : v <= 150 ? ['Dañino para sensibles', '#ea580c'] : v <= 200 ? ['Dañino', '#dc2626'] : ['Muy dañino', '#7c3aed'];
+const DUST_LVL = v => v < 20 ? ['Bajo', '#16a34a'] : v < 50 ? ['Moderado', '#ca8a04'] : ['Alto', '#dc2626'];
+const POL_LVL = v => v < 10 ? ['Bajo', '#16a34a'] : v < 50 ? ['Medio', '#ca8a04'] : ['Alto', '#dc2626'];
+function wxAirHTML(d) {
+  const a = d.aq; if (!a) return '';
+  const cell = (t, v, u, lv) => `<div><small>${t}</small><b style="color:${lv[1]}">${lv[0]}</b><small>${v}${u}</small></div>`;
+  const cells = [];
+  if (a.dust != null) cells.push(cell('Polvo del Sahara', a.dust, ' µg/m³', DUST_LVL(a.dust)));
+  if (a.aqi != null) cells.push(cell('Calidad del aire', a.aqi, ' AQI', AQI_LVL(a.aqi)));
+  const pol = a.pollen ? `<div class="wxpol">Polen: ${a.pollen.map(x => `${x.n} <b style="color:${POL_LVL(x.v)[1]}">${POL_LVL(x.v)[0]}</b>`).join(' · ')}</div>` : '<div class="wxpol muted">Polen (hongos y alergias): no disponible en tu zona.</div>';
+  return `<div class="wxaq">${cells.join('')}</div>${pol}`;
 }
 // Tarjeta arriba en Mi Día
 async function wxMount(v) {
@@ -3040,6 +3069,6 @@ function vClima(v) {
   };
   v.querySelector('#wxGo').onclick = find;
   v.querySelector('#wxQ').onkeydown = e => { if (e.key === 'Enter') find(); };
-  v.querySelector('#wxAuto').onclick = async () => { S.settings.clima = {place: {name: 'Mi ubicación', auto: true}}; save('meta'); await big(true); };
+  v.querySelector('#wxAuto').onclick = async () => { const b = v.querySelector('#wxBig'); b.innerHTML = '<small class="muted">Buscando tu ubicación…</small>'; const loc = await wxLocate(); if (!loc) { b.innerHTML = '<small class="muted">No pude leer tu ubicación. Revisa que la app tenga permiso de ubicación en el teléfono, o escribe tu ciudad arriba.</small>'; return; } S.settings.clima = {place: {name: 'Mi ubicación', auto: true, lat: loc.lat, lon: loc.lon}}; save('meta'); await big(true); };
   big(false);
 }

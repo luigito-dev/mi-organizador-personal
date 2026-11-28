@@ -1672,6 +1672,12 @@ input[data-wheel]{cursor:pointer;caret-color:transparent}
 .wxdays{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:12px 0 6px;text-align:center}
 .wxdays div{background:#fff;border-radius:12px;padding:8px 2px;display:flex;flex-direction:column;align-items:center}
 .wxdays span{font-size:20px}
+.wxaq{display:flex;gap:6px;margin:8px 0 4px}
+.wxaq>div{flex:1;background:#fff;border-radius:12px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.wxaq b{font-size:14px;margin:2px 0}
+.wxaq small{font-size:11px;color:#5b6b82}
+.wxpol{font-size:12px;color:#5b6b82;margin:6px 2px}
+.wxpol b{font-size:12px}
 .wxdays small{font-size:11px;color:#5b6b82}
 .wxsearch{display:flex;gap:8px;margin-bottom:10px}
 .wxsearch .inp{flex:1}
