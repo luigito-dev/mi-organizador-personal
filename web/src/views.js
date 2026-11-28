@@ -2979,6 +2979,7 @@ function wirePinCards(v) {
 /* ===== Clima (Open-Meteo: sin clave) ===== */
 const WX_ICON = c => c === 0 ? '☀️' : c <= 2 ? '⛅' : c === 3 ? '☁️' : c <= 48 ? '🌫️' : c <= 67 ? '🌧️' : c <= 77 ? '❄️' : c <= 82 ? '🌦️' : '⛈️';
 const WX_TXT = c => c === 0 ? 'Despejado' : c <= 2 ? 'Parcialmente nublado' : c === 3 ? 'Nublado' : c <= 48 ? 'Neblina' : c <= 67 ? 'Lluvia' : c <= 77 ? 'Nieve' : c <= 82 ? 'Chubascos' : 'Tormenta';
+const TF = c => Math.round(c * 9 / 5 + 32); // los datos vienen en °C, se muestran en °F
 const WX_DIA = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 async function wxSearch(q) {
   const j = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=es&format=json`)).json();
@@ -3063,20 +3064,20 @@ async function wxGet(force) {
 }
 function wxCardHTML(d) {
   const al = d.alerts && d.alerts.length ? `<small class="wxal">⚠️ ${esc(d.alerts[0].ev)}</small>` : '';
-  return `<div class="wxhead"><span class="wxico">${WX_ICON(d.cur.c)}</span><div><b>${d.cur.t}°C · ${WX_TXT(d.cur.c)}</b><small>${esc(d.place)}</small>${al}</div><span class="wxgo">›</span></div>`;
+  return `<div class="wxhead"><span class="wxico">${WX_ICON(d.cur.c)}</span><div><b>${TF(d.cur.t)}°F · ${WX_TXT(d.cur.c)}</b><small>${esc(d.place)}</small>${al}</div><span class="wxgo">›</span></div>`;
 }
 function wxBigHTML(d) {
   const al = (d.alerts || []).map(a => `<div class="wxalert"><b>⚠️ ${esc(a.ev)}</b>${a.head ? `<small>${esc(a.head)}</small>` : ''}</div>`).join('');
   const none = S.settings.avisos && d.alerts && !d.alerts.length ? '<small class="muted">Sin avisos activos ahora. (Los avisos son solo para Estados Unidos y sus territorios.)</small>' : '';
   const mx = Math.max(...d.days.map(x => x.max)), mn = Math.min(...d.days.map(x => x.max));
   const pts = d.days.map((x, i) => ({px: 30 + i * 60, py: 30 + (mx - x.max) / Math.max(1, mx - mn) * 34, x}));
-  const chart = `<svg class="wxchart" viewBox="0 0 300 92"><polyline points="${pts.map(p => p.px + ',' + p.py).join(' ')}" fill="none" stroke="#1d4f91" stroke-width="2.5"/>${pts.map(p => `<text x="${p.px}" y="${p.py - 8}" text-anchor="middle" font-size="13" font-weight="600" fill="#0b2545">${p.x.max}°</text>`).join('')}</svg>`;
+  const chart = `<svg class="wxchart" viewBox="0 0 300 92"><polyline points="${pts.map(p => p.px + ',' + p.py).join(' ')}" fill="none" stroke="#1d4f91" stroke-width="2.5"/>${pts.map(p => `<text x="${p.px}" y="${p.py - 8}" text-anchor="middle" font-size="13" font-weight="600" fill="#0b2545">${TF(p.x.max)}°</text>`).join('')}</svg>`;
   const coord = d.lat != null ? `<small class="muted wxcoord">Punto usado: ${d.lat.toFixed(4)}, ${d.lon.toFixed(4)}</small>` : '';
   return `<div class="wxbig">
-    <div class="wxtop"><small class="wxplace">${esc(d.place)}</small><div class="wxnow"><span class="wxtemp">${d.cur.t}°</span><span class="wxico big">${WX_ICON(d.cur.c)}</span></div><div class="wxcond">${WX_TXT(d.cur.c)}</div><small class="wxmeta">Viento ${d.cur.w} km/h</small></div>
+    <div class="wxtop"><small class="wxplace">${esc(d.place)}</small><div class="wxnow"><span class="wxtemp">${TF(d.cur.t)}°</span><span class="wxico big">${WX_ICON(d.cur.c)}</span></div><div class="wxcond">${WX_TXT(d.cur.c)}</div><small class="wxmeta">Viento ${d.cur.w} km/h</small></div>
     ${al}${none}
     ${chart}
-    <div class="wxdays">${d.days.map((x, i) => `<div class="wxday" data-wxd="${i}"><small>${WX_DIA[new Date(x.d + 'T12:00:00').getDay()]}</small><span>${WX_ICON(x.c)}</span><b>${x.max}°</b><small>${x.min}°</small></div>`).join('')}</div>
+    <div class="wxdays">${d.days.map((x, i) => `<div class="wxday" data-wxd="${i}"><small>${WX_DIA[new Date(x.d + 'T12:00:00').getDay()]}</small><span>${WX_ICON(x.c)}</span><b>${TF(x.max)}°</b><small>${TF(x.min)}°</small></div>`).join('')}</div>
     <div class="wxdet"><small class="muted">Toca un día para ver lluvia y viento.</small></div>
     ${wxAirHTML(d)}
     <small class="muted">Se actualiza cada 15 minutos cuando hay internet.</small>${coord}
